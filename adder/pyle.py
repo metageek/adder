@@ -88,6 +88,14 @@ class IfOperator(Expr):
                               self.elseExpr.toPython(True))),
                           inParens)
 
+class DotExpr(Expr):
+    def __init__(self,base,path):
+        self.base=base
+        self.path=path
+
+    def toPython(self,inParens):
+        return '.'.join([self.base.toPython(True)]+self.path)
+
 class ListConstructor(Expr):
     def __init__(self,elementExprs):
         self.elementExprs=elementExprs
@@ -186,6 +194,13 @@ class WhileStmt(Stmt):
         return ('while %s:' % self.condExpr.toPython(False),
                 self.body.toPythonTree())
 
+class ReturnStmt(Stmt):
+    def __init__(self,returnExpr):
+        self.returnExpr=returnExpr
+
+    def toPythonTree(self):
+        return 'return %s' % self.returnExpr.toPython(False)
+
 class DefStmt(Stmt):
     def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body):
         self.fname=fname
@@ -217,11 +232,16 @@ class DefStmt(Stmt):
                                      '*,' if self.kwArgs else '',
                                      ','.join(kwArgsPy)
                                      ),
-                [self.body.toPythonTree()])
+                [self.body.toPythonTree() if self.body else 'pass'])
 
-class ReturnStmt(Stmt):
-    def __init__(self,returnExpr):
-        self.returnExpr=returnExpr
+class ClassStmt(Stmt):
+    def __init__(self,name,parents,body):
+        self.name=name
+        self.parents=parents
+        self.body=body
 
     def toPythonTree(self):
-        return 'return %s' % self.returnExpr.toPython(False)
+        return ('class %s(%s):' % (self.name,
+                                   ','.join(self.parents)),
+                [self.body.toPythonTree() if self.body else 'pass']
+                )

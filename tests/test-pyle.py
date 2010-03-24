@@ -133,6 +133,21 @@ class ExprTestCase(unittest.TestCase):
         assert expr.toPython(False)=="{a: 9, 'x': 7}"
         assert expr.toPython(True)=="{a: 9, 'x': 7}"
 
+    def testDot0(self):
+        expr=DotExpr(VarExpr('a'),[])
+        assert expr.toPython(False)=="a"
+        assert expr.toPython(True)=="a"
+
+    def testDot1(self):
+        expr=DotExpr(VarExpr('a'),['x'])
+        assert expr.toPython(False)=="a.x"
+        assert expr.toPython(True)=="a.x"
+
+    def testDot2(self):
+        expr=DotExpr(VarExpr('a'),['x','y'])
+        assert expr.toPython(False)=="a.x.y"
+        assert expr.toPython(True)=="a.x.y"
+
 class StmtTestCase(unittest.TestCase):
     def testAssignment(self):
         stmt=Assignment(VarExpr('foo.bar'),
@@ -207,6 +222,56 @@ else:
         assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
         assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
     return a
+""")
+
+    def testClassNoParentsNoBody(self):
+        stmt=ClassStmt('C',[],None)
+        assert(stmt.toPythonTree()==('class C():',['pass']))
+        assert(stmt.toPythonFlat()=="""class C():
+    pass
+""")
+
+    def testClass1ParentNoBody(self):
+        stmt=ClassStmt('C',['A'],None)
+        assert(stmt.toPythonTree()==('class C(A):',['pass']))
+        assert(stmt.toPythonFlat()=="""class C(A):
+    pass
+""")
+
+    def testClass2ParentsNoBody(self):
+        stmt=ClassStmt('C',['A','B'],None)
+        assert(stmt.toPythonTree()==('class C(A,B):',['pass']))
+        assert(stmt.toPythonFlat()=="""class C(A,B):
+    pass
+""")
+
+    def testClassNoParentsBlockBody(self):
+        stmt=ClassStmt('C',[],
+                       Block([Assignment(VarExpr('z'),Constant(7)),
+                              DefStmt('__init__',['n'],[],[],
+                                      Assignment(DotExpr(VarExpr('self'),['q']),
+                                                 VarExpr('n'))),
+                              DefStmt('sq',[],[],[],
+                                      ReturnStmt(BinaryOperator('*',
+                                                                DotExpr(VarExpr('self'),['q']),
+                                                                DotExpr(VarExpr('self'),['q'])
+                                                                )
+                                                 )
+                                      )
+                              ]))
+        assert(stmt.toPythonTree()==('class C():',
+                                     [('z=7',
+                                       ('def __init__(n):',
+                                        ['self.q=n']),
+                                       ('def sq():',
+                                        ['return self.q*self.q'])
+                                       )]))
+        assert(stmt.toPythonFlat()=="""class C():
+    z=7
+    def __init__(n):
+        self.q=n
+    def sq():
+        return self.q*self.q
 """)
 
 suite=unittest.TestSuite(
