@@ -1,0 +1,131 @@
+<html>
+<head>
+<title>Adder language spec</title>
+</head>
+
+<body>
+<h1>Adder language spec</h1>
+
+<h2>Overview</h2>
+
+<p>Adder is a Lisp-1, meaning that function names are variable
+names, as in Scheme (or Python), not a separate set of names, as in
+Common Lisp.  All names must be defined before being used; setting a
+variable without binding it is an error.  There are no Common
+Lisp-style packages; a symbol is purely a name.
+</p>
+
+<p>All Python builtins are available in the "python" package; so, for
+example, (python.sum '(1 2 3)) is legal Adder.
+</p>
+
+<p>Adder supports Common Lisp-style (defmacro).
+</p>
+
+<p>Adder supports object field access via Python syntax: foo.bar.baz,
+  for 
+example.  In addition, .bar.baz is a function, so that (.bar.baz foo)
+is equivalent to (foo.bar.baz).
+</p>
+
+<h2>Builtins</h2>
+
+<h3>Special forms</h3>
+
+<dl>
+<dt>quote</dt>
+<dt>import</dt>
+<dt>if</dt>
+<dt>while</dt>
+<dt>break</dt>
+<dt>continue</dt>
+<dt>begin</dt>
+<dt>yield</dt>
+<dt>return</dt>
+<dt>let</dt>
+<dd>Yes, it can be defined in terms of lambda; but that depends on
+  having cheap function calls.  I don't know that Python is cheap
+  enough.
+</dd>
+<dt>lambda</dt>
+<dt>define</dt>
+<dt>defmacro</dt>
+<dt>:=</dt>
+</dl>
+
+<h3>Functions</h3>
+
+<dl>
+<dt>==</dt>
+<dt>!=</dt>
+<dt>&lt;=</dt>
+<dt>&lt;</dt>
+<dt>&gt;=</dt>
+<dt>&gt;</dt>
+<dt>+</dt>
+<dt>-</dt>
+<dt>*</dt>
+<dt>/</dt>
+<dt>//</dt>
+<dt>%</dt>
+<dt>in</dt>
+<dt>raise</dt>
+<dt>print</dt>
+<dt>gensym</dt>
+<dt>.</dt>
+<dt>[]</dt>
+<dt>head</dt>
+<dt>tail</dt>
+<dt>list</dt>
+<dt>tuple</dt>
+<dt>isinstance</dt>
+<dt>mk-list</dt>
+<dt>mk-tuple</dt>
+<dt>mk-symbol</dt>
+<dt>mk-int</dt>
+<dt>mk-dict</dt>
+<dt>reverse</dt>
+<dt>reverse!</dt>
+<dt>stdenv</dt>
+<dt>eval</dt>
+<dt>py-eval</dt>
+<dt>apply</dt>
+<dt>load</dt>
+<dt>unwind-protect</dt>
+</dl>
+
+<h3>Constants</h3>
+
+<dl>
+<dt>stdin</dt>
+<dt>stdout</dt>
+<dt>stderr</dt>
+<dt>true</dt>
+<dt>false</dt>
+</dl>
+
+<h2>Prelude</h2>
+
+<h3>Macros</h3>
+
+<dl>
+<dt>let*</dt>
+<dt>and</dt>
+<dt>or</dt>
+<dt>cond</dt>
+<dt>case</dt>
+<dt>ecase</dt>
+</dl>
+
+<h3>Functions</h3>
+
+<dl>
+<dt>list?</dt>
+<dt>tuple?</dt>
+<dt>dict?</dt>
+<dt>symbol?</dt>
+<dt>int?</dt>
+</dl>
+
+</body>
+</html>
