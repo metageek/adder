@@ -1,4 +1,7 @@
-# Python Lisp-Like Encoding.  IL which maps directly to Python.
+# Python Lisp-Like Encoding.  IL which maps directly to Python.  Does not encode all
+#  of Python, only the bits which Adder will need to generate.
+
+import itertools,re
 
 def withParens(s,inParens):
     if inParens:
@@ -24,41 +27,51 @@ class VarExpr(SimpleExpr):
     def __init__(self,v):
         SimpleExpr.__init__(self,v)
 
+noPaddingRe=re.compile('^[^a-zA-Z]+$')
+
 class BinaryOperator(Expr):
     def __init__(self,operator,left,right):
         self.operator=operator
+        self.padding='' if noPaddingRe.match(operator) else ' '
         self.left=left
         self.right=right
 
     def toPython(self,inParens):
-        return withParens('%s %s %s' % (self.left.toPython(True),
-                                        self.operator,
-                                        self.right.toPython(True)),
+        return withParens('%s%s%s%s%s' % (self.left.toPython(True),
+                                          self.padding,
+                                          self.operator,
+                                          self.padding,
+                                          self.right.toPython(True)),
                           inParens)
 
 class UnaryOperator(Expr):
     def __init__(self,operator,operand):
         self.operator=operator
         self.operand=operand
+        self.padding='' if noPaddingRe.match(operator) else ' '
 
     def toPython(self,inParens):
-        return withParens('%s %s' % (self.operator,
-                                     self.operand.toPython(True)),
+        return withParens('%s%s%s' % (self.operator,
+                                      self.padding,
+                                      self.operand.toPython(True)),
                           inParens)
 
 class CallExpr(Expr):
-    def __init__(self,f,posArgs,kwArgs):
+    def __init__(self,f,posArgs,kwArgs=None):
         self.f=f
         self.posArgs=posArgs
-        self.kwArgs=kwArgs
+        self.kwArgs=kwArgs or {}
 
     def toPython(self,inParens):
-        res=(self.f.toPython(True)
-             +'('
-             +', '.join(map(lambda expr: expr.toPython(False),
-                           self.posArgs)))
-        for (argName,argExpr) in kwArgs.iteritems():
-            res+=', %s=%s' % (argName,argExpr.toPython(False))
+        res=self.f.toPython(True)+'('
+
+        posArgsStrs=map(lambda expr: expr.toPython(False),
+                        self.posArgs)
+        kwArgsStrs=map(lambda a: '%s=%s' % (a[0],a[1].toPython(False)),
+                       self.kwArgs.items())
+
+        res+=', '.join(itertools.chain(posArgsStrs,kwArgsStrs))
+
         res+=')'
         return res
 
@@ -69,9 +82,9 @@ class IfOperator(Expr):
         self.elseExpr=elseExpr
 
     def toPython(self,inParens):
-        return withParens(('if %s then %s else %s'
-                           % (self.condExpr.toPython(True),
-                              self.thenExpr.toPython(True),
+        return withParens(('%s if %s else %s'
+                           % (self.thenExpr.toPython(True),
+                              self.condExpr.toPython(True),
                               self.elseExpr.toPython(True))),
                           inParens)
 
@@ -81,17 +94,32 @@ class Stmt:
     def flatten(self,tree,depth=0):
         if isinstance(tree,str):
             return (' '*(depth*Stmt.indentStep))+tree+'\n'
-        return ''.join(map(lambda t: flatten(t,depth+1)))
+
+        if isinstance(tree,list):
+            indent=1
+        else:
+            indent=0
+
+        return ''.join(map(lambda t: self.flatten(t,depth+indent),tree))
 
     def toPythonFlat(self):
         return self.flatten(self.toPythonTree())
+
+class Assignment(Stmt):
+    def __init__(self,lvalue,rvalue):
+        self.lvalue=lvalue
+        self.rvalue=rvalue
+
+    def toPythonTree(self):
+        return '%s=%s' % (self.lvalue.toPython(False),
+                          self.rvalue.toPython(False))
 
 class Block(Stmt):
     def __init__(self,stmts):
         self.stmts=stmts
 
     def toPythonTree(self):
-        return list(map(lambda s: s.toPythonTree(),self.stmts))
+        return tuple(map(lambda s: s.toPythonTree(),self.stmts))
 
 class IfStmt(Stmt):
     def __init__(self,condExpr,thenStmt,elseStmt):
@@ -100,10 +128,10 @@ class IfStmt(Stmt):
         self.elseStmt=elseStmt
 
     def toPythonTree(self):
-        return ['if %s:' % self.condExpr.toPython(False),
-                self.thenStmt.toPythonTree(),
+        return ('if %s:' % self.condExpr.toPython(False),
+                [self.thenStmt.toPythonTree()],
                 'else:',
-                self.elseStmt.toPythonTree()]
+                [self.elseStmt.toPythonTree()])
 
 class WhileStmt(Stmt):
     def __init__(self,condExpr,body):
@@ -111,8 +139,8 @@ class WhileStmt(Stmt):
         self.body=body
 
     def toPythonTree(self):
-        return ['while %s:' % self.condExpr.toPython(False),
-                self.body.toPythonTree()]
+        return ('while %s:' % self.condExpr.toPython(False),
+                self.body.toPythonTree())
 
 class DefStmt(Stmt):
     def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body):
@@ -139,12 +167,12 @@ class DefStmt(Stmt):
         nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
         kwArgsPy=map(kwArgToPy,self.kwArgs)
 
-        return ['def %s(%s%s%s):' % (self.fname,
+        return ('def %s(%s%s%s):' % (self.fname,
                                      ','.join(nonKwArgsPy),
-                                     '*' if kwArgs else '',
+                                     '*' if self.kwArgs else '',
                                      ','.join(kwArgsPy)
                                      ),
-                self.body.toPythonTree()]
+                [self.body.toPythonTree()])
 
 class ReturnStmt(Stmt):
     def __init__(self,returnExpr):
