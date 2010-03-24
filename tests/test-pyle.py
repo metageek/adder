@@ -326,6 +326,18 @@ else:
         return self.q*self.q
 """)
 
+    def testImport1(self):
+        stmt=ImportStmt(['re'])
+        assert stmt.toPythonTree()=='import re'
+        assert stmt.toPythonFlat()=="""import re
+"""
+
+    def testImport2(self):
+        stmt=ImportStmt(['re','adder.parser'])
+        assert stmt.toPythonTree()=='import re, adder.parser'
+        assert stmt.toPythonFlat()=="""import re, adder.parser
+"""
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(StmtTestCase,'test'),

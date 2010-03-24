@@ -273,3 +273,11 @@ class ClassStmt(Stmt):
                                    ','.join(self.parents)),
                 [self.body.toPythonTree() if self.body else 'pass']
                 )
+
+class ImportStmt(Stmt):
+    def __init__(self,modules):
+        assert modules
+        self.modules=modules
+
+    def toPythonTree(self):
+        return 'import %s' % (', '.join(self.modules))
