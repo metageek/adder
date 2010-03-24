@@ -374,7 +374,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert isinstance(expr.pairExprs[0][1],Constant)
         assert expr.pairExprs[0][1].py=='9'
         assert isinstance(expr.pairExprs[1][0],Constant)
-        assert expr.pairExprs[1][0].py=='x'
+        assert expr.pairExprs[1][0].py=="'x'"
         assert isinstance(expr.pairExprs[1][1],Constant)
         assert expr.pairExprs[1][1].py=='7'
 
