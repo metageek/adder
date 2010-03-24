@@ -9,6 +9,16 @@ class ExprTestCase(unittest.TestCase):
         assert expr.toPython(False)=='17'
         assert expr.toPython(True)=='17'
 
+    def testStr(self):
+        expr=Constant('fred')
+        assert expr.toPython(False)=="'fred'"
+        assert expr.toPython(True)=="'fred'"
+
+    def testPlusExpr(self):
+        expr=BinaryOperator('*',Constant(9),Constant(7))
+        assert expr.toPython(False)=="9 * 7"
+        assert expr.toPython(True)=="(9 * 7)"
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(ExprTestCase,'test'),
      )
