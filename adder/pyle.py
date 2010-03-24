@@ -167,9 +167,10 @@ class DefStmt(Stmt):
         nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
         kwArgsPy=map(kwArgToPy,self.kwArgs)
 
-        return ('def %s(%s%s%s):' % (self.fname,
+        return ('def %s(%s%s%s%s):' % (self.fname,
                                      ','.join(nonKwArgsPy),
-                                     '*' if self.kwArgs else '',
+                                     ',' if self.kwArgs and nonKwArgsPy else '',
+                                     '*,' if self.kwArgs else '',
                                      ','.join(kwArgsPy)
                                      ),
                 [self.body.toPythonTree()])

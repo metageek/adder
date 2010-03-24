@@ -112,11 +112,40 @@ else:
     return 0
 """)
 
-    def testDefOnlyPosArgs(self):
+    def testDefOnlyFixedArgs(self):
         stmt=DefStmt('f',['n'],[],[],ReturnStmt(VarExpr('n')))
         assert(stmt.toPythonTree()==('def f(n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n):
     return n
+""")
+
+    def testDefOnlyOptionalArgs(self):
+        stmt=DefStmt('f',[],[('n',Constant(None))],[],ReturnStmt(VarExpr('n')))
+        assert(stmt.toPythonTree()==('def f(n=None):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(n=None):
+    return n
+""")
+
+    def testDefOnlyKwArgsNoDefaults(self):
+        stmt=DefStmt('f',[],[],['n'],ReturnStmt(VarExpr('n')))
+        assert(stmt.toPythonTree()==('def f(*,n):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(*,n):
+    return n
+""")
+
+    def testDefOnlyKwArgsWithDefaults(self):
+        stmt=DefStmt('f',[],[],[('n',Constant(None))],ReturnStmt(VarExpr('n')))
+        assert(stmt.toPythonTree()==('def f(*,n=None):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(*,n=None):
+    return n
+""")
+
+    def testDefAllArgTypes(self):
+        stmt=DefStmt('f',['a'],[('b',Constant(9))],['c',('d',Constant(7))],
+                     ReturnStmt(VarExpr('a')))
+        assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
+        assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
+    return a
 """)
 
 suite=unittest.TestSuite(
