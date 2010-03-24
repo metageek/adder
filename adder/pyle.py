@@ -1,13 +1,71 @@
 # Python Lisp-Like Encoding.  IL which maps directly to Python.  Does not encode all
 #  of Python, only the bits which Adder will need to generate.
 
-import itertools,re
+from adder.common import Symbol as S
+
+import itertools,re,pdb
 
 def withParens(s,inParens):
     if inParens:
         return '(%s)' % s
     else:
         return s
+
+def buildExpr(pyle):
+    if isinstance(pyle,S):
+        return VarExpr(pyle)
+    if pyle is None:
+        return Constant(pyle)
+    for t in [str,int,float,bool]:
+        if isinstance(pyle,t):
+            return Constant(pyle)
+
+    assert isinstance(pyle,list)
+    assert pyle
+    for t in [int,float,bool]:
+        assert not isinstance(pyle[0],t)
+    assert not (isinstance(pyle[0],str) and not isinstance(pyle[0],S))
+
+    if pyle[0]==S('[]'):
+        assert len(pyle)==3
+        return IndexOperator(buildExpr(pyle[1]),buildExpr(pyle[2]))
+
+    if pyle[0]==S('if'):
+        assert len(pyle)==4
+        return IfOperator(buildExpr(pyle[1]),buildExpr(pyle[2]),buildExpr(pyle[3]))
+
+    if pyle[0]==S('.'):
+        assert len(pyle)==3
+        return DotExpr(buildExpr(pyle[1]),pyle[2])
+
+    if pyle[0]==S('mk-list'):
+        return ListConstructor(list(map(buildExpr,pyle[1:])))
+
+    if pyle[0]==S('mk-tuple'):
+        return TupleConstructor(list(map(buildExpr,pyle[1:])))
+
+    if pyle[0]==S('mk-set'):
+        return SetConstructor(list(map(buildExpr,pyle[1:])))
+
+    if pyle[0]==S('mk-dict'):
+        return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),buildExpr(kx[1])),pyle[1:])))
+
+    if pyle[0] in buildExpr.binaryOperators:
+        assert len(pyle)==3
+        return BinaryOperator(pyle[0],buildExpr(pyle[1]),buildExpr(pyle[2]))
+
+    if pyle[0] in buildExpr.unaryOperators:
+        assert len(pyle)==2
+        return UnaryOperator(pyle[0],buildExpr(pyle[1]))
+
+    return CallExpr(buildExpr(pyle[0]),
+                    list(map(buildExpr,pyle[1])),
+                    dict(map(lambda kx: (kx[0], buildExpr(kx[1])), pyle[2])))
+
+buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
+                                     '+','*','/','//','%',
+                                     'in']))
+buildExpr.unaryOperators=set(map(S,['-','not','and','or']))
 
 class Expr:
     def isLvalue(self):
