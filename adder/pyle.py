@@ -10,7 +10,8 @@ def withParens(s,inParens):
         return s
 
 class Expr:
-    pass
+    def isLvalue(self):
+        return False
 
 class SimpleExpr(Expr):
     def __init__(self,py):
@@ -26,6 +27,9 @@ class Constant(SimpleExpr):
 class VarExpr(SimpleExpr):
     def __init__(self,v):
         SimpleExpr.__init__(self,v)
+
+    def isLvalue(self):
+        return True
 
 noPaddingRe=re.compile('^[^a-zA-Z]+$')
 
@@ -43,6 +47,20 @@ class BinaryOperator(Expr):
                                           self.padding,
                                           self.right.toPython(True)),
                           inParens)
+
+class IndexOperator(Expr):
+    def __init__(self,left,right):
+        self.left=left
+        self.right=right
+
+    def isLvalue(self):
+        return True
+
+    def toPython(self,inParens):
+        return '%s[%s]' % (self.left.toPython(True),
+                           self.right.toPython(False)
+                           )
+
 
 class UnaryOperator(Expr):
     def __init__(self,operator,operand):
@@ -92,6 +110,9 @@ class DotExpr(Expr):
     def __init__(self,base,path):
         self.base=base
         self.path=path
+
+    def isLvalue(self):
+        return True
 
     def toPython(self,inParens):
         return '.'.join([self.base.toPython(True)]+self.path)
@@ -159,6 +180,7 @@ class Stmt:
 
 class Assignment(Stmt):
     def __init__(self,lvalue,rvalue):
+        assert lvalue.isLvalue()
         self.lvalue=lvalue
         self.rvalue=rvalue
 
@@ -202,12 +224,14 @@ class ReturnStmt(Stmt):
         return 'return %s' % self.returnExpr.toPython(False)
 
 class DefStmt(Stmt):
-    def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body):
+    def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body,globals=None,nonlocals=None):
         self.fname=fname
         self.fixedArgs=fixedArgs
         self.optionalArgs=optionalArgs
         self.kwArgs=kwArgs
         self.body=body
+        self.globals=globals or []
+        self.nonlocals=nonlocals or []
 
     def toPythonTree(self):
         def optArgToPy(optionalArg):
@@ -232,7 +256,11 @@ class DefStmt(Stmt):
                                      '*,' if self.kwArgs else '',
                                      ','.join(kwArgsPy)
                                      ),
-                [self.body.toPythonTree() if self.body else 'pass'])
+                ( (['global '+','.join(self.globals)] if self.globals else [])
+                 +(['nonlocal '+','.join(self.nonlocals)] if self.nonlocals else [])
+                  +[self.body.toPythonTree() if self.body else 'pass']
+                  )
+                )
 
 class ClassStmt(Stmt):
     def __init__(self,name,parents,body):

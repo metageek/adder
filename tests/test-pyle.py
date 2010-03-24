@@ -148,6 +148,17 @@ class ExprTestCase(unittest.TestCase):
         assert expr.toPython(False)=="a.x.y"
         assert expr.toPython(True)=="a.x.y"
 
+    def testIndexSimple(self):
+        expr=IndexOperator(VarExpr('a'),Constant(1))
+        assert expr.toPython(False)=="a[1]"
+        assert expr.toPython(True)=="a[1]"
+
+    def testIndexComplex(self):
+        expr=IndexOperator(BinaryOperator('+',VarExpr('a'),VarExpr('b')),
+                           Constant(1))
+        assert expr.toPython(False)=="(a+b)[1]"
+        assert expr.toPython(True)=="(a+b)[1]"
+
 class StmtTestCase(unittest.TestCase):
     def testAssignment(self):
         stmt=Assignment(VarExpr('foo.bar'),
@@ -185,6 +196,47 @@ else:
         stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)))
         assert(stmt.toPythonTree()==('def f():',['return 0']))
         assert(stmt.toPythonFlat()=="""def f():
+    return 0
+""")
+
+    def testDefNoArgsGlobals1(self):
+        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['x'])
+        assert(stmt.toPythonTree()==('def f():',['global x','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global x
+    return 0
+""")
+
+    def testDefNoArgsGlobals2(self):
+        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['x','y'])
+        assert(stmt.toPythonTree()==('def f():',['global x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global x,y
+    return 0
+""")
+
+    def testDefNoArgsNonlocals1(self):
+        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),[],['x'])
+        assert(stmt.toPythonTree()==('def f():',['nonlocal x','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    nonlocal x
+    return 0
+""")
+
+    def testDefNoArgsNonlocals2(self):
+        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),[],['x','y'])
+        assert(stmt.toPythonTree()==('def f():',['nonlocal x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    nonlocal x,y
+    return 0
+""")
+
+    def testDefNoArgsGlobals2Nonlocals2(self):
+        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['a','b'],['x','y'])
+        assert(stmt.toPythonTree()==('def f():',['global a,b','nonlocal x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global a,b
+    nonlocal x,y
     return 0
 """)
 
