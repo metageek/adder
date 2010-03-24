@@ -76,16 +76,22 @@ class IfOperator(Expr):
                           inParens)
 
 class Stmt:
-    pass
+    indentStep=4
+
+    def flatten(self,tree,depth=0):
+        if isinstance(tree,str):
+            return (' '*(depth*Stmt.indentStep))+tree+'\n'
+        return ''.join(map(lambda t: flatten(t,depth+1)))
+
+    def toPythonFlat(self):
+        return self.flatten(self.toPythonTree())
 
 class Block(Stmt):
     def __init__(self,stmts):
         self.stmts=stmts
 
-    def genPython(self,indent):
-        for s in self.stmts:
-            for line in s.genPython(indent):
-                yield line
+    def toPythonTree(self):
+        return list(map(lambda s: s.toPythonTree(),self.stmts))
 
 class IfStmt(Stmt):
     def __init__(self,condExpr,thenStmt,elseStmt):
@@ -93,10 +99,56 @@ class IfStmt(Stmt):
         self.thenStmt=thenStmt
         self.elseStmt=elseStmt
 
-    def genPython(self,indent):
-        yield prefix(indent)+'if %s:'
-        for line in self.thenStmt.genPython(indent+2):
-            yield line
-        yield prefix(indent)+'if %s:'
-        for line in self.elseStmt.genPython(indent+2):
-            yield line
+    def toPythonTree(self):
+        return ['if %s:' % self.condExpr.toPython(False),
+                self.thenStmt.toPythonTree(),
+                'else:',
+                self.elseStmt.toPythonTree()]
+
+class WhileStmt(Stmt):
+    def __init__(self,condExpr,body):
+        self.condExpr=condExpr
+        self.body=body
+
+    def toPythonTree(self):
+        return ['while %s:' % self.condExpr.toPython(False),
+                self.body.toPythonTree()]
+
+class DefStmt(Stmt):
+    def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body):
+        self.fname=fname
+        self.fixedArgs=fixedArgs
+        self.optionalArgs=optionalArgs
+        self.kwArgs=kwArgs
+        self.body=body
+
+    def toPythonTree(self):
+        def optArgToPy(optionalArg):
+            (name,defExpr)=optionalArg
+            return '%s=%s' % (name,defExpr.toPython(False))
+
+        def kwArgToPy(kwArg):
+            if isinstance(kwArg,str):
+                return kwArg
+            else:
+                (name,defExpr)=kwArg
+                return '%s=%s' % (name,defExpr.toPython(False))
+
+        fixedArgsPy=self.fixedArgs
+        optionalArgsPy=map(optArgToPy,self.optionalArgs)
+        nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
+        kwArgsPy=map(kwArgToPy,self.kwArgs)
+
+        return ['def %s(%s%s%s):' % (self.fname,
+                                     ','.join(nonKwArgsPy),
+                                     '*' if kwArgs else '',
+                                     ','.join(kwArgsPy)
+                                     ),
+                self.body.toPythonTree()]
+
+class ReturnStmt(Stmt):
+    def __init__(self,returnExpr):
+        self.returnExpr=returnExpr
+
+    def toPythonTree(self):
+        return 'return %s' % self.returnExpr.toPython(False)
