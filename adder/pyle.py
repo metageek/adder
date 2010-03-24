@@ -88,6 +88,50 @@ class IfOperator(Expr):
                               self.elseExpr.toPython(True))),
                           inParens)
 
+class ListConstructor(Expr):
+    def __init__(self,elementExprs):
+        self.elementExprs=elementExprs
+
+    def toPython(self,inParens):
+        return ('[%s]'
+                % ', '.join(map(lambda e: e.toPython(False),self.elementExprs))
+                )
+
+class TupleConstructor(Expr):
+    def __init__(self,elementExprs):
+        self.elementExprs=elementExprs
+
+    def toPython(self,inParens):
+        if len(self.elementExprs)==1:
+            return '(%s,)' % self.elementExprs[0].toPython(False)
+        else:
+            return ('(%s)'
+                    % ', '.join(map(lambda e: e.toPython(False),self.elementExprs))
+                    )
+
+class DictConstructor(Expr):
+    def __init__(self,pairExprs):
+        self.pairExprs=pairExprs
+
+    def toPython(self,inParens):
+        return ('{%s}'
+                % ', '.join(map(lambda p: '%s: %s' % (p[0].toPython(False),
+                                                      p[1].toPython(False)),
+                                self.pairExprs))
+                )
+
+class SetConstructor(Expr):
+    def __init__(self,elementExprs):
+        self.elementExprs=elementExprs
+
+    def toPython(self,inParens):
+        if self.elementExprs:
+            return ('{%s}'
+                    % ', '.join(map(lambda e: e.toPython(False),self.elementExprs))
+                    )
+        else:
+            return 'set()'
+
 class Stmt:
     indentStep=4
 

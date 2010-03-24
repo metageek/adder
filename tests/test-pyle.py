@@ -72,6 +72,67 @@ class ExprTestCase(unittest.TestCase):
         assert expr.toPython(False)=="(x*7) if (x==9) else (9*x)"
         assert expr.toPython(True)=="((x*7) if (x==9) else (9*x))"
 
+    def testListConstructor0(self):
+        expr=ListConstructor([])
+        assert expr.toPython(False)=="[]"
+        assert expr.toPython(True)=="[]"
+
+    def testListConstructor1(self):
+        expr=ListConstructor([Constant(9)])
+        assert expr.toPython(False)=="[9]"
+        assert expr.toPython(True)=="[9]"
+
+    def testListConstructor2(self):
+        expr=ListConstructor([Constant(9),Constant(7)])
+        assert expr.toPython(False)=="[9, 7]"
+        assert expr.toPython(True)=="[9, 7]"
+
+    def testTupleConstructor0(self):
+        expr=TupleConstructor([])
+        assert expr.toPython(False)=="()"
+        assert expr.toPython(True)=="()"
+
+    def testTupleConstructor1(self):
+        expr=TupleConstructor([Constant(9)])
+        assert expr.toPython(False)=="(9,)"
+        assert expr.toPython(True)=="(9,)"
+
+    def testTupleConstructor2(self):
+        expr=TupleConstructor([Constant(9),Constant(7)])
+        assert expr.toPython(False)=="(9, 7)"
+        assert expr.toPython(True)=="(9, 7)"
+
+    def testSetConstructor0(self):
+        expr=SetConstructor([])
+        assert expr.toPython(False)=="set()"
+        assert expr.toPython(True)=="set()"
+
+    def testSetConstructor1(self):
+        expr=SetConstructor([Constant(9)])
+        assert expr.toPython(False)=="{9}"
+        assert expr.toPython(True)=="{9}"
+
+    def testSetConstructor2(self):
+        expr=SetConstructor([Constant(9),Constant(7)])
+        assert expr.toPython(False)=="{9, 7}"
+        assert expr.toPython(True)=="{9, 7}"
+
+    def testDictConstructor0(self):
+        expr=DictConstructor([])
+        assert expr.toPython(False)=="{}"
+        assert expr.toPython(True)=="{}"
+
+    def testDictConstructor1(self):
+        expr=DictConstructor([(VarExpr('a'),Constant(9))])
+        assert expr.toPython(False)=="{a: 9}"
+        assert expr.toPython(True)=="{a: 9}"
+
+    def testDictConstructor2(self):
+        expr=DictConstructor([(VarExpr('a'),Constant(9)),
+                              (Constant('x'),Constant(7))])
+        assert expr.toPython(False)=="{a: 9, 'x': 7}"
+        assert expr.toPython(True)=="{a: 9, 'x': 7}"
+
 class StmtTestCase(unittest.TestCase):
     def testAssignment(self):
         stmt=Assignment(VarExpr('foo.bar'),
