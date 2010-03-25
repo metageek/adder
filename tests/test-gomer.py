@@ -426,6 +426,66 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('//',1)==1
         assert self.call('//',-1)==-1
 
+    def testEq(self):
+        assert self.call('==',25,3,4)==False
+        assert self.call('==',24,24,7)==False
+        assert self.call('==',24,24,24)==True
+        assert self.call('==',24,24)==True
+        assert self.call('==',24)==True
+        assert self.call('==')==True
+
+    def testNe(self):
+        assert self.call('!=',25,3,4)==True
+        assert self.call('!=',24,24,7)==True
+        assert self.call('!=',24,24,24)==False
+        assert self.call('!=',24,24)==False
+        assert self.call('!=',24)==False
+        assert self.call('!=')==False
+
+    def testLt(self):
+        assert self.call('<')==True
+        assert self.call('<',3)==True
+        assert self.call('<',3,4)==True
+        assert self.call('<',4,3)==False
+        assert self.call('<',4,4)==False
+        assert self.call('<',3,4,5)==True
+        assert self.call('<',5,4,3)==False
+        assert self.call('<',3,5,4)==False
+        assert self.call('<',4,3,5)==False
+
+    def testGt(self):
+        assert self.call('>')==True
+        assert self.call('>',3)==True
+        assert self.call('>',3,4)==False
+        assert self.call('>',4,3)==True
+        assert self.call('>',4,4)==False
+        assert self.call('>',3,4,5)==False
+        assert self.call('>',5,4,3)==True
+        assert self.call('>',3,5,4)==False
+        assert self.call('>',4,3,5)==False
+
+    def testLe(self):
+        assert self.call('<=')==True
+        assert self.call('<=',3)==True
+        assert self.call('<=',3,4)==True
+        assert self.call('<=',4,3)==False
+        assert self.call('<=',4,4)==True
+        assert self.call('<=',3,4,5)==True
+        assert self.call('<=',5,4,3)==False
+        assert self.call('<=',3,5,4)==False
+        assert self.call('<=',4,3,5)==False
+
+    def testGe(self):
+        assert self.call('>=')==True
+        assert self.call('>=',3)==True
+        assert self.call('>=',3,4)==False
+        assert self.call('>=',4,3)==True
+        assert self.call('>=',4,4)==True
+        assert self.call('>=',3,4,5)==False
+        assert self.call('>=',5,4,3)==True
+        assert self.call('>=',3,5,4)==False
+        assert self.call('>=',4,3,5)==False
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
