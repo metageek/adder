@@ -426,6 +426,11 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('//',1)==1
         assert self.call('//',-1)==-1
 
+    def testMod(self):
+        assert self.call('%',25,3)==1
+        assert self.call('%',25,7)==4
+        assert self.call('%',-25,7)==3
+
     def testEq(self):
         assert self.call('==',25,3,4)==False
         assert self.call('==',24,24,7)==False
