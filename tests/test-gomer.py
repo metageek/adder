@@ -322,7 +322,9 @@ class ExprTestCase(unittest.TestCase):
         scope3.addDef(S('charles2'),Constant(scope3,1649))
 
         scope2.addDef(S('l'),Constant(scope2,
-                                      NativeFunction((lambda a,b,c: [a,b,c]),True)))
+                                      NativeFunction((lambda a,b,c:
+                                                          [a,b,c]),
+                                                     True)))
 
         call=Call(scope3,
                   VarRef(scope3,S('l')),
@@ -342,6 +344,42 @@ class ExprTestCase(unittest.TestCase):
         assert list(map(lambda vr: vr.name,vrs))==[
             S('l'),S('james1'),S('charles1'),S('charles2')
             ]
+
+    def testCallNative(self):
+        scope1=Scope(None)
+        scope2=Scope(scope1)
+        scope3=Scope(scope2)
+        scope4=Scope(scope2)
+
+        scope1.addDef(S('james1'),Constant(scope1,1603))
+        scope2.addDef(S('charles1'),Constant(scope2,1625))
+        scope3.addDef(S('charles2'),Constant(scope3,1649))
+        scope4.addFuncArg(S('a'))
+        scope4.addFuncArg(S('b'))
+        scope4.addFuncArg(S('c'))
+
+        fExpr=Call(scope2,
+                   VarRef(scope2,S('lambda')),
+                   [VarRef(scope4,S('a')),
+                    VarRef(scope4,S('b')),
+                    VarRef(scope4,S('c'))],
+                   Call(scope4,
+                        VarRef(scope4,S('l')),
+                        [VarRef(scope4,S('c')),
+                         VarRef(scope4,S('b')),
+                         VarRef(scope4,S('a'))]))
+
+        scope2.addDef(S('l'),Constant(scope2,fExpr))
+
+        call=Call(scope3,
+                  VarRef(scope3,S('l')),
+                  [VarRef(scope3,S('james1')),
+                   VarRef(scope3,S('charles1')),
+                   VarRef(scope3,S('charles2'))])
+
+        assert call.scopeRequired() is scope1
+        assert call.isPureIn(scope3)
+        assert call.constValue()==[1649,1625,1603]
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
