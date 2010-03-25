@@ -379,21 +379,19 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.pairExprs[1][1].py=='7'
 
     def testDot0(self):
-        expr=buildExpr([S('.'),S('a'),[]])
-        assert isinstance(expr,DotExpr)
-        assert isinstance(expr.base,VarExpr)
-        assert expr.base.py=='a'
-        assert expr.path==[]
+        expr=buildExpr([S('.'),S('a')])
+        assert isinstance(expr,VarExpr)
+        assert expr.py=='a'
 
     def testDot1(self):
-        expr=buildExpr([S('.'),S('a'),['x']])
+        expr=buildExpr([S('.'),S('a'),S('x')])
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
         assert expr.path==['x']
 
     def testDot2(self):
-        expr=buildExpr([S('.'),S('a'),['x','y']])
+        expr=buildExpr([S('.'),S('a'),S('x'),S('y')])
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
@@ -437,7 +435,15 @@ class StmtTestCase(unittest.TestCase):
 foo.bar=x*7
 """)
 
-    def testIf(self):
+    def testIfNoElse(self):
+        stmt=IfStmt(BinaryOperator('<',VarExpr('n'),Constant(2)),
+                    Assignment(VarExpr('x'),Constant(1)))
+        assert(stmt.toPythonTree()==('if n<2:',['x=1']))
+        assert(stmt.toPythonFlat()=="""if n<2:
+    x=1
+""")
+
+    def testIfElse(self):
         stmt=IfStmt(BinaryOperator('<',VarExpr('n'),Constant(2)),
                     Assignment(VarExpr('x'),Constant(1)),
                     Assignment(VarExpr('x'),BinaryOperator('*',Constant(9),Constant(7))))
@@ -600,10 +606,230 @@ else:
         assert stmt.toPythonFlat()=="""import re, adder.parser
 """
 
+class BuildStmtTestCase(unittest.TestCase):
+    def testAssignment(self):
+        stmt=buildStmt([S(':='),S('foo.bar'),
+                        [S('*'),9,7]])
+        assert(stmt.toPythonTree()=='foo.bar=9*7')
+        assert(stmt.toPythonFlat()=='foo.bar=9*7\n')
+
+    def testBlock(self):
+        stmt=buildStmt([S('begin'),
+                        [S(':='),S('x'),9],
+                        [S(':='),S('foo.bar'),[S('*'),S('x'),7]]])
+        assert(stmt.toPythonTree()==('x=9','foo.bar=x*7'))
+        assert(stmt.toPythonFlat()=="""x=9
+foo.bar=x*7
+""")
+
+    def testBlockEmpty(self):
+        stmt=buildStmt([S('begin')])
+        assert(stmt.toPythonTree()==('assert True'))
+        assert(stmt.toPythonFlat()=='assert True\n')
+
+    def testIfNoElse(self):
+        stmt=buildStmt([S('if'),
+                        [S('<'),S('n'),2],
+                        [S(':='),S('x'),1]])
+        assert(stmt.toPythonTree()==('if n<2:',['x=1']))
+        assert(stmt.toPythonFlat()=="""if n<2:
+    x=1
+""")
+
+    def testIfElse(self):
+        stmt=buildStmt([S('if'),
+                        [S('<'),S('n'),2],
+                        [S(':='),S('x'),1],
+                        [S(':='),S('x'),
+                         [S('*'),9,7]]])
+        assert(stmt.toPythonTree()==('if n<2:',['x=1'],'else:',['x=9*7']))
+        assert(stmt.toPythonFlat()=="""if n<2:
+    x=1
+else:
+    x=9*7
+""")
+
+    def testReturn(self):
+        stmt=buildStmt([S('return'),0])
+        assert(stmt.toPythonTree()=='return 0')
+        assert(stmt.toPythonFlat()=="""return 0
+""")
+
+    def testDefNoArgs(self):
+        stmt=buildStmt([S('def'),S('f'),[],[S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    return 0
+""")
+
+    def testDefNoArgsGlobals1(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&global'),S('x')],
+                        [S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['global x','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global x
+    return 0
+""")
+
+    def testDefNoArgsGlobals2(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&global'),S('x'),S('y')],
+                        [S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['global x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global x,y
+    return 0
+""")
+
+    def testDefNoArgsNonlocals1(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&nonlocal'),S('x')],
+                        [S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['nonlocal x','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    nonlocal x
+    return 0
+""")
+
+    def testDefNoArgsNonlocals2(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&nonlocal'),S('x'),S('y')],
+                        [S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['nonlocal x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    nonlocal x,y
+    return 0
+""")
+
+    def testDefNoArgsGlobals2Nonlocals2(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&global'),S('a'),S('b'),
+                         S('&nonlocal'),S('x'),S('y')],
+                        [S('return'),0]])
+        assert(stmt.toPythonTree()==('def f():',['global a,b','nonlocal x,y','return 0']))
+        assert(stmt.toPythonFlat()=="""def f():
+    global a,b
+    nonlocal x,y
+    return 0
+""")
+
+    def testDefOnlyFixedArgs(self):
+        stmt=buildStmt([S('def'),S('f'),[S('n')],[S('return'),S('n')]])
+        assert(stmt.toPythonTree()==('def f(n):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(n):
+    return n
+""")
+
+    def testDefOnlyOptionalArgs(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&optional'),S('n'),(S('x'),9)],
+                        [S('return'),S('n')]])
+        assert(stmt.toPythonTree()==('def f(n=None,x=9):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(n=None,x=9):
+    return n
+""")
+
+    def testDefOnlyKwArgsNoDefaults(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&key'),S('n')],
+                        [S('return'),S('n')]])
+        assert(stmt.toPythonTree()==('def f(*,n):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(*,n):
+    return n
+""")
+
+    def testDefOnlyKwArgsWithDefaults(self):
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('&key'),(S('n'),6),(S('x'),None)],
+                        [S('return'),S('n')]])
+        assert(stmt.toPythonTree()==('def f(*,n=6,x=None):',['return n']))
+        assert(stmt.toPythonFlat()=="""def f(*,n=6,x=None):
+    return n
+""")
+
+    def testDefAllArgTypes(self):
+        stmt=DefStmt('f',['a'],[('b',Constant(9))],['c',('d',Constant(7))],
+                     ReturnStmt(VarExpr('a')))
+        stmt=buildStmt([S('def'),S('f'),
+                        [S('a'),
+                         S('&optional'),(S('b'),9),
+                         S('&key'),S('c'),(S('d'),7)],
+                        [S('return'),S('a')]])
+        assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
+        assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
+    return a
+""")
+
+    def testClassNoParentsNoBody(self):
+        stmt=buildStmt([S('class'),S('C'),[]])
+        assert(stmt.toPythonTree()==('class C():',['pass']))
+        assert(stmt.toPythonFlat()=="""class C():
+    pass
+""")
+
+    def testClass1ParentNoBody(self):
+        stmt=buildStmt([S('class'),S('C'),[S('A')]])
+        assert(stmt.toPythonTree()==('class C(A):',['pass']))
+        assert(stmt.toPythonFlat()=="""class C(A):
+    pass
+""")
+
+    def testClass2ParentsNoBody(self):
+        stmt=ClassStmt('C',['A','B'],None)
+        stmt=buildStmt([S('class'),S('C'),[S('A'),S('B')]])
+        assert(stmt.toPythonTree()==('class C(A,B):',['pass']))
+        assert(stmt.toPythonFlat()=="""class C(A,B):
+    pass
+""")
+
+    def testClassNoParentsBlockBody(self):
+        stmt=buildStmt([S('class'),S('C'),[],
+                        [S(':='),S('z'),7],
+                        [S('def'),S('__init__'),[S('n')],
+                         [S(':='),[S('.'),S('self'),S('q')],S('n')]
+                         ],
+                        [S('def'),S('sq'),[],
+                         [S('return'),
+                          [S('*'),
+                           [S('.'),S('self'),S('q')],
+                           [S('.'),S('self'),S('q')]
+                           ]
+                          ]
+                         ]
+                        ])
+        assert(stmt.toPythonTree()==('class C():',
+                                     [('z=7',
+                                       ('def __init__(n):',
+                                        ['self.q=n']),
+                                       ('def sq():',
+                                        ['return self.q*self.q'])
+                                       )]))
+        assert(stmt.toPythonFlat()=="""class C():
+    z=7
+    def __init__(n):
+        self.q=n
+    def sq():
+        return self.q*self.q
+""")
+
+    def testImport1(self):
+        stmt=buildStmt([S('import'),S('re')])
+        assert stmt.toPythonTree()=='import re'
+        assert stmt.toPythonFlat()=="""import re
+"""
+
+    def testImport2(self):
+        stmt=buildStmt([S('import'),S('re'),S('adder.parser')])
+        assert stmt.toPythonTree()=='import re, adder.parser'
+        assert stmt.toPythonFlat()=="""import re, adder.parser
+"""
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(BuildExprTestCase,'test'),
       unittest.makeSuite(StmtTestCase,'test'),
+      unittest.makeSuite(BuildStmtTestCase,'test'),
      )
     )
 

@@ -35,8 +35,10 @@ def buildExpr(pyle):
         return IfOperator(buildExpr(pyle[1]),buildExpr(pyle[2]),buildExpr(pyle[3]))
 
     if pyle[0]==S('.'):
-        assert len(pyle)==3
-        return DotExpr(buildExpr(pyle[1]),pyle[2])
+        assert len(pyle)>=2
+        if len(pyle)==2:
+            return buildExpr(pyle[1])
+        return DotExpr(buildExpr(pyle[1]),pyle[2:])
 
     if pyle[0]==S('mk-list'):
         return ListConstructor(list(map(buildExpr,pyle[1:])))
@@ -66,6 +68,90 @@ buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
                                      '+','*','/','//','%',
                                      'in']))
 buildExpr.unaryOperators=set(map(S,['-','not','and','or']))
+
+def buildStmt(pyle):
+    assert isinstance(pyle,list)
+    assert pyle
+    assert isinstance(pyle[0],S)
+
+    if pyle[0]==S(':='):
+        assert len(pyle)==3
+        return Assignment(buildExpr(pyle[1]),
+                          buildExpr(pyle[2]))
+
+    if pyle[0]==S('begin'):
+        if len(pyle)==1:
+            return Nop()
+        return Block(list(map(buildStmt,pyle[1:])))
+
+    if pyle[0]==S('if'):
+        assert len(pyle)>=3 and len(pyle)<=4
+        elseStmt=buildStmt(pyle[3]) if len(pyle)==4 else None
+        return IfStmt(buildExpr(pyle[1]),
+                      buildStmt(pyle[2]),
+                      elseStmt)
+
+    if pyle[0]==S('while'):
+        assert len(pyle)>=2
+        return WhileStmt(buildExpr(pyle[1]),
+                         list(map(buildStmt,pyle[1:])))
+
+    if pyle[0]==S('return'):
+        assert len(pyle)==2
+        return ReturnStmt(buildExpr(pyle[1]),)
+
+    if pyle[0]==S('def'):
+        assert len(pyle)>=3
+        assert isinstance(pyle[1],S)
+        assert isinstance(pyle[2],list)
+        fixedArgs=[]
+        optionalArgs=[]
+        kwArgs=[]
+        globals=[]
+        nonlocals=[]
+        stateToCollector={'fixed': fixedArgs,
+                          'optional': optionalArgs,
+                          'key': kwArgs,
+                          'global': globals,
+                          'nonlocal': nonlocals}
+        state='fixed'
+        for arg in pyle[2]:
+            if isinstance(arg,S) and arg[0]=='&':
+                state=arg[1:]
+                continue
+            if (state=='optional' or state=='key'):
+                assert isinstance(arg,tuple) or isinstance(arg,S)
+                if state=='optional' and not isinstance(arg,tuple):
+                    arg=(arg,None)
+            else:
+                assert isinstance(arg,S)
+            if isinstance(arg,tuple):
+                assert len(arg)==2
+                assert isinstance(arg[0],S)
+                arg=(arg[0],buildExpr(arg[1]))
+            stateToCollector[state].append(arg)
+        return DefStmt(pyle[1],
+                       fixedArgs,optionalArgs,kwArgs,
+                       maybeBlock(list(map(buildStmt,pyle[3:]))),
+                       globals,nonlocals)
+
+    if pyle[0]==S('class'):
+        assert len(pyle)>=3
+        assert isinstance(pyle[1],S)
+        assert isinstance(pyle[2],list)
+        for parent in pyle[2]:
+            assert isinstance(parent,S)
+
+        return ClassStmt(pyle[1],pyle[2],
+                         maybeBlock(list(map(buildStmt,pyle[3:])),True))
+
+    if pyle[0]==S('import'):
+        for module in pyle[1:]:
+            assert isinstance(module,S)
+
+        return ImportStmt(pyle[1:])
+
+    assert False
 
 class Expr:
     def isLvalue(self):
@@ -246,6 +332,20 @@ class Assignment(Stmt):
         return '%s=%s' % (self.lvalue.toPython(False),
                           self.rvalue.toPython(False))
 
+class Nop(Stmt):
+    def __init__(self,passable=False):
+        self.passable=passable
+
+    def toPythonTree(self):
+        return 'pass' if self.passable else 'assert True'
+
+def maybeBlock(stmts,passable=False):
+    if stmts:
+        if len(stmts)>1:
+            return Block(stmts)
+        return stmts[0]
+    return Nop(passable)
+
 class Block(Stmt):
     def __init__(self,stmts):
         self.stmts=stmts
@@ -254,16 +354,18 @@ class Block(Stmt):
         return tuple(map(lambda s: s.toPythonTree(),self.stmts))
 
 class IfStmt(Stmt):
-    def __init__(self,condExpr,thenStmt,elseStmt):
+    def __init__(self,condExpr,thenStmt,elseStmt=None):
         self.condExpr=condExpr
         self.thenStmt=thenStmt
         self.elseStmt=elseStmt
 
     def toPythonTree(self):
-        return ('if %s:' % self.condExpr.toPython(False),
-                [self.thenStmt.toPythonTree()],
-                'else:',
-                [self.elseStmt.toPythonTree()])
+        res=('if %s:' % self.condExpr.toPython(False),
+             [self.thenStmt.toPythonTree()])
+        if self.elseStmt:
+            res=res+('else:',
+                     [self.elseStmt.toPythonTree()])
+        return res
 
 class WhileStmt(Stmt):
     def __init__(self,condExpr,body):
@@ -272,7 +374,7 @@ class WhileStmt(Stmt):
 
     def toPythonTree(self):
         return ('while %s:' % self.condExpr.toPython(False),
-                self.body.toPythonTree())
+                [self.body.toPythonTree() if self.body else 'pass'])
 
 class ReturnStmt(Stmt):
     def __init__(self,returnExpr):
