@@ -345,11 +345,15 @@ class ExprTestCase(unittest.TestCase):
             S('l'),S('james1'),S('charles1'),S('charles2')
             ]
 
-    def testCallNative(self):
+    def testCallUser(self):
         scope1=Scope(None)
         scope2=Scope(scope1)
         scope3=Scope(scope2)
         scope4=Scope(scope2)
+
+        env1=Env(scope1,None)
+        env2=Env(scope2,env1)
+        env3=Env(scope3,env2)
 
         scope1.addDef(S('james1'),Constant(scope1,1603))
         scope2.addDef(S('charles1'),Constant(scope2,1625))
@@ -360,25 +364,31 @@ class ExprTestCase(unittest.TestCase):
 
         fExpr=Call(scope2,
                    VarRef(scope2,S('lambda')),
-                   [VarRef(scope4,S('a')),
-                    VarRef(scope4,S('b')),
-                    VarRef(scope4,S('c'))],
-                   Call(scope4,
-                        VarRef(scope4,S('l')),
-                        [VarRef(scope4,S('c')),
-                         VarRef(scope4,S('b')),
-                         VarRef(scope4,S('a'))]))
+                   [[VarRef(scope4,S('a')),
+                     VarRef(scope4,S('b')),
+                     VarRef(scope4,S('c'))],
+                    Call(scope4,
+                         VarRef(scope4,S('l')),
+                         [VarRef(scope4,S('c')),
+                          VarRef(scope4,S('b')),
+                          VarRef(scope4,S('a'))])])
 
-        scope2.addDef(S('l'),Constant(scope2,fExpr))
+        scope2.addDef(S('l'),Constant(scope2,
+                                      NativeFunction((lambda a,b,c:
+                                                          [a,b,c]),
+                                                     True)))
+
+        scope2.addDef(S('f'),Constant(scope2,UserFunction(fExpr,env3)))
 
         call=Call(scope3,
-                  VarRef(scope3,S('l')),
+                  VarRef(scope3,S('f')),
                   [VarRef(scope3,S('james1')),
                    VarRef(scope3,S('charles1')),
                    VarRef(scope3,S('charles2'))])
 
         assert call.scopeRequired() is scope1
         assert call.isPureIn(scope3)
+        assert call.evaluate(env3)==[1649,1625,1603]
         assert call.constValue()==[1649,1625,1603]
 
 suite=unittest.TestSuite(

@@ -1,5 +1,6 @@
 # A structured internal representation; basically an annotated form of
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
+#  Includes a basic interpreter, for use in macro expansion.
 
 import itertools,re,pdb
 
@@ -14,6 +15,14 @@ class NotConstant(Exception):
 
     def __str__(self):
         return '%s is not a constant.' % self.args
+
+class NotInitialized(Exception):
+    def __init__(self,varName):
+        Exception.__init__(self,varName)
+        self.varName=varName
+
+    def __str__(self):
+        return "%s is not initialized; probably it's a function arg." % self.args
 
 class Undefined(Exception):
     def __init__(self,varRef):
@@ -50,6 +59,8 @@ class VarEntry:
     def constValue(self):
         if not self.neverModified:
             raise NotConstant(None)
+        if not self.initExpr:
+            raise NotInitialized(self.name)
         return self.initExpr.constValue()
 
 # Table of vars  known in a lexical scope
@@ -103,6 +114,9 @@ class Scope:
             raise Redefined(var,initExpr,self.localDefs[var])
         self.localDefs[var]=VarEntry(var,initExpr)
 
+    def addFuncArg(self,var):
+        self.addDef(var,None)
+
     def _addAccess(self,varRef):
         if varRef.name not in self.varAccesses:
             self.varAccesses[varRef.name]=set()
@@ -125,6 +139,36 @@ class Scope:
         for v in self.varAccesses:
             if v not in self:
                 yield (v,self.varAccesses[v])
+
+class Env:
+    def __init__(self,scope,parent):
+        self.parent=parent
+        self.scope=scope
+        self.values={}
+
+    def __getitem__(self,varRef):
+        if self.scope.isLocal(varRef.name):
+            if varRef.name in self.values:
+                return self.values[varRef.name]
+            else:
+                try:
+                    return varRef.constValue()
+                except NotConstant:
+                    raise NotInitialized(varRef.name)
+        else:
+            if self.parent:
+                return self.parent[varRef]
+            else:
+                raise Undefined(varRef)
+
+    def __setitem__(self,varRef,value):
+        if self.scope.isLocal(varRef.name):
+            self.values[varRef.name]=value
+        else:
+            if self.parent:
+                self.parent[varRef]=value
+            else:
+                raise Undefined(varRef)
 
 class Expr:
     def __init__(self,scope):
@@ -150,6 +194,9 @@ class Constant(Expr):
         Expr.__init__(self,scope)
         self.value=value
 
+    def evaluate(self,env):
+        return self.value
+
     def constValue(self):
         return self.value
 
@@ -163,6 +210,9 @@ class VarRef(Expr):
     def __init__(self,scope,name):
         Expr.__init__(self,scope)
         self.name=name
+
+    def evaluate(self,env):
+        return env[self]
 
     def constValue(self):
         try:
@@ -203,6 +253,11 @@ class Call(Expr):
         Expr.__init__(self,scope)
         self.f=f
         self.args=list(args)
+
+    def evaluate(self,env):
+        fv=self.f.evaluate(env)
+        argVs=list(map(lambda a: a.evaluate(env),self.args))
+        return fv(*argVs)
 
     def constValue(self):
         fv=self.f.constValue()
@@ -251,17 +306,34 @@ class NativeFunction(Function):
 
 class UserFunction(Function):
     # The fExpr should be the (define) or (lambda) that created this function.
-    def __init__(self,fExpr):
+    def __init__(self,fExpr,outerEnv):
         self.fExpr=fExpr
         assert isinstance(fExpr,Call)
         assert isinstance(fExpr.f,VarRef)
         assert fExpr.f.name in {'define','lambda'}
         assert fExpr.args
-        assert isinstance(fExpr.args[0],list)
-        for arg in fExpr.args[0]:
+        offset=(1 if fExpr.f.name=='define' else 0)
+        assert isinstance(fExpr.args[offset+0],list)
+        for arg in fExpr.args[offset+0]:
             assert isinstance(arg,VarRef)
-        self.argList=fExpr.args[0]
-        self.bodyExprs=fExpr.args[1:]
+        self.argList=fExpr.args[offset+0]
+        self.bodyExprs=fExpr.args[(offset+1):]
+        if self.bodyExprs:
+            self.innerScope=self.bodyExprs[0].scope
+            self.outerEnv=outerEnv
+
+    def __call__(self,*args):
+        if not self.bodyExprs:
+            return None
+        assert len(args)==len(self.argList)
+        innerEnv=Env(self.innerScope,self.outerEnv)
+        for (arg,value) in zip(self.argList,args):
+            innerEnv[arg]=value
+
+        last=None
+        for x in self.bodyExprs:
+            last=x.evaluate(innerEnv)
+        return last
 
     def isPure(self):
         if not self.bodyExprs:
