@@ -3,7 +3,7 @@
 import unittest,pdb,sys,os
 from adder.gomer import *
 from adder.common import Symbol as S
-import adder.stdenv
+import adder.stdenv,adder.common
 
 class VarEntryTestCase(unittest.TestCase):
     def testConstValueSuccess(self):
@@ -395,6 +395,7 @@ class ExprTestCase(unittest.TestCase):
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):
         (self.scope,self.env)=adder.stdenv.mkStdEnv()
+        adder.common.gensym.nextId=1
 
     def tearDown(self):
         self.scope=self.env=None
@@ -494,6 +495,22 @@ class StdEnvTestCase(unittest.TestCase):
     def testIn(self):
         assert self.call('in','x','fox')==True
         assert self.call('in','x','fob')==False
+
+    def testRaise(self):
+        try:
+            self.call('raise',Exception('foo'))
+        except Exception as e:
+            assert type(e)==Exception
+            assert e.args==('foo',)
+
+    def testGensym(self):
+        x=self.call('gensym','x')
+        assert isinstance(x,S)
+        assert x==S('#<gensym-x #1>')
+
+        y=self.call('gensym','y')
+        assert isinstance(y,S)
+        assert y==S('#<gensym-y #2>')
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
