@@ -491,6 +491,10 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('>=',3,5,4)==False
         assert self.call('>=',4,3,5)==False
 
+    def testIn(self):
+        assert self.call('in','x','fox')==True
+        assert self.call('in','x','fob')==False
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
