@@ -391,10 +391,28 @@ class ExprTestCase(unittest.TestCase):
         assert call.evaluate(env3)==[1649,1625,1603]
         assert call.constValue()==[1649,1625,1603]
 
+class StdEnvTestCase(unittest.TestCase):
+    def setUp(self):
+        (self.scope,self.env)=mkStdEnv()
+
+    def tearDown(self):
+        self.scope=self.env=None
+
+    def call(self,fname,*argConsts):
+        expr=Call(self.scope,
+                  VarRef(self.scope,S(fname)),
+                  list(map(lambda c: Constant(self.scope,c),argConsts)))
+        return expr.evaluate(self.env)
+
+    def testPlus(self):
+        assert self.call('+',1,2,3)==6
+        
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
+      unittest.makeSuite(StdEnvTestCase,'test'),
      )
     )
 

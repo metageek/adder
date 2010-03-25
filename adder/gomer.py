@@ -3,6 +3,7 @@
 #  Includes a basic interpreter, for use in macro expansion.
 
 import itertools,re,pdb
+from adder.common import Symbol as S
 
 class NoCommonAncestor(Exception):
     def __str__(self):
@@ -256,8 +257,11 @@ class Call(Expr):
 
     def evaluate(self,env):
         fv=self.f.evaluate(env)
-        argVs=list(map(lambda a: a.evaluate(env),self.args))
-        return fv(*argVs)
+        if fv.special:
+            args=self.args
+        else:
+            args=list(map(lambda a: a.evaluate(env),self.args))
+        return fv(*args)
 
     def constValue(self):
         fv=self.f.constValue()
@@ -294,9 +298,10 @@ class Function:
         return False
 
 class NativeFunction(Function):
-    def __init__(self,f,pure):
+    def __init__(self,f,pure,*,special=False):
         self.pure=pure
         self.f=f
+        self.special=special
 
     def __call__(self,*args):
         return self.f(*args)
@@ -307,6 +312,7 @@ class NativeFunction(Function):
 class UserFunction(Function):
     # The fExpr should be the (define) or (lambda) that created this function.
     def __init__(self,fExpr,outerEnv):
+        self.special=False
         self.fExpr=fExpr
         assert isinstance(fExpr,Call)
         assert isinstance(fExpr.f,VarRef)
@@ -343,3 +349,18 @@ class UserFunction(Function):
             if not expr.isPureIn(localScope):
                 return False
         return True
+
+def mkStdEnv():
+    scope=Scope(None)
+    env=Env(scope,None)
+
+    functions=[('+',lambda *a: sum(a),True)]
+    specials=[]
+
+    for (name,f,pure) in functions:
+        scope.addDef(S(name),Constant(scope,NativeFunction(f,pure)))
+
+    for (name,f) in []:
+        scope.addDef(S(name),Constant(scope,NativeFunction(f,False,special=True)))
+
+    return (scope,env)
