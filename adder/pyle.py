@@ -1,5 +1,10 @@
-# Python Lisp-Like Encoding.  IL which maps directly to Python.  Does not encode all
-#  of Python, only the bits which Adder will need to generate.
+# Python Lisp-Like Encoding.  IL which maps directly to Python; does
+#  not include semantics which can't be translated directly.  Does not
+#  encode all of Python, only the bits which Adder will need to
+#  generate.  Just easier for Adder to generate than Python text.
+#  (Also, I hold out hope that it can target py3 or py2,
+#  transparently.  For that to be useful, though, the compiler itself
+#  would also have to work in both.)
 
 from adder.common import Symbol as S
 
