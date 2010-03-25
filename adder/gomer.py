@@ -10,6 +10,7 @@ class NoCommonAncestor(Exception):
 class NotConstant(Exception):
     def __init__(self,expr):
         Exception.__init__(self,expr)
+        self.expr=expr
 
     def __str__(self):
         return '%s is not a constant.' % self.args
@@ -17,6 +18,7 @@ class NotConstant(Exception):
 class Undefined(Exception):
     def __init__(self,varRef):
         Exception.__init__(self,varRef)
+        self.varRef=varRef
 
     def __str__(self):
         return 'Undefined variable: %s' % self.args
@@ -58,6 +60,8 @@ class Scope:
         self.varAccesses={}
 
     def isDescendant(self,other):
+        if not other:
+            return False
         cur=self
         while cur:
             if cur==other:
@@ -155,42 +159,6 @@ class Constant(Expr):
     def isPureIn(self,containingScope):
         return True
 
-class Call(Expr):
-    def __init__(self,scope,f,args):
-        Expr.__init__(self,scope)
-        self.f=f
-        self.args=list(args)
-
-    def constValue(self):
-        fv=self.f.constValue()
-        if not fv.isPure():
-            raise NotConstant(self)
-        argVs=list(map(lambda a: a.constValue(),self.args))
-        return fv(*argVs)
-
-    def scopeRequired(self):
-        required=self.f.scopeRequired()
-        for arg in self.args:
-            required=required.commonAncestor(self.args.scopeRequired())
-        return required
-
-    def varRefs(self):
-        for var in self.f.varRefs():
-            yield var
-
-        for arg in self.args:
-            for var in arg.varRefs():
-                yield var
-
-    def isPureIn(self,containingScope):
-        fv=self.f.constValue()
-        if not fv.isPure():
-            return False
-        for arg in self.args:
-            if not arg.isPureIn(constValue):
-                return False
-        return True
-
 class VarRef(Expr):
     def __init__(self,scope,name):
         Expr.__init__(self,scope)
@@ -207,19 +175,63 @@ class VarRef(Expr):
         while cur:
             if cur.isLocal(self.name):
                 return cur
+            cur=cur.parent
         raise Undefined(self)
 
     def varRefs(self):
         return [self]
 
     def isPureIn(self,containingScope):
-        if self.scope.isDescendant(containingScope):
+        try:
+            required=self.scopeRequired()
+        except Undefined:
+            return False
+
+        if required.isDescendant(containingScope):
             return True
 
         try:
             self.constValue()
         except NotConstant:
             return False
+        except Undefined:
+            return False
+        return True
+
+class Call(Expr):
+    def __init__(self,scope,f,args):
+        Expr.__init__(self,scope)
+        self.f=f
+        self.args=list(args)
+
+    def constValue(self):
+        fv=self.f.constValue()
+        if not fv.isPure():
+            raise NotConstant(self)
+        argVs=list(map(lambda a: a.constValue(),self.args))
+        return fv(*argVs)
+
+    def scopeRequired(self):
+        required=self.f.scopeRequired()
+        for arg in self.args:
+            required=required.commonAncestor(arg.scopeRequired())
+        return required
+
+    def varRefs(self):
+        for var in self.f.varRefs():
+            yield var
+
+        for arg in self.args:
+            for var in arg.varRefs():
+                yield var
+
+    def isPureIn(self,containingScope):
+        fv=self.f.constValue()
+        if not fv.isPure():
+            return False
+        for arg in self.args:
+            if not arg.isPureIn(containingScope):
+                return False
         return True
 
 class Function:
@@ -229,7 +241,10 @@ class Function:
 class NativeFunction(Function):
     def __init__(self,f,pure):
         self.pure=pure
-        self.__call__=f
+        self.f=f
+
+    def __call__(self,*args):
+        return self.f(*args)
 
     def isPure(self):
         return self.pure

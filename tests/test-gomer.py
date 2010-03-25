@@ -88,15 +88,15 @@ class ScopeTestCase(unittest.TestCase):
 
     def testContainsLocal(self):
         scope=Scope(None)
-        scope.addDef(S('fred'),Constant(None,17))
+        scope.addDef(S('fred'),Constant(scope,17))
         assert S('fred') in scope
         assert S('barney') not in scope
 
     def testContainsNonLocal(self):
         scope1=Scope(None)
         scope1_1=Scope(scope1)
-        scope1.addDef(S('fred'),Constant(None,17))
-        scope1_1.addDef(S('wilma'),Constant(None,13))
+        scope1.addDef(S('fred'),Constant(scope1,17))
+        scope1_1.addDef(S('wilma'),Constant(scope1_1,13))
         assert S('fred') in scope1
         assert S('fred') in scope1_1
         assert S('wilma') not in scope1
@@ -107,8 +107,8 @@ class ScopeTestCase(unittest.TestCase):
     def testIsLocal(self):
         scope1=Scope(None)
         scope1_1=Scope(scope1)
-        scope1.addDef(S('fred'),Constant(None,17))
-        scope1_1.addDef(S('wilma'),Constant(None,13))
+        scope1.addDef(S('fred'),Constant(scope1,17))
+        scope1_1.addDef(S('wilma'),Constant(scope1_1,13))
         assert scope1.isLocal(S('fred'))
         assert not scope1_1.isLocal(S('fred'))
         assert not scope1.isLocal(S('wilma'))
@@ -118,7 +118,7 @@ class ScopeTestCase(unittest.TestCase):
 
     def testGetItemLocal(self):
         scope=Scope(None)
-        scope.addDef(S('fred'),Constant(None,17))
+        scope.addDef(S('fred'),Constant(scope,17))
 
         v=scope[VarRef(scope,S('fred'))]
         assert isinstance(v,VarEntry)
@@ -136,8 +136,8 @@ class ScopeTestCase(unittest.TestCase):
     def testGetItemNonLocal(self):
         scope1=Scope(None)
         scope1_1=Scope(scope1)
-        scope1.addDef(S('fred'),Constant(None,17))
-        scope1_1.addDef(S('wilma'),Constant(None,13))
+        scope1.addDef(S('fred'),Constant(scope1,17))
+        scope1_1.addDef(S('wilma'),Constant(scope1_1,13))
 
         v=scope1[VarRef(scope1,S('fred'))]
         assert isinstance(v,VarEntry)
@@ -183,16 +183,16 @@ class ScopeTestCase(unittest.TestCase):
         fred1=VarRef(scope,S('fred'))
         scope.addRead(fred1)
         try:
-            scope.addDef(S('fred'),Constant(None,17))
+            scope.addDef(S('fred'),Constant(scope,17))
             assert False
         except DefinedAfterUse:
             pass
 
     def testAddDefRedefined(self):
         scope=Scope(None)
-        scope.addDef(S('fred'),Constant(None,17))
+        scope.addDef(S('fred'),Constant(scope,17))
         try:
-            scope.addDef(S('fred'),Constant(None,17))
+            scope.addDef(S('fred'),Constant(scope,17))
             assert False
         except Redefined:
             pass
@@ -211,7 +211,7 @@ class ScopeTestCase(unittest.TestCase):
     def testAddWrite(self):
         scope=Scope(None)
         fred0=VarRef(scope,S('fred'))
-        scope.addDef(S('fred'),Constant(None,17))
+        scope.addDef(S('fred'),Constant(scope,17))
         assert scope[fred0].neverModified
 
         assert list(scope.varAccesses.keys())==[]
@@ -245,9 +245,108 @@ class ScopeTestCase(unittest.TestCase):
         assert len(accesses)==1
         assert list(accesses)[0] is fred1
 
+class ExprTestCase(unittest.TestCase):
+    def testConstantInt(self):
+        scope=Scope(None)
+        c=Constant(scope,5)
+        assert c.constValue()==5
+        assert c.scopeRequired() is None
+        assert c.isPureIn(scope)
+        assert list(c.varRefs())==[]
+
+    def testConstantStr(self):
+        scope=Scope(None)
+        c=Constant(scope,'fred')
+        assert c.constValue()=='fred'
+        assert c.scopeRequired() is None
+        assert c.isPureIn(scope)
+        assert list(c.varRefs())==[]
+
+    def testVarUnbound(self):
+        scope=Scope(None)
+        scope1=Scope(scope)
+        v=VarRef(scope,S('fred'))
+        assert len(list(v.varRefs()))==1
+        assert list(v.varRefs())[0] is v
+        assert not v.isPureIn(scope)
+        assert not v.isPureIn(scope1)
+
+        try:
+            v.constValue()
+            assert False
+        except Undefined as u:
+            assert u.varRef is v
+
+        try:
+            v.scopeRequired()
+            assert False
+        except Undefined as u:
+            assert u.varRef is v
+
+    def testVarBound(self):
+        scope1=Scope(None)
+        scope2=Scope(scope1)
+        scope3=Scope(scope2)
+
+        scope2.addDef(S('fred'),Constant(scope2,17))
+
+        v=VarRef(scope2,S('fred'))
+
+        assert len(list(v.varRefs()))==1
+        assert list(v.varRefs())[0] is v
+
+        assert v.isPureIn(scope1)
+        assert v.isPureIn(scope2)
+        assert v.isPureIn(scope3)
+
+        assert v.constValue()==17
+        assert v.scopeRequired()==scope2
+
+        scope2[v].markModified()
+
+        try:
+            v.constValue()
+            assert False
+        except NotConstant as nc:
+            assert nc.expr is v
+
+        assert not v.isPureIn(scope3)
+
+    def testCallNative(self):
+        scope1=Scope(None)
+        scope2=Scope(scope1)
+        scope3=Scope(scope2)
+
+        scope1.addDef(S('james1'),Constant(scope1,1603))
+        scope2.addDef(S('charles1'),Constant(scope2,1625))
+        scope3.addDef(S('charles2'),Constant(scope3,1649))
+
+        scope2.addDef(S('l'),Constant(scope2,
+                                      NativeFunction((lambda a,b,c: [a,b,c]),True)))
+
+        call=Call(scope3,
+                  VarRef(scope3,S('l')),
+                  [VarRef(scope3,S('james1')),
+                   VarRef(scope3,S('charles1')),
+                   VarRef(scope3,S('charles2'))])
+
+        assert call.constValue()==[1603,1625,1649]
+        assert call.scopeRequired() is scope1
+        assert call.isPureIn(scope3)
+
+        vrs=list(call.varRefs())
+        assert len(vrs)==4
+        for vr in vrs:
+            assert vr.scope==scope3
+
+        assert list(map(lambda vr: vr.name,vrs))==[
+            S('l'),S('james1'),S('charles1'),S('charles2')
+            ]
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
+      unittest.makeSuite(ExprTestCase,'test'),
      )
     )
 
