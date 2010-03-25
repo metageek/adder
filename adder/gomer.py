@@ -65,14 +65,17 @@ class Scope:
             cur=cur.parent
         return False
 
-    def commonAncestor(self,other):
+    def commonAncestor(self,other,*,errorp=False):
         if self.isDescendant(other):
             return other
         if other.isDescendant(self):
-            return other
+            return self
         if not self.parent:
-            raise NoCommonAncestor()
-        return self.parent.commonAncestor(other)
+            if errorp:
+                raise NoCommonAncestor()
+            else:
+                return None
+        return self.parent.commonAncestor(other,errorp=errorp)
 
     def __contains__(self,var):
         return (self.isLocal(var)
@@ -82,11 +85,6 @@ class Scope:
     def isLocal(self,var):
         return var in self.localDefs
 
-    def undefinedVars(self):
-        for v in self.varsAccessed:
-            if v not in self:
-                yield (v,self.varsAccessed[v])
-
     def __getitem__(self,varRef):
         if varRef.name in self.localDefs:
             return self.localDefs[varRef.name]
@@ -95,27 +93,34 @@ class Scope:
         raise Undefined(varRef)
 
     def addDef(self,var,initExpr):
-        if var in self.varsAccessed:
-            raise DefinedAfterUse(var,initExpr,self.varsAccessed[var])
+        if var in self.varAccesses:
+            raise DefinedAfterUse(var,initExpr,self.varAccesses[var])
         if var in self.localDefs:
             raise Redefined(var,initExpr,self.localDefs[var])
         self.localDefs[var]=VarEntry(var,initExpr)
 
-    def _addAccess(self,var,expr):
-        accesses=self.varsAccessed.get(var,{})
-        accesses.add(expr)
+    def _addAccess(self,varRef):
+        if varRef.name not in self.varAccesses:
+            self.varAccesses[varRef.name]=set()
+        accesses=self.varAccesses[varRef.name]
+        accesses.add(varRef)
 
-    def addRead(self,var,expr):
-        self._addAccess(expr)
+    def addRead(self,varRef):
+        self._addAccess(varRef)
 
-    def addWrite(self,var,expr):
-        self._addAccess(expr)
+    def addWrite(self,varRef):
+        self._addAccess(varRef)
         cur=self
         while cur:
-            if var in cur.localDefs:
-                cur.localDefs[var].markModified()
+            if varRef.name in cur.localDefs:
+                cur.localDefs[varRef.name].markModified()
                 break
             cur=cur.parent
+
+    def undefinedVars(self):
+        for v in self.varAccesses:
+            if v not in self:
+                yield (v,self.varAccesses[v])
 
 class Expr:
     def __init__(self,scope):
