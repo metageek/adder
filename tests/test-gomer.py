@@ -512,6 +512,13 @@ class StdEnvTestCase(unittest.TestCase):
         assert isinstance(y,S)
         assert y==S('#<gensym-y #2>')
 
+    def testGetitem(self):
+        assert self.call('[]',[2,3,5,7],2)==5
+
+    def testSlice(self):
+        assert self.call('slice',[2,3,5,7],2)==[5,7]
+        assert self.call('slice',[2,3,5,7],1,3)==[3,5]
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),

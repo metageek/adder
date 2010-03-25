@@ -40,6 +40,15 @@ def inF(a,b):
 def raiseF(e):
     raise e
 
+def getitem(l,i):
+    return l[i]
+
+def slice(l,a,b=None):
+    if b is None:
+        return l[a:]
+    else:
+        return l[a:b]
+
 def cmpN(cmp2):
     def f(*args):
         if not args:
@@ -84,6 +93,8 @@ def mkStdEnv():
         ('raise',raiseF,False),
         ('print',print,False),
         ('gensym',adder.common.gensym,False),
+        ('[]',getitem,False), # impure for arb objects
+        ('slice',slice,False), # probably impure for arb objects
         ]
     specials=[]
 
