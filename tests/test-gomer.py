@@ -3,6 +3,7 @@
 import unittest,pdb,sys,os
 from adder.gomer import *
 from adder.common import Symbol as S
+import adder.stdenv
 
 class VarEntryTestCase(unittest.TestCase):
     def testConstValueSuccess(self):
@@ -393,7 +394,7 @@ class ExprTestCase(unittest.TestCase):
 
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):
-        (self.scope,self.env)=mkStdEnv()
+        (self.scope,self.env)=adder.stdenv.mkStdEnv()
 
     def tearDown(self):
         self.scope=self.env=None
@@ -405,8 +406,25 @@ class StdEnvTestCase(unittest.TestCase):
         return expr.evaluate(self.env)
 
     def testPlus(self):
-        assert self.call('+',1,2,3)==6
+        assert self.call('+',1,2,3,4)==10
         
+    def testMinus(self):
+        assert self.call('-',1,2,3)==-4
+        assert self.call('-',1)==-1
+
+    def testTimes(self):
+        assert self.call('*',1,2,3,4)==24
+        assert self.call('*')==1
+
+    def testFDiv(self):
+        assert self.call('/',25,3,4)==25/3/4
+        assert self.call('/',8)==1/8
+
+    def testIDiv(self):
+        assert self.call('//',25,3,4)==2
+        assert self.call('//',8)==0
+        assert self.call('//',1)==1
+        assert self.call('//',-1)==-1
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),

@@ -349,18 +349,3 @@ class UserFunction(Function):
             if not expr.isPureIn(localScope):
                 return False
         return True
-
-def mkStdEnv():
-    scope=Scope(None)
-    env=Env(scope,None)
-
-    functions=[('+',lambda *a: sum(a),True)]
-    specials=[]
-
-    for (name,f,pure) in functions:
-        scope.addDef(S(name),Constant(scope,NativeFunction(f,pure)))
-
-    for (name,f) in []:
-        scope.addDef(S(name),Constant(scope,NativeFunction(f,False,special=True)))
-
-    return (scope,env)
