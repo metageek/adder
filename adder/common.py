@@ -1,8 +1,22 @@
-import pdb,types
+import pdb,types,re
+
+pythonLegal=re.compile('^[_a-z0-9]+$')
 
 class Symbol(str):
     def __repr__(self):
         return 'adder.common.Symbol('+repr(str(self))+')'
+
+    def toPython(self):
+        if pythonLegal.match(self):
+            return self
+        def escape1(ch):
+            if ch=='_':
+                return '__'
+            if pythonLegal.match(ch):
+                return ch
+            return '_%04x' % ord(ch)
+        return '__adder__'+''.join(map(escape1,self))
+            
 
 def gensym(base=None):
     id=gensym.nextId

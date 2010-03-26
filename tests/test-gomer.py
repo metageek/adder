@@ -5,6 +5,13 @@ from adder.gomer import *
 from adder.common import Symbol as S
 import adder.stdenv,adder.common
 
+def deepToPython(x):
+    if isinstance(x,S):
+        return x.toPython()
+    if isinstance(x,list):
+        return list(map(lambda elt: deepToPython(elt),x))
+    return x
+
 class VarEntryTestCase(unittest.TestCase):
     def testConstValueSuccess(self):
         var=VarEntry('fred',Constant(None,17))
@@ -467,7 +474,7 @@ class CompyleTestCase(unittest.TestCase):
                   [S('*'),S('n'),[S('-'),S('n'),1]]]])
         p=x.compyle(self.stmtCollector)
         assert p.name==S('fact')
-        assert self.stmts==[
+        expected=deepToPython([
             [S('def'),S('fact'),[S('n')],
              [S(':='),S('#<gensym-scratch #1>'),
               [S('if'),[S('<'),S('n'),2],
@@ -477,7 +484,8 @@ class CompyleTestCase(unittest.TestCase):
               ],
              [S('return'),S('#<gensym-scratch #1>')]
              ]
-            ]
+            ])
+        assert self.stmts==expected
 
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):

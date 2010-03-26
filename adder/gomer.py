@@ -222,7 +222,7 @@ class Constant(Expr):
         if isinstance(self.value,UserFunction):
             return self.value.compyle(stmtCollector)
         assert isinstance(self.value,list)
-        return (['mk-list']
+        return ([S('mk-list')]
                 +list(map(lambda x: Constant(self.scope,
                                              x).compyle(stmtCollector),
                           self.value))
@@ -274,7 +274,7 @@ class VarRef(Expr):
         return self.name
 
     def compyle(self,stmtCollector):
-        return S(self.name)
+        return S(self.name.toPython())
 
 class Call(Expr):
     def __init__(self,scope,f,args):
@@ -395,8 +395,8 @@ class UserFunction(Function):
         return True
 
     def compyle(self,stmtCollector):
-        defStmt=[S('def'),self.name.name,
-                 list(map(lambda sym: sym.name,self.argList))
+        defStmt=[S('def'),self.name.compyle(stmtCollector),
+                 list(map(lambda sym: sym.name.toPython(),self.argList))
                  ]
 
         def innerCollector(stmt):
@@ -407,8 +407,10 @@ class UserFunction(Function):
         lastPyleExpr=None
         for expr in self.bodyExprs:
             pyleExpr=expr.compyle(innerCollector)
-            innerCollector([S(':='),scratchVar,pyleExpr])
-        innerCollector([S('return'),scratchVar])
+            innerCollector([S(':=').toPython(),
+                            scratchVar.toPython(),
+                            pyleExpr])
+        innerCollector([S('return'),scratchVar.toPython()])
 
         stmtCollector(defStmt)
         return self.name
