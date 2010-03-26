@@ -71,6 +71,11 @@ def sliceF(l,a,b=None):
     else:
         return l[a:b]
 
+def reverseF(l):
+    l2=list(l)
+    l2.reverse()
+    return l2
+
 def mkStdEnv():
     scope=Scope(None)
     env=Env(scope,None)
@@ -102,6 +107,8 @@ def mkStdEnv():
         ('mk-tuple',lambda *a: a,True),
         ('mk-set',lambda *a: set(a),True),
         ('mk-dict',lambda *a: dict(a),True),
+        ('reverse',reverseF,True),
+        ('reverse!',lambda l: l.reverse(),False),
         ]
     specials=[]
 

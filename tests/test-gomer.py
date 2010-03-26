@@ -544,6 +544,13 @@ class StdEnvTestCase(unittest.TestCase):
                          ('c',5),
                          ('d',7))=={'a': 2, 'b': 3, 'c': 5, 'd': 7}
 
+    def testReverse(self):
+        assert self.call('reverse',[2,3,5,7])==[7,5,3,2]
+
+        l=[1,2,3,4]
+        self.call('reverse!',l)
+        assert l==[4,3,2,1]
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
