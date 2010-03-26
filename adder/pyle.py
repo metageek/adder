@@ -57,6 +57,16 @@ def buildExpr(pyle):
     if pyle[0]==S('mk-dict'):
         return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),buildExpr(kx[1])),pyle[1:])))
 
+    if pyle[0]=='-':
+        assert len(pyle) in [2,3]
+        if len(pyle)==3:
+            return BinaryOperator(pyle[0],
+                                  buildExpr(pyle[1]),
+                                  buildExpr(pyle[2]))
+        else:
+            return UnaryOperator(pyle[0],
+                                 buildExpr(pyle[1]))
+
     if pyle[0] in buildExpr.binaryOperators:
         assert len(pyle)==3
         return BinaryOperator(pyle[0],buildExpr(pyle[1]),buildExpr(pyle[2]))
@@ -72,7 +82,7 @@ def buildExpr(pyle):
 buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
                                      '+','*','/','//','%',
                                      'in']))
-buildExpr.unaryOperators=set(map(S,['-','not','and','or']))
+buildExpr.unaryOperators=set(map(S,['not','and','or']))
 
 def buildStmt(pyle):
     assert isinstance(pyle,list)
@@ -314,7 +324,7 @@ class SetConstructor(Expr):
         else:
             return 'set()'
 
-def flatten(self,tree,depth=0):
+def flatten(tree,depth=0):
     if isinstance(tree,str):
         return (' '*(depth*Stmt.indentStep))+tree+'\n'
 

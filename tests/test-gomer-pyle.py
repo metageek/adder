@@ -39,6 +39,10 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.compile([S('+'),2,2])=='2+2'
         assert self.pythonFlat==''
 
+    def testCallMinus(self):
+        assert self.compile([S('-'),2,2])=='2-2'
+        assert self.pythonFlat==''
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),
      )
