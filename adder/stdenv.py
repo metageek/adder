@@ -135,6 +135,10 @@ def mkStdEnv():
         ('stderr',sys.stderr),
         ('true',True),
         ('false',False),
+        ('list-type',list),
+        ('tuple-type',tuple),
+        ('set-type',set),
+        ('dict-type',dict),
         ]:
         scope.addDef(S(name),Constant(scope,value))
 

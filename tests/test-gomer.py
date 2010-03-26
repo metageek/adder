@@ -532,6 +532,10 @@ class StdEnvTestCase(unittest.TestCase):
     def testSet(self):
         assert self.call('set',(2,3,5,7))==set([2,3,5,7])
 
+    def testIsInstance(self):
+        assert self.call('isinstance',[2,3],list)==True
+        assert self.call('isinstance',[2,3],set)==False
+
     def testMkList(self):
         assert self.call('mk-list',2,3,5,7)==[2,3,5,7]
 
@@ -582,6 +586,10 @@ class StdEnvTestCase(unittest.TestCase):
             ('stderr',sys.stderr),
             ('true',True),
             ('false',False),
+            ('list-type',list),
+            ('tuple-type',tuple),
+            ('set-type',set),
+            ('dict-type',dict),
             ]:
             assert self.call('eval-gomer',S(name),self.env)==value
 

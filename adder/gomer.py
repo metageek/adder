@@ -249,6 +249,9 @@ class VarRef(Expr):
             return False
         return True
 
+    def __str__(self):
+        return self.name
+
 class Call(Expr):
     def __init__(self,scope,f,args):
         Expr.__init__(self,scope)
