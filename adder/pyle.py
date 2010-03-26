@@ -33,51 +33,65 @@ def buildExpr(pyle):
 
     if pyle[0]==S('[]'):
         assert len(pyle)==3
-        return IndexOperator(buildExpr(pyle[1]),buildExpr(pyle[2]))
+        return IndexOperator(buildExpr(pyle[1][0]),
+                             buildExpr(pyle[1][1]))
 
     if pyle[0]==S('if'):
-        assert len(pyle)==4
-        return IfOperator(buildExpr(pyle[1]),buildExpr(pyle[2]),buildExpr(pyle[3]))
+        assert len(pyle[1])==3
+        return IfOperator(buildExpr(pyle[1][0]),
+                          buildExpr(pyle[1][1]),
+                          buildExpr(pyle[1][2]))
 
     if pyle[0]==S('.'):
         assert len(pyle)>=2
         if len(pyle)==2:
-            return buildExpr(pyle[1])
-        return DotExpr(buildExpr(pyle[1]),pyle[2:])
+            return buildExpr(pyle[1][0])
+        return DotExpr(buildExpr(pyle[1][1]),pyle[1][1:])
 
     if pyle[0]==S('mk-list'):
-        return ListConstructor(list(map(buildExpr,pyle[1:])))
+        return ListConstructor(list(map(buildExpr,pyle[1][1:])))
 
     if pyle[0]==S('mk-tuple'):
-        return TupleConstructor(list(map(buildExpr,pyle[1:])))
+        return TupleConstructor(list(map(buildExpr,pyle[1][1:])))
 
     if pyle[0]==S('mk-set'):
-        return SetConstructor(list(map(buildExpr,pyle[1:])))
+        return SetConstructor(list(map(buildExpr,pyle[1][1:])))
 
     if pyle[0]==S('mk-dict'):
-        return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),buildExpr(kx[1])),pyle[1:])))
+        return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
+                                                    buildExpr(kx[1])),
+                                        pyle[1][1:])))
 
     if pyle[0]=='-':
-        assert len(pyle) in [2,3]
-        if len(pyle)==3:
+        assert len(pyle[1]) in [1,2]
+        if len(pyle[1])==2:
             return BinaryOperator(pyle[0],
-                                  buildExpr(pyle[1]),
-                                  buildExpr(pyle[2]))
+                                  buildExpr(pyle[1][0]),
+                                  buildExpr(pyle[1][1]))
         else:
             return UnaryOperator(pyle[0],
-                                 buildExpr(pyle[1]))
+                                 buildExpr(pyle[1][0]))
 
     if pyle[0] in buildExpr.binaryOperators:
-        assert len(pyle)==3
-        return BinaryOperator(pyle[0],buildExpr(pyle[1]),buildExpr(pyle[2]))
+        assert len(pyle[1])==2
+        return BinaryOperator(pyle[0],
+                              buildExpr(pyle[1][0]),
+                              buildExpr(pyle[1][1]))
 
     if pyle[0] in buildExpr.unaryOperators:
-        assert len(pyle)==2
-        return UnaryOperator(pyle[0],buildExpr(pyle[1]))
+        assert len(pyle[1])==1
+        return UnaryOperator(pyle[0],buildExpr(pyle[1][0]))
 
+    if len(pyle)==2:
+        kwArgs=[]
+    else:
+        kwArgs=pyle[2]
     return CallExpr(buildExpr(pyle[0]),
                     list(map(buildExpr,pyle[1])),
-                    dict(map(lambda kx: (kx[0], buildExpr(kx[1])), pyle[2])))
+                    dict(map(lambda kx: (kx[0], buildExpr(kx[1])),
+                             kwArgs)
+                         )
+                    )
 
 buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
                                      '+','*','/','//','%',
@@ -88,37 +102,39 @@ def buildStmt(pyle):
     assert isinstance(pyle,list)
     assert pyle
     assert isinstance(pyle[0],S)
+    assert len(pyle)>1
 
     if pyle[0]==S(':='):
-        assert len(pyle)==3
-        return Assignment(buildExpr(pyle[1]),
-                          buildExpr(pyle[2]))
+        assert len(pyle[1])==2
+        return Assignment(buildExpr(pyle[1][0]),
+                          buildExpr(pyle[1][1]))
 
     if pyle[0]==S('begin'):
-        if len(pyle)==1:
+        if not pyle[1]:
             return Nop()
-        return Block(list(map(buildStmt,pyle[1:])))
+        return Block(list(map(buildStmt,pyle[1])))
 
     if pyle[0]==S('if'):
-        assert len(pyle)>=3 and len(pyle)<=4
-        elseStmt=buildStmt(pyle[3]) if len(pyle)==4 else None
-        return IfStmt(buildExpr(pyle[1]),
-                      buildStmt(pyle[2]),
+        assert len(pyle[1]) in [2,3]
+        elseStmt=buildStmt(pyle[1][2]) if len(pyle[1])==3 else None
+        return IfStmt(buildExpr(pyle[1][0]),
+                      buildStmt(pyle[1][1]),
                       elseStmt)
 
     if pyle[0]==S('while'):
         assert len(pyle)>=2
-        return WhileStmt(buildExpr(pyle[1]),
-                         list(map(buildStmt,pyle[1:])))
+        return WhileStmt(buildExpr(pyle[1][0]),
+                         list(map(buildStmt,pyle[1][1:])))
 
     if pyle[0]==S('return'):
         assert len(pyle)==2
-        return ReturnStmt(buildExpr(pyle[1]),)
+        assert len(pyle[1])==1
+        return ReturnStmt(buildExpr(pyle[1][0]),)
 
     if pyle[0]==S('def'):
-        assert len(pyle)>=3
-        assert isinstance(pyle[1],S)
-        assert isinstance(pyle[2],list)
+        assert len(pyle[1])>=2
+        assert isinstance(pyle[1][0],S)
+        assert isinstance(pyle[1][1],list)
         fixedArgs=[]
         optionalArgs=[]
         kwArgs=[]
@@ -130,7 +146,7 @@ def buildStmt(pyle):
                           'global': globals,
                           'nonlocal': nonlocals}
         state='fixed'
-        for arg in pyle[2]:
+        for arg in pyle[1][1]:
             if isinstance(arg,S) and arg[0]=='&':
                 state=arg[1:]
                 continue
@@ -145,26 +161,26 @@ def buildStmt(pyle):
                 assert isinstance(arg[0],S)
                 arg=(arg[0],buildExpr(arg[1]))
             stateToCollector[state].append(arg)
-        return DefStmt(pyle[1],
+        return DefStmt(pyle[1][0],
                        fixedArgs,optionalArgs,kwArgs,
-                       maybeBlock(list(map(buildStmt,pyle[3:]))),
+                       maybeBlock(list(map(buildStmt,pyle[1][2:]))),
                        globals,nonlocals)
 
     if pyle[0]==S('class'):
-        assert len(pyle)>=3
-        assert isinstance(pyle[1],S)
-        assert isinstance(pyle[2],list)
-        for parent in pyle[2]:
+        assert pyle[1]
+        assert isinstance(pyle[1][0],S)
+        assert isinstance(pyle[1][1],list)
+        for parent in pyle[1][1]:
             assert isinstance(parent,S)
 
-        return ClassStmt(pyle[1],pyle[2],
-                         maybeBlock(list(map(buildStmt,pyle[3:])),True))
+        return ClassStmt(pyle[1][0],pyle[1][1],
+                         maybeBlock(list(map(buildStmt,pyle[1][2:])),True))
 
     if pyle[0]==S('import'):
-        for module in pyle[1:]:
+        for module in pyle[1]:
             assert isinstance(module,S)
 
-        return ImportStmt(pyle[1:])
+        return ImportStmt(pyle[1])
 
     assert False
 

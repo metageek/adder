@@ -468,14 +468,24 @@ class CompyleTestCase(unittest.TestCase):
         p=x.compyle(self.stmtCollector)
         assert p.name==S('fact')
         expected=[
-            [S('def'),S('fact'),[S('n')],
-             [S(':='),S('#<gensym-scratch #1>'),
-              [S('if'),[S('<'),S('n'),2],
-               1,
-               [S('*'),S('n'),[S('-'),S('n'),1]]
-               ]
-              ],
-             [S('return'),S('#<gensym-scratch #1>')]
+            [S('def'),[
+                    S('fact'),
+                    [S('n')],
+                    [S(':='),[
+                            S('#<gensym-scratch #1>'),
+                            [S('if'),[
+                                    [S('<'),[S('n'),2],[]],
+                                    1,
+                                    [S('*'), [
+                                            S('n'),
+                                            [S('-'),[S('n'),1],[]]
+                                            ],[]]
+                                    ],[]
+                             ]
+                            ],[]
+                     ],
+                    [S('return'),[S('#<gensym-scratch #1>')],[]]
+                    ],[]
              ]
             ]
         assert self.stmts==expected

@@ -324,9 +324,10 @@ class Call(Expr):
         if isinstance(self.f,VarRef) and self.f.name==S('defun'):
             return UserFunction(self,None).compyle(stmtCollector)
         else:
-            return ([self.f.compyle(stmtCollector)]
-                    +list(map(lambda x: x.compyle(stmtCollector),
-                              self.args))
+            return ([self.f.compyle(stmtCollector),
+                    list(map(lambda x: x.compyle(stmtCollector),
+                             self.args)),
+                     []]
                     )
 
 class Function:
@@ -395,12 +396,14 @@ class UserFunction(Function):
         return True
 
     def compyle(self,stmtCollector):
-        defStmt=[S('def'),self.name.compyle(stmtCollector),
-                 list(map(lambda sym: sym.name,self.argList))
+        defStmt=[S('def'),
+                 [self.name.compyle(stmtCollector),
+                  list(map(lambda sym: sym.name,self.argList))],
+                 []
                  ]
 
         def innerCollector(stmt):
-            defStmt.append(stmt)
+            defStmt[1].append(stmt)
 
         scratchVar=gensym('scratch')
 
@@ -408,9 +411,9 @@ class UserFunction(Function):
         for expr in self.bodyExprs:
             pyleExpr=expr.compyle(innerCollector)
             innerCollector([S(':='),
-                            scratchVar,
-                            pyleExpr])
-        innerCollector([S('return'),scratchVar])
+                            [scratchVar,pyleExpr],
+                            []])
+        innerCollector([S('return'),[scratchVar],[]])
 
         stmtCollector(defStmt)
         return self.name

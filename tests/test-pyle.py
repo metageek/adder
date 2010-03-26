@@ -196,7 +196,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.py=="'fred'"
 
     def testPlusExpr(self):
-        expr=buildExpr([S('*'),9,7])
+        expr=buildExpr([S('+'),[9,7]])
         assert isinstance(expr,BinaryOperator)
         assert isinstance(expr.left,Constant)
         assert expr.left.py=='9'
@@ -204,7 +204,9 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.right.py=='7'
 
     def testNestedExpr(self):
-        expr=buildExpr([S('*'),9,[S('+'),3,S('z')]])
+        expr=buildExpr([S('*'),[9,
+                                [S('+'),[3,S('z')]]
+                                ]])
         assert isinstance(expr,BinaryOperator)
         assert isinstance(expr.left,Constant)
         assert expr.left.py=='9'
@@ -216,21 +218,21 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.right.right.py=='z'
 
     def testUnaryMinus(self):
-        expr=buildExpr([S('-'),9])
+        expr=buildExpr([S('-'),[9]])
         assert isinstance(expr,UnaryOperator)
         assert expr.operator==S('-')
         assert isinstance(expr.operand,Constant)
         assert expr.operand.py=='9'
 
     def testUnaryNot(self):
-        expr=buildExpr([S('not'),False])
+        expr=buildExpr([S('not'),[False]])
         assert isinstance(expr,UnaryOperator)
         assert expr.operator==S('not')
         assert isinstance(expr.operand,Constant)
         assert expr.operand.py=='False'
 
     def testCallExprNoArgs(self):
-        expr=buildExpr([S('f'),[],[]])
+        expr=buildExpr([S('f'),[[],[]]])
         assert isinstance(expr,CallExpr)
         assert isinstance(expr.f,VarExpr)
         assert expr.f.py=='f'
@@ -238,7 +240,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.kwArgs=={}
 
     def testCallExprOnlyPosArgs(self):
-        expr=buildExpr([S('f'),[9,7],[]])
+        expr=buildExpr([S('f'),[[9,7],[]]])
         assert isinstance(expr,CallExpr)
         assert isinstance(expr.f,VarExpr)
         assert expr.f.py=='f'
@@ -280,10 +282,12 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.kwArgs['b'].py=='7'
 
     def testIfOperator(self):
-        expr=buildExpr([S('if'),
-                        [S('=='),S('x'),9],
-                        [S('*'),S('x'),7],
-                        [S('*'),9,S('x')]])
+        expr=buildExpr([S('if'), [
+                    [S('=='),S('x'),9],
+                    [S('*'),S('x'),7],
+                    [S('*'),9,S('x')]
+                    ],[]
+                        ])
         assert isinstance(expr,IfOperator)
 
         assert isinstance(expr.condExpr,BinaryOperator)
@@ -398,7 +402,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.pairExprs[1][1].py=='7'
 
     def testDot0(self):
-        expr=buildExpr([S('.'),S('a')])
+        expr=buildExpr([S('.'),[S('a')]])
         assert isinstance(expr,VarExpr)
         assert expr.py=='a'
 
@@ -647,20 +651,26 @@ foo.bar=x*7
         assert(stmt.toPythonFlat()=='assert True\n')
 
     def testIfNoElse(self):
-        stmt=buildStmt([S('if'),
-                        [S('<'),S('n'),2],
-                        [S(':='),S('x'),1]])
+        stmt=buildStmt([S('if'),[
+                        [S('<'),[S('n'),2]],
+                        [S(':='),[S('x'),1]]
+                        ]
+                        ])
         assert(stmt.toPythonTree()==('if n<2:',['x=1']))
         assert(stmt.toPythonFlat()=="""if n<2:
     x=1
 """)
 
     def testIfElse(self):
-        stmt=buildStmt([S('if'),
-                        [S('<'),S('n'),2],
-                        [S(':='),S('x'),1],
-                        [S(':='),S('x'),
-                         [S('*'),9,7]]])
+        stmt=buildStmt([S('if'),[
+                        [S('<'),[S('n'),2]],
+                        [S(':='),[S('x'),1]],
+                        [S(':='),[
+                            S('x'),
+                         [S('*'),[9,7]]
+                         ]]
+                        ]
+                        ])
         assert(stmt.toPythonTree()==('if n<2:',['x=1'],'else:',['x=9*7']))
         assert(stmt.toPythonFlat()=="""if n<2:
     x=1
@@ -781,7 +791,7 @@ else:
 """)
 
     def testClassNoParentsNoBody(self):
-        stmt=buildStmt([S('class'),S('C'),[]])
+        stmt=buildStmt([S('class'),[S('C'),[]]])
         assert(stmt.toPythonTree()==('class C():',['pass']))
         assert(stmt.toPythonFlat()=="""class C():
     pass
@@ -803,20 +813,25 @@ else:
 """)
 
     def testClassNoParentsBlockBody(self):
-        stmt=buildStmt([S('class'),S('C'),[],
-                        [S(':='),S('z'),7],
-                        [S('def'),S('__init__'),[S('n')],
-                         [S(':='),[S('.'),S('self'),S('q')],S('n')]
-                         ],
-                        [S('def'),S('sq'),[],
-                         [S('return'),
-                          [S('*'),
-                           [S('.'),S('self'),S('q')],
-                           [S('.'),S('self'),S('q')]
-                           ]
-                          ]
-                         ]
-                        ])
+        stmt=buildStmt([S('class'),[S('C'),[],
+                        [S(':='),[S('z'),7]],
+                        [S('def'),[
+                            S('__init__'),
+                            [S('n')],
+                            [S(':='),[
+                                    [S('.'),S('self'),S('q')],
+                                    S('n')
+                                    ]]
+                         ]],
+                        [S('def'),[S('sq'),[],
+                         [S('return'),[
+                                    [S('*'),[
+                                            [S('.'),[S('self'),S('q')]],
+                                            [S('.'),[S('self'),S('q')]]
+                                            ]]
+                                    ]]
+                         ]]
+                        ]])
         assert(stmt.toPythonTree()==('class C():',
                                      [('z=7',
                                        ('def __init__(n):',
@@ -833,13 +848,13 @@ else:
 """)
 
     def testImport1(self):
-        stmt=buildStmt([S('import'),S('re')])
+        stmt=buildStmt([S('import'),[S('re')]])
         assert stmt.toPythonTree()=='import re'
         assert stmt.toPythonFlat()=="""import re
 """
 
     def testImport2(self):
-        stmt=buildStmt([S('import'),S('re'),S('adder.parser')])
+        stmt=buildStmt([S('import'),[S('re'),S('adder.parser')]])
         assert stmt.toPythonTree()=='import re, adder.parser'
         assert stmt.toPythonFlat()=="""import re, adder.parser
 """
