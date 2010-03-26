@@ -4,34 +4,34 @@ from adder.common import Symbol as S
 from adder.gomer import *
 import adder.common
 
-def plus(*args):
+def plusF(*args):
     return sum(args)
 
-def minus(first,*rest):
+def minusF(first,*rest):
     if rest:
         return first-sum(rest)
     else:
         return -first
 
-def times(*args):
+def timesF(*args):
     res=1
     for a in args:
         res*=a
     return res
 
-def fdiv(first,*rest):
+def fdivF(first,*rest):
     if rest:
-        return first/times(*rest)
+        return first/timesF(*rest)
     else:
         return 1/first
 
-def idiv(first,*rest):
+def idivF(first,*rest):
     if rest:
-        return first//times(*rest)
+        return first//timesF(*rest)
     else:
         return 1//first
 
-def mod(a,b):
+def modF(a,b):
     return a%b
 
 def inF(a,b):
@@ -40,16 +40,16 @@ def inF(a,b):
 def raiseF(e):
     raise e
 
-def getitem(l,i):
+def getitemF(l,i):
     return l[i]
 
-def slice(l,a,b=None):
+def sliceF(l,a,b=None):
     if b is None:
         return l[a:]
     else:
         return l[a:b]
 
-def cmpN(cmp2):
+def cmpNF(cmp2):
     def f(*args):
         if not args:
             return True
@@ -61,15 +61,15 @@ def cmpN(cmp2):
         return True
     return f
 
-lt=cmpN(lambda a,b: a<b)
-gt=cmpN(lambda a,b: a>b)
-le=cmpN(lambda a,b: a<=b)
-ge=cmpN(lambda a,b: a>=b)
+ltF=cmpNF(lambda a,b: a<b)
+gtF=cmpNF(lambda a,b: a>b)
+leF=cmpNF(lambda a,b: a<=b)
+geF=cmpNF(lambda a,b: a>=b)
 
-eq=cmpN(lambda a,b: a==b)
+eqF=cmpNF(lambda a,b: a==b)
 
-def ne(*args):
-    return not eq(*args)
+def neF(*args):
+    return not eqF(*args)
 
 
 def mkStdEnv():
@@ -77,24 +77,24 @@ def mkStdEnv():
     env=Env(scope,None)
 
     functions=[
-        ('==',eq,True),
-        ('!=',ne,True),
-        ('<',lt,True),
-        ('>',gt,True),
-        ('<=',le,True),
-        ('>=',ge,True),
-        ('+',plus,True),
-        ('-',minus,True),
-        ('*',times,True),
-        ('/',fdiv,True),
-        ('//',idiv,True),
-        ('%',mod,True),
+        ('==',eqF,True),
+        ('!=',neF,True),
+        ('<',ltF,True),
+        ('>',gtF,True),
+        ('<=',leF,True),
+        ('>=',geF,True),
+        ('+',plusF,True),
+        ('-',minusF,True),
+        ('*',timesF,True),
+        ('/',fdivF,True),
+        ('//',idivF,True),
+        ('%',modF,True),
         ('in',inF,True),
         ('raise',raiseF,False),
         ('print',print,False),
         ('gensym',adder.common.gensym,False),
-        ('[]',getitem,False), # impure for arb objects
-        ('slice',slice,False), # probably impure for arb objects
+        ('[]',getitemF,False), # impure for arb objects
+        ('slice',sliceF,False), # probably impure for arb objects
         ]
     specials=[]
 
