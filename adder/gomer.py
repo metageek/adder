@@ -406,7 +406,7 @@ class UserFunction(Function):
         for expr in self.bodyExprs:
             pyleExpr=expr.compyle(innerCollector)
             innerCollector([S(':='),scratchVar,pyleExpr])
-        innerCollector([S('return'),pyleExpr])
+        innerCollector([S('return'),scratchVar])
 
         stmtCollector(defStmt)
         return self.name

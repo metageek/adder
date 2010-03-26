@@ -467,6 +467,20 @@ class CompyleTestCase(unittest.TestCase):
                   [S('*'),S('n'),[S('-'),S('n'),1]]]])
         p=x.compyle(self.stmtCollector)
         assert p.name==S('fact')
+        print(self.stmts)
+        assert len(self.stmts)==1
+        assert isinstance(self.stmts[0],list)
+        assert len(self.stmts[0])==5
+        assert isinstance(self.stmts[0][0],S)
+        assert self.stmts[0][0]==S('def')
+        assert isinstance(self.stmts[0][1],VarRef)
+        assert self.stmts[0][1].name==S('fact')
+        assert isinstance(self.stmts[0][2],list)
+        assert len(self.stmts[0][2])==1
+        assert isinstance(self.stmts[0][2][0],VarRef)
+        assert self.stmts[0][2][0].name==S('n')
+        assert isinstance(self.stmts[0][3],list)
+        assert len(self.stmts[0][3])==3
 
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):
