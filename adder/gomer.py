@@ -395,7 +395,9 @@ class UserFunction(Function):
         return True
 
     def compyle(self,stmtCollector):
-        defStmt=[S('def'),self.name,self.argList]
+        defStmt=[S('def'),self.name.name,
+                 list(map(lambda sym: sym.name,self.argList))
+                 ]
 
         def innerCollector(stmt):
             defStmt.append(stmt)
