@@ -519,6 +519,24 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('slice',[2,3,5,7],2)==[5,7]
         assert self.call('slice',[2,3,5,7],1,3)==[3,5]
 
+    def testList(self):
+        assert self.call('list',(2,3,5,7))==[2,3,5,7]
+
+    def testTuple(self):
+        assert self.call('tuple',[2,3,5,7])==(2,3,5,7)
+
+    def testSet(self):
+        assert self.call('set',(2,3,5,7))==set([2,3,5,7])
+
+    def testMkList(self):
+        assert self.call('mk-list',2,3,5,7)==[2,3,5,7]
+
+    def testMkTuple(self):
+        assert self.call('mk-tuple',2,3,5,7)==(2,3,5,7)
+
+    def testMkSet(self):
+        assert self.call('mk-set',2,3,5,7)==set([2,3,5,7])
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),

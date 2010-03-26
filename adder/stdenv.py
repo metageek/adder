@@ -94,6 +94,13 @@ def mkStdEnv():
         ('gensym',adder.common.gensym,False),
         ('[]',getitemF,False), # impure for arb objects
         ('slice',sliceF,False), # probably impure for arb objects
+        ('list',list,True),
+        ('tuple',tuple,True),
+        ('set',set,True),
+        ('isinstance',isinstance,True),
+        ('mk-list',lambda *a: list(a),True),
+        ('mk-tuple',lambda *a: a,True),
+        ('mk-set',lambda *a: set(a),True),
         ]
     specials=[]
 
