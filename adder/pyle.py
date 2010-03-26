@@ -21,7 +21,7 @@ def buildExpr(pyle):
         return VarExpr(pyle)
     if pyle is None:
         return Constant(pyle)
-    for t in [str,int,float,bool]:
+    for t in [str,int,float,bool,tuple]:
         if isinstance(pyle,t):
             return Constant(pyle)
 

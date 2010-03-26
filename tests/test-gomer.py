@@ -392,6 +392,83 @@ class ExprTestCase(unittest.TestCase):
         assert call.evaluate(env3)==[1649,1625,1603]
         assert call.constValue()==[1649,1625,1603]
 
+class CompyleTestCase(unittest.TestCase):
+    def setUp(self):
+        self.stmts=[]
+        adder.common.gensym.nextId=1
+
+    def tearDown(self):
+        self.stmts=None
+
+    def stmtCollector(self,stmt):
+        self.stmts.append(stmt)
+
+    def testConstantInt(self):
+        scope=Scope(None)
+        x=Constant(scope,5)
+        assert x.compyle(self.stmtCollector)==5
+        assert self.stmts==[]
+
+    def testConstantStr(self):
+        scope=Scope(None)
+        x=Constant(scope,'fred')
+        assert x.compyle(self.stmtCollector)=='fred'
+        assert self.stmts==[]
+
+    def testConstantBool(self):
+        scope=Scope(None)
+        x=Constant(scope,False)
+        assert x.compyle(self.stmtCollector)==False
+        assert self.stmts==[]
+
+    def testConstantNone(self):
+        scope=Scope(None)
+        x=Constant(scope,None)
+        assert x.compyle(self.stmtCollector)==None
+        assert self.stmts==[]
+
+    def testConstantFloat(self):
+        scope=Scope(None)
+        x=Constant(scope,3.7)
+        assert x.compyle(self.stmtCollector)==3.7
+        assert self.stmts==[]
+
+    def testConstantTuple(self):
+        scope=Scope(None)
+        x=Constant(scope,(1,2,3))
+        assert x.compyle(self.stmtCollector)==(1,2,3)
+        assert self.stmts==[]
+
+    def testConstantSymbol(self):
+        scope=Scope(None)
+        x=Constant(scope,S('fred'))
+        assert x.compyle(self.stmtCollector)==[S('adder.common.Symbol'),
+                                               'fred']
+        assert self.stmts==[]
+
+    def testConstantList(self):
+        scope=Scope(None)
+        x=Constant(scope,[1,2,3])
+        assert x.compyle(self.stmtCollector)==[S('mk-list'),1,2,3]
+        assert self.stmts==[]
+
+    def testVar(self):
+        scope=Scope(None)
+        x=VarRef(scope,S('fred'))
+        assert x.compyle(self.stmtCollector)==S('fred')
+        assert self.stmts==[]
+
+    def testDefun(self):
+        scope=Scope(None)
+        x=build(scope,
+                [S('defun'),S('fact'),[S('n')],
+                 [S('if'),[S('<'),S('n'),2],
+                  1,
+                  [S('*'),S('n'),[S('-'),S('n'),1]]]])
+        p=x.compyle(self.stmtCollector)
+        print(p)
+        assert p==S('fact')
+
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):
         (self.scope,self.env)=adder.stdenv.mkStdEnv()
@@ -625,6 +702,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(StdEnvTestCase,'test'),
+      unittest.makeSuite(CompyleTestCase,'test'),
      )
     )
 

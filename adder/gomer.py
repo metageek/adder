@@ -3,7 +3,7 @@
 #  Includes a basic interpreter, for use in macro expansion.
 
 import itertools,re,pdb
-from adder.common import Symbol as S
+from adder.common import Symbol as S, gensym
 
 class NoCommonAncestor(Exception):
     def __str__(self):
@@ -190,6 +190,10 @@ class Expr:
     def isPureIn(self,containingScope):
         return False
 
+    # Compile into Pyle.
+    def compyle(self,stmtCollector):
+        pass
+
 class Constant(Expr):
     def __init__(self,scope,value):
         Expr.__init__(self,scope)
@@ -206,6 +210,23 @@ class Constant(Expr):
 
     def isPureIn(self,containingScope):
         return True
+
+    def compyle(self,stmtCollector):
+        if isinstance(self.value,S):
+            return ['adder.common.Symbol',str(self.value)]
+        if self.value is None:
+            return self.value
+        for t in [str,int,float,bool,tuple]:
+            if isinstance(self.value,t):
+                return self.value
+        if isinstance(self.value,UserFunction):
+            return self.value.compyle(stmtCollector)
+        assert isinstance(self.value,list)
+        return (['mk-list']
+                +list(map(lambda x: Constant(self.scope,
+                                             x).compyle(stmtCollector),
+                          self.value))
+                )
 
 class VarRef(Expr):
     def __init__(self,scope,name):
@@ -252,6 +273,9 @@ class VarRef(Expr):
     def __str__(self):
         return self.name
 
+    def compyle(self,stmtCollector):
+        return S(self.name)
+
 class Call(Expr):
     def __init__(self,scope,f,args):
         Expr.__init__(self,scope)
@@ -296,6 +320,15 @@ class Call(Expr):
                 return False
         return True
 
+    def compyle(self,stmtCollector):
+        if isinstance(self.f,VarRef) and self.f.name==S('defun'):
+            return UserFunction(self,None).compyle(stmtCollector)
+        else:
+            return ([self.f.compyle(stmtCollector)]
+                    +list(map(lambda x: x.compyle(stmtCollector),
+                              self.args))
+                    )
+
 class Function:
     def isPure(self):
         return False
@@ -321,9 +354,17 @@ class UserFunction(Function):
         assert isinstance(fExpr.f,VarRef)
         assert fExpr.f.name in {'defun','lambda'}
         assert fExpr.args
-        offset=(1 if fExpr.f.name=='defun' else 0)
+        if fExpr.f.name=='defun':
+            offset=1
+            self.name=fExpr.args[1]
+        else:
+            offset=0
+            self.name=gensym('lambda')
+        
         assert isinstance(fExpr.args[offset+0],list)
         for arg in fExpr.args[offset+0]:
+            if not isinstance(arg,VarRef):
+                print (offset,fExpr.args)
             assert isinstance(arg,VarRef)
         self.argList=fExpr.args[offset+0]
         self.bodyExprs=fExpr.args[(offset+1):]
@@ -353,6 +394,23 @@ class UserFunction(Function):
                 return False
         return True
 
+    def compyle(self,stmtCollector):
+        defStmt=[S('def'),self.name,self.argList]
+
+        def innerCollector(stmt):
+            defStmt.append(stmt)
+
+        scratchVar=gensym('scratch')
+
+        lastPyleExpr=None
+        for expr in self.bodyExprs:
+            pyleExpr=expr.compyle(innerCollector)
+            innerCollector([S(':='),scratchVar,pyleExpr])
+        innerCollector([S('return'),pyleExpr])
+
+        stmtCollector(defStmt)
+        return self.name
+
 def build(scope,gomer):
     if isinstance(gomer,S):
         return VarRef(scope,gomer)
@@ -360,11 +418,30 @@ def build(scope,gomer):
         return Constant(scope,gomer)
     assert gomer
     assert gomer[0]
-    if gomer[0]==S('defun') or gomer[0]==S('lambda'):
+    if gomer[0]==S('defun'):
         innerScope=Scope(scope)
-    else:
-        innerScope=scope
+        name=gomer[1]
+        argList=gomer[2]
+        body=gomer[3:]
+        return Call(scope,
+                    build(scope,gomer[0]),
+                    ([build(scope,name)]
+                     +[list(map(lambda a: build(scope,a),argList))]
+                     +list(map(lambda g: build(innerScope,g),body))
+                     )
+                    )
+    if gomer[0]==S('lambda'):
+        innerScope=Scope(scope)
+        argList=gomer[1]
+        body=gomer[2:]
+        return Call(scope,
+                    build(scope,gomer[0]),
+                    ([list(map(lambda a: build(scope,a),argList))]
+                     +list(map(lambda g: build(innerScope,g),body))
+                     )
+                    )
+
     return Call(scope,
                 build(scope,gomer[0]),
-                list(map(lambda g: build(innerScope,g),
+                list(map(lambda g: build(scope,g),
                          gomer[1:])))
