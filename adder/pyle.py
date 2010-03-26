@@ -314,22 +314,22 @@ class SetConstructor(Expr):
         else:
             return 'set()'
 
+def flatten(self,tree,depth=0):
+    if isinstance(tree,str):
+        return (' '*(depth*Stmt.indentStep))+tree+'\n'
+
+    if isinstance(tree,list):
+        indent=1
+    else:
+        indent=0
+
+    return ''.join(map(lambda t: flatten(t,depth+indent),tree))
+
 class Stmt:
     indentStep=4
 
-    def flatten(self,tree,depth=0):
-        if isinstance(tree,str):
-            return (' '*(depth*Stmt.indentStep))+tree+'\n'
-
-        if isinstance(tree,list):
-            indent=1
-        else:
-            indent=0
-
-        return ''.join(map(lambda t: self.flatten(t,depth+indent),tree))
-
     def toPythonFlat(self):
-        return self.flatten(self.toPythonTree())
+        return flatten(self.toPythonTree())
 
 class Assignment(Stmt):
     def __init__(self,lvalue,rvalue):
