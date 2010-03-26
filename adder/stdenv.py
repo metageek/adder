@@ -76,6 +76,9 @@ def reverseF(l):
     l2.reverse()
     return l2
 
+def evalGomerF(expr,env):
+    return build(env.scope,expr).evaluate(env)
+
 def mkStdEnv():
     scope=Scope(None)
     env=Env(scope,None)
@@ -109,6 +112,10 @@ def mkStdEnv():
         ('mk-dict',lambda *a: dict(a),True),
         ('reverse',reverseF,True),
         ('reverse!',lambda l: l.reverse(),False),
+        ('eval-gomer',evalGomerF,False),
+        ('stdenv',lambda : mkStdEnv()[1],True),
+        ('eval-py',eval,False),
+        ('apply',lambda f,args: f(*args),False),
         ]
     specials=[]
 

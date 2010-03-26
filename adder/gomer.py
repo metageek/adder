@@ -316,9 +316,9 @@ class UserFunction(Function):
         self.fExpr=fExpr
         assert isinstance(fExpr,Call)
         assert isinstance(fExpr.f,VarRef)
-        assert fExpr.f.name in {'define','lambda'}
+        assert fExpr.f.name in {'defun','lambda'}
         assert fExpr.args
-        offset=(1 if fExpr.f.name=='define' else 0)
+        offset=(1 if fExpr.f.name=='defun' else 0)
         assert isinstance(fExpr.args[offset+0],list)
         for arg in fExpr.args[offset+0]:
             assert isinstance(arg,VarRef)
@@ -349,3 +349,19 @@ class UserFunction(Function):
             if not expr.isPureIn(localScope):
                 return False
         return True
+
+def build(scope,gomer):
+    if isinstance(gomer,S):
+        return VarRef(scope,gomer)
+    if not isinstance(gomer,list):
+        return Constant(scope,gomer)
+    assert gomer
+    assert gomer[0]
+    if gomer[0]==S('defun') or gomer[0]==S('lambda'):
+        innerScope=Scope(scope)
+    else:
+        innerScope=scope
+    return Call(scope,
+                build(scope,gomer[0]),
+                list(map(lambda g: build(innerScope,g),
+                         gomer[1:])))

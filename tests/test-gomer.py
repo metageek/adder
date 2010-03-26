@@ -414,6 +414,7 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('-',1)==-1
 
     def testTimes(self):
+        assert self.call('*',9,7)==63
         assert self.call('*',1,2,3,4)==24
         assert self.call('*')==1
 
@@ -550,6 +551,26 @@ class StdEnvTestCase(unittest.TestCase):
         l=[1,2,3,4]
         self.call('reverse!',l)
         assert l==[4,3,2,1]
+
+    def testEvalGomer(self):
+        assert self.call('eval-gomer',
+                         [S('+'),1,2,3,4],
+                         self.env)==10
+
+    def testStdenv(self):
+        env=self.call('stdenv')
+        assert isinstance(env,Env)
+        assert self.call('eval-gomer',
+                         [S('+'),1,2,3,4],
+                         env)==10
+
+    def testEvalPy(self):
+        assert self.call('eval-py','9*7')==63
+
+    def testApply(self):
+        assert self.call('apply',
+                         self.env[VarRef(self.scope,'+')],
+                         [1,2,3])==6
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
