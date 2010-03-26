@@ -516,6 +516,9 @@ class StdEnvTestCase(unittest.TestCase):
     def testGetitem(self):
         assert self.call('[]',[2,3,5,7],2)==5
 
+    def testGetattr(self):
+        assert self.call('getattr',self,'env') is self.env
+
     def testSlice(self):
         assert self.call('slice',[2,3,5,7],2)==[5,7]
         assert self.call('slice',[2,3,5,7],1,3)==[3,5]
@@ -571,6 +574,16 @@ class StdEnvTestCase(unittest.TestCase):
         assert self.call('apply',
                          self.env[VarRef(self.scope,'+')],
                          [1,2,3])==6
+
+    def testConstants(self):
+        for (name,value) in [
+            ('stdin',sys.stdin),
+            ('stdout',sys.stdout),
+            ('stderr',sys.stderr),
+            ('true',True),
+            ('false',False),
+            ]:
+            assert self.call('eval-gomer',S(name),self.env)==value
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),

@@ -1,5 +1,7 @@
 # Standard env for Gomer.  Subset of the Adder stdenv, with no macros.
 
+import sys
+
 from adder.common import Symbol as S
 from adder.gomer import *
 import adder.common
@@ -101,7 +103,8 @@ def mkStdEnv():
         ('print',print,False),
         ('gensym',adder.common.gensym,False),
         ('[]',getitemF,False), # impure for arb objects
-        ('slice',sliceF,False), # probably impure for arb objects
+        ('getattr',getattr,False), # ditto
+        ('slice',sliceF,False), # probably ditto
         ('list',list,True),
         ('tuple',tuple,True),
         ('set',set,True),
@@ -125,5 +128,14 @@ def mkStdEnv():
     for (name,f) in []:
         scope.addDef(S(name),Constant(scope,NativeFunction(f,False,
                                                            special=True)))
+
+    for (name,value) in [
+        ('stdin',sys.stdin),
+        ('stdout',sys.stdout),
+        ('stderr',sys.stderr),
+        ('true',True),
+        ('false',False),
+        ]:
+        scope.addDef(S(name),Constant(scope,value))
 
     return (scope,env)
