@@ -4,6 +4,28 @@ from adder.common import Symbol as S
 from adder.gomer import *
 import adder.common
 
+def cmpNF(cmp2):
+    def f(*args):
+        if not args:
+            return True
+        prev=args[0]
+        for a in args[1:]:
+            if not cmp2(prev,a):
+                return False
+            prev=a
+        return True
+    return f
+
+ltF=cmpNF(lambda a,b: a<b)
+gtF=cmpNF(lambda a,b: a>b)
+leF=cmpNF(lambda a,b: a<=b)
+geF=cmpNF(lambda a,b: a>=b)
+
+eqF=cmpNF(lambda a,b: a==b)
+
+def neF(*args):
+    return not eqF(*args)
+
 def plusF(*args):
     return sum(args)
 
@@ -48,29 +70,6 @@ def sliceF(l,a,b=None):
         return l[a:]
     else:
         return l[a:b]
-
-def cmpNF(cmp2):
-    def f(*args):
-        if not args:
-            return True
-        prev=args[0]
-        for a in args[1:]:
-            if not cmp2(prev,a):
-                return False
-            prev=a
-        return True
-    return f
-
-ltF=cmpNF(lambda a,b: a<b)
-gtF=cmpNF(lambda a,b: a>b)
-leF=cmpNF(lambda a,b: a<=b)
-geF=cmpNF(lambda a,b: a>=b)
-
-eqF=cmpNF(lambda a,b: a==b)
-
-def neF(*args):
-    return not eqF(*args)
-
 
 def mkStdEnv():
     scope=Scope(None)
