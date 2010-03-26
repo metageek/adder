@@ -4,6 +4,13 @@ import unittest,pdb,sys,os
 from adder.pyle import *
 from adder.common import Symbol as S
 
+def deepToPython(x):
+    if isinstance(x,S):
+        return x.toPython()
+    if isinstance(x,list):
+        return list(map(lambda elt: deepToPython(elt),x))
+    return x
+
 class ExprTestCase(unittest.TestCase):
     def testInt(self):
         expr=Constant(17)
