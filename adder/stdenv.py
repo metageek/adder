@@ -101,6 +101,7 @@ def mkStdEnv():
         ('mk-list',lambda *a: list(a),True),
         ('mk-tuple',lambda *a: a,True),
         ('mk-set',lambda *a: set(a),True),
+        ('mk-dict',lambda *a: dict(a),True),
         ]
     specials=[]
 

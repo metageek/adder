@@ -537,6 +537,13 @@ class StdEnvTestCase(unittest.TestCase):
     def testMkSet(self):
         assert self.call('mk-set',2,3,5,7)==set([2,3,5,7])
 
+    def testMkDict(self):
+        assert self.call('mk-dict',
+                         ('a',2),
+                         ('b',3),
+                         ('c',5),
+                         ('d',7))=={'a': 2, 'b': 3, 'c': 5, 'd': 7}
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
