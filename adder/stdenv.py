@@ -81,6 +81,15 @@ def reverseF(l):
 def evalGomerF(expr,env):
     return build(env.scope,expr).evaluate(env)
 
+def ifSF(env,cond,thenClause,elseClause=None):
+    if cond.evaluate(env):
+        return thenClause.evaluate(env)
+    else:
+        if elseClause:
+            return elseClause.evaluate(env)
+        else:
+            return None
+
 def mkStdEnv():
     scope=Scope(None)
     env=Env(scope,None)
@@ -120,13 +129,15 @@ def mkStdEnv():
         ('eval-py',eval,False),
         ('apply',lambda f,args: f(*args),False),
         ]
-    specials=[]
+    specials=[
+        ('if',ifSF,True)
+        ]
 
     for (name,f,pure) in functions:
         scope.addDef(S(name),Constant(scope,NativeFunction(f,pure)))
 
-    for (name,f) in []:
-        scope.addDef(S(name),Constant(scope,NativeFunction(f,False,
+    for (name,f,pure) in specials:
+        scope.addDef(S(name),Constant(scope,NativeFunction(f,pure,
                                                            special=True)))
 
     for (name,value) in [

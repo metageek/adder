@@ -261,10 +261,10 @@ class Call(Expr):
     def evaluate(self,env):
         fv=self.f.evaluate(env)
         if fv.special:
-            args=self.args
+            return fv(env,*self.args)
         else:
             args=list(map(lambda a: a.evaluate(env),self.args))
-        return fv(*args)
+            return fv(*args)
 
     def constValue(self):
         fv=self.f.constValue()

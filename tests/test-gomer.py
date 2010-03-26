@@ -593,6 +593,33 @@ class StdEnvTestCase(unittest.TestCase):
             ]:
             assert self.call('eval-gomer',S(name),self.env)==value
 
+    def testIf(self):
+        self.scope.addDef(S('james1'),Constant(self.scope,1603))
+        self.scope.addDef(S('charles1'),Constant(self.scope,1625))
+        self.scope.addDef(S('charles2'),Constant(self.scope,1649))
+
+        assert self.call('eval-gomer',
+                         [S('if'),
+                          [S('<'),S('james1'),S('charles1')],
+                          17,
+                          S('james1')
+                          ],
+                         self.env)==17
+
+        assert self.call('eval-gomer',
+                         [S('if'),
+                          [S('<'),S('james1'),S('charles1')],
+                          17
+                          ],
+                         self.env)==17
+
+        assert self.call('eval-gomer',
+                         [S('if'),
+                          [S('>'),S('james1'),S('charles1')],
+                          17
+                          ],
+                         self.env) is None
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
