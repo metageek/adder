@@ -13,5 +13,33 @@
   target Python 3.1 instead of 3.0.)
 </p>
 
+<h2>The intermediate languages</h2>
+
+<p>The Adder compiler uses two intermediate languages: Gomer and
+  Pyle.  Adder is reduced to Gomer, which is then compiled to Pyle,
+  which is then transliterated to Python.
+</p>
+
+<h3>Gomer</h3>
+
+<p>Gomer is actually a subset of Adder, a core language with no
+  macros.  As of this writing, there is a Gomer interpreter, but no
+  Gomer-to-Pyle compiler.  Eventually, this should be reversed.
+</p>
+
+<p>Gomer expressions get built into ASTs, which are annotated with
+  knowledge of lexical scopes (and probably other stuff, eventually).
+</p>
+
+<h3>Pyle</h3>
+
+<p>Pyle (Python Lisplike Encoding) is an encoding of a subset of
+  Python in Lispy data structures.  It doesn't need to encode all of
+  Python; it just needs to be the subset that the Gomer compiler will
+  emit.  I could write the compiler to emit Python directly; but
+  emitting code as text always gets so chaotic.  This should be
+  better.
+</p>
+
 </body>
 </html>
