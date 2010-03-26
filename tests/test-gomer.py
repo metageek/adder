@@ -466,8 +466,7 @@ class CompyleTestCase(unittest.TestCase):
                   1,
                   [S('*'),S('n'),[S('-'),S('n'),1]]]])
         p=x.compyle(self.stmtCollector)
-        print(p)
-        assert p==S('fact')
+        assert p.name==S('fact')
 
 class StdEnvTestCase(unittest.TestCase):
     def setUp(self):

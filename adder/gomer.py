@@ -356,7 +356,7 @@ class UserFunction(Function):
         assert fExpr.args
         if fExpr.f.name=='defun':
             offset=1
-            self.name=fExpr.args[1]
+            self.name=fExpr.args[0]
         else:
             offset=0
             self.name=gensym('lambda')
