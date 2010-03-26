@@ -15,6 +15,18 @@ class ExprTestCase(unittest.TestCase):
         assert expr.toPython(False)=='barney'
         assert expr.toPython(True)=='barney'
 
+    def testVarEscaped(self):
+        expr=VarExpr('barney-rubble')
+        assert expr.toPython(False)==S('barney-rubble').toPython()
+        assert expr.toPython(True)==S('barney-rubble').toPython()
+
+    def testVarEscapedParts(self):
+        expr=VarExpr('barney-rubble.bedrock')
+        assert expr.toPython(False)==(S('barney-rubble').toPython()
+                                      +S('.bedrock'))
+        assert expr.toPython(True)==(S('barney-rubble').toPython()
+                                     +S('.bedrock'))
+
     def testStr(self):
         expr=Constant('fred')
         assert expr.toPython(False)=="'fred'"

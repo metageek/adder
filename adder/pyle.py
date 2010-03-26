@@ -177,6 +177,10 @@ class VarExpr(SimpleExpr):
     def __init__(self,v):
         SimpleExpr.__init__(self,v)
 
+    def toPython(self,inParens):
+        return '.'.join(map(lambda part: S(part).toPython(),
+                            self.py.split('.')))
+
     def isLvalue(self):
         return True
 
