@@ -1,6 +1,6 @@
 import pdb,types,re
 
-pythonLegal=re.compile('^[_a-z0-9]+$')
+pythonLegal=re.compile('^[_a-z0-9A-Z]+$')
 
 class Symbol(str):
     def __repr__(self):

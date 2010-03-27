@@ -32,7 +32,7 @@ def buildExpr(pyle):
     assert not (isinstance(pyle[0],str) and not isinstance(pyle[0],S))
 
     if pyle[0]==S('[]'):
-        assert len(pyle)==3
+        assert len(pyle[1])==2
         return IndexOperator(buildExpr(pyle[1][0]),
                              buildExpr(pyle[1][1]))
 
@@ -44,23 +44,23 @@ def buildExpr(pyle):
 
     if pyle[0]==S('.'):
         assert len(pyle)>=2
-        if len(pyle)==2:
+        if len(pyle[1])==1:
             return buildExpr(pyle[1][0])
-        return DotExpr(buildExpr(pyle[1][1]),pyle[1][1:])
+        return DotExpr(buildExpr(pyle[1][0]),pyle[1][1:])
 
     if pyle[0]==S('mk-list'):
-        return ListConstructor(list(map(buildExpr,pyle[1][1:])))
+        return ListConstructor(list(map(buildExpr,pyle[1])))
 
     if pyle[0]==S('mk-tuple'):
-        return TupleConstructor(list(map(buildExpr,pyle[1][1:])))
+        return TupleConstructor(list(map(buildExpr,pyle[1])))
 
     if pyle[0]==S('mk-set'):
-        return SetConstructor(list(map(buildExpr,pyle[1][1:])))
+        return SetConstructor(list(map(buildExpr,pyle[1])))
 
     if pyle[0]==S('mk-dict'):
         return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
                                                     buildExpr(kx[1])),
-                                        pyle[1][1:])))
+                                        pyle[1])))
 
     if pyle[0]=='-':
         assert len(pyle[1]) in [1,2]
@@ -130,6 +130,11 @@ def buildStmt(pyle):
         assert len(pyle)==2
         assert len(pyle[1])==1
         return ReturnStmt(buildExpr(pyle[1][0]),)
+
+    if pyle[0]==S('raise'):
+        assert len(pyle)==2
+        assert len(pyle[1])==1
+        return RaiseStmt(buildExpr(pyle[1][0]),)
 
     if pyle[0]==S('def'):
         assert len(pyle[1])>=2
@@ -417,6 +422,13 @@ class ReturnStmt(Stmt):
 
     def toPythonTree(self):
         return 'return %s' % self.returnExpr.toPython(False)
+
+class RaiseStmt(Stmt):
+    def __init__(self,raiseExpr):
+        self.raiseExpr=raiseExpr
+
+    def toPythonTree(self):
+        return 'raise %s' % self.raiseExpr.toPython(False)
 
 class DefStmt(Stmt):
     def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body,globals=None,nonlocals=None):

@@ -24,8 +24,11 @@ class GomerToPythonTestCase(unittest.TestCase):
         gomerAST=adder.gomer.build(adder.gomer.Scope(None),
                                    gomerList)
         exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
-        exprPyleAST=adder.pyle.buildExpr(exprPyleList)
-        self.exprPython=exprPyleAST.toPython(False)
+        if exprPyleList:
+            exprPyleAST=adder.pyle.buildExpr(exprPyleList)
+            self.exprPython=exprPyleAST.toPython(False)
+        else:
+            self.exprPython=None
         for pyleList in self.pyleStmtLists:
             pyleAST=adder.pyle.buildStmt(pyleList)
             pythonTree=pyleAST.toPythonTree()
@@ -70,7 +73,6 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallTimes(self):
-        pdb.set_trace()
         assert self.compile([S('*'),2,3])=='2*3'
         assert self.pythonFlat==''
 
@@ -91,7 +93,7 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallRaise(self):
-        assert self.compile([S('raise'),[S('Exception')]])==''
+        assert self.compile([S('raise'),[S('Exception')]])==None
         assert self.pythonFlat=='raise Exception()\n'
 
 suite=unittest.TestSuite(

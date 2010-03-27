@@ -474,18 +474,18 @@ class CompyleTestCase(unittest.TestCase):
                     [S(':='),[
                             S('#<gensym-scratch #1>'),
                             [S('if'),[
-                                    [S('<'),[S('n'),2],[]],
+                                    [S('<'),[S('n'),2]],
                                     1,
                                     [S('*'), [
                                             S('n'),
-                                            [S('-'),[S('n'),1],[]]
-                                            ],[]]
-                                    ],[]
+                                            [S('-'),[S('n'),1]]
+                                            ]]
+                                    ]
                              ]
-                            ],[]
+                            ]
                      ],
-                    [S('return'),[S('#<gensym-scratch #1>')],[]]
-                    ],[]
+                    [S('return'),[S('#<gensym-scratch #1>')]]
+                    ]
              ]
             ]
         assert self.stmts==expected

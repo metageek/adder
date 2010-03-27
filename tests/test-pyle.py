@@ -232,7 +232,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.operand.py=='False'
 
     def testCallExprNoArgs(self):
-        expr=buildExpr([S('f'),[[],[]]])
+        expr=buildExpr([S('f'),[]])
         assert isinstance(expr,CallExpr)
         assert isinstance(expr.f,VarExpr)
         assert expr.f.py=='f'
@@ -240,7 +240,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.kwArgs=={}
 
     def testCallExprOnlyPosArgs(self):
-        expr=buildExpr([S('f'),[[9,7],[]]])
+        expr=buildExpr([S('f'),[9,7]])
         assert isinstance(expr,CallExpr)
         assert isinstance(expr.f,VarExpr)
         assert expr.f.py=='f'
@@ -283,11 +283,10 @@ class BuildExprTestCase(unittest.TestCase):
 
     def testIfOperator(self):
         expr=buildExpr([S('if'), [
-                    [S('=='),S('x'),9],
-                    [S('*'),S('x'),7],
-                    [S('*'),9,S('x')]
-                    ],[]
-                        ])
+                    [S('=='),[S('x'),9]],
+                    [S('*'),[S('x'),7]],
+                    [S('*'),[9,S('x')]]
+                    ]])
         assert isinstance(expr,IfOperator)
 
         assert isinstance(expr.condExpr,BinaryOperator)
@@ -312,19 +311,19 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.elseExpr.right.py=='x'
 
     def testListConstructor0(self):
-        expr=buildExpr([S('mk-list')])
+        expr=buildExpr([S('mk-list'),[]])
         assert isinstance(expr,ListConstructor)
         assert expr.elementExprs==[]
 
     def testListConstructor1(self):
-        expr=buildExpr([S('mk-list'),9])
+        expr=buildExpr([S('mk-list'),[9]])
         assert isinstance(expr,ListConstructor)
         assert len(expr.elementExprs)==1
         assert isinstance(expr.elementExprs[0],Constant)
         assert expr.elementExprs[0].py=='9'
 
     def testListConstructor2(self):
-        expr=buildExpr([S('mk-list'),9,7])
+        expr=buildExpr([S('mk-list'),[9,7]])
         assert isinstance(expr,ListConstructor)
         assert len(expr.elementExprs)==2
         assert isinstance(expr.elementExprs[0],Constant)
@@ -333,19 +332,19 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.elementExprs[1].py=='7'
 
     def testTupleConstructor0(self):
-        expr=buildExpr([S('mk-tuple')])
+        expr=buildExpr([S('mk-tuple'),[]])
         assert isinstance(expr,TupleConstructor)
         assert expr.elementExprs==[]
 
     def testTupleConstructor1(self):
-        expr=buildExpr([S('mk-tuple'),9])
+        expr=buildExpr([S('mk-tuple'),[9]])
         assert isinstance(expr,TupleConstructor)
         assert len(expr.elementExprs)==1
         assert isinstance(expr.elementExprs[0],Constant)
         assert expr.elementExprs[0].py=='9'
 
     def testTupleConstructor2(self):
-        expr=buildExpr([S('mk-tuple'),9,7])
+        expr=buildExpr([S('mk-tuple'),[9,7]])
         assert isinstance(expr,TupleConstructor)
         assert len(expr.elementExprs)==2
         assert isinstance(expr.elementExprs[0],Constant)
@@ -354,19 +353,19 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.elementExprs[1].py=='7'
 
     def testSetConstructor0(self):
-        expr=buildExpr([S('mk-set')])
+        expr=buildExpr([S('mk-set'),[]])
         assert isinstance(expr,SetConstructor)
         assert expr.elementExprs==[]
 
     def testSetConstructor1(self):
-        expr=buildExpr([S('mk-set'),9])
+        expr=buildExpr([S('mk-set'),[9]])
         assert isinstance(expr,SetConstructor)
         assert len(expr.elementExprs)==1
         assert isinstance(expr.elementExprs[0],Constant)
         assert expr.elementExprs[0].py=='9'
 
     def testSetConstructor2(self):
-        expr=buildExpr([S('mk-set'),9,7])
+        expr=buildExpr([S('mk-set'),[9,7]])
         assert isinstance(expr,SetConstructor)
         assert len(expr.elementExprs)==2
         assert isinstance(expr.elementExprs[0],Constant)
@@ -375,12 +374,12 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.elementExprs[1].py=='7'
 
     def testDictConstructor0(self):
-        expr=buildExpr([S('mk-dict')])
+        expr=buildExpr([S('mk-dict'),[]])
         assert isinstance(expr,DictConstructor)
         assert expr.pairExprs==[]
 
     def testDictConstructor1(self):
-        expr=buildExpr([S('mk-dict'),(S('a'), 9)])
+        expr=buildExpr([S('mk-dict'),[(S('a'), 9)]])
         assert isinstance(expr,DictConstructor)
         assert len(expr.pairExprs)==1
         assert isinstance(expr.pairExprs[0][0],VarExpr)
@@ -389,7 +388,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.pairExprs[0][1].py=='9'
 
     def testDictConstructor2(self):
-        expr=buildExpr([S('mk-dict'),(S('a'), 9),('x',7)])
+        expr=buildExpr([S('mk-dict'),[(S('a'), 9),('x',7)]])
         assert isinstance(expr,DictConstructor)
         assert len(expr.pairExprs)==2
         assert isinstance(expr.pairExprs[0][0],VarExpr)
@@ -407,21 +406,21 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.py=='a'
 
     def testDot1(self):
-        expr=buildExpr([S('.'),S('a'),S('x')])
+        expr=buildExpr([S('.'),[S('a'),S('x')]])
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
         assert expr.path==['x']
 
     def testDot2(self):
-        expr=buildExpr([S('.'),S('a'),S('x'),S('y')])
+        expr=buildExpr([S('.'),[S('a'),S('x'),S('y')]])
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
         assert expr.path==['x','y']
 
     def testIndexSimple(self):
-        expr=buildExpr([S('[]'),S('a'),1])
+        expr=buildExpr([S('[]'),[S('a'),1]])
         assert isinstance(expr,IndexOperator)
         assert isinstance(expr.left,VarExpr)
         assert expr.left.py=='a'
@@ -430,8 +429,8 @@ class BuildExprTestCase(unittest.TestCase):
 
     def testIndexComplex(self):
         expr=buildExpr([S('[]'),
-                        [S('+'),S('a'),S('b')],
-                        1])
+                        [[S('+'),[S('a'),S('b')]],
+                        1]])
         assert isinstance(expr,IndexOperator)
         assert isinstance(expr.left,BinaryOperator)
         assert expr.left.operator=='+'
@@ -631,22 +630,22 @@ else:
 
 class BuildStmtTestCase(unittest.TestCase):
     def testAssignment(self):
-        stmt=buildStmt([S(':='),S('foo.bar'),
-                        [S('*'),9,7]])
+        stmt=buildStmt([S(':='),[S('foo.bar'),
+                        [S('*'),[9,7]]]])
         assert(stmt.toPythonTree()=='foo.bar=9*7')
         assert(stmt.toPythonFlat()=='foo.bar=9*7\n')
 
     def testBlock(self):
         stmt=buildStmt([S('begin'),
-                        [S(':='),S('x'),9],
-                        [S(':='),S('foo.bar'),[S('*'),S('x'),7]]])
+                        [[S(':='),[S('x'),9]],
+                        [S(':='),[S('foo.bar'),[S('*'),[S('x'),7]]]]]])
         assert(stmt.toPythonTree()==('x=9','foo.bar=x*7'))
         assert(stmt.toPythonFlat()=="""x=9
 foo.bar=x*7
 """)
 
     def testBlockEmpty(self):
-        stmt=buildStmt([S('begin')])
+        stmt=buildStmt([S('begin'),[]])
         assert(stmt.toPythonTree()==('assert True'))
         assert(stmt.toPythonFlat()=='assert True\n')
 
@@ -679,22 +678,22 @@ else:
 """)
 
     def testReturn(self):
-        stmt=buildStmt([S('return'),0])
+        stmt=buildStmt([S('return'),[0]])
         assert(stmt.toPythonTree()=='return 0')
         assert(stmt.toPythonFlat()=="""return 0
 """)
 
     def testDefNoArgs(self):
-        stmt=buildStmt([S('def'),S('f'),[],[S('return'),0]])
+        stmt=buildStmt([S('def'),[S('f'),[],[S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     return 0
 """)
 
     def testDefNoArgsGlobals1(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&global'),S('x')],
-                        [S('return'),0]])
+                        [S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['global x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x
@@ -702,9 +701,9 @@ else:
 """)
 
     def testDefNoArgsGlobals2(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&global'),S('x'),S('y')],
-                        [S('return'),0]])
+                        [S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['global x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x,y
@@ -712,9 +711,9 @@ else:
 """)
 
     def testDefNoArgsNonlocals1(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&nonlocal'),S('x')],
-                        [S('return'),0]])
+                        [S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x
@@ -722,9 +721,9 @@ else:
 """)
 
     def testDefNoArgsNonlocals2(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&nonlocal'),S('x'),S('y')],
-                        [S('return'),0]])
+                        [S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x,y
@@ -732,10 +731,10 @@ else:
 """)
 
     def testDefNoArgsGlobals2Nonlocals2(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&global'),S('a'),S('b'),
                          S('&nonlocal'),S('x'),S('y')],
-                        [S('return'),0]])
+                        [S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['global a,b','nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global a,b
@@ -744,34 +743,35 @@ else:
 """)
 
     def testDefOnlyFixedArgs(self):
-        stmt=buildStmt([S('def'),S('f'),[S('n')],[S('return'),S('n')]])
+        stmt=buildStmt([S('def'),[S('f'),[S('n')],[S('return'),[S('n')]]]])
         assert(stmt.toPythonTree()==('def f(n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n):
     return n
 """)
 
     def testDefOnlyOptionalArgs(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),
+                        [S('f'),
                         [S('&optional'),S('n'),(S('x'),9)],
-                        [S('return'),S('n')]])
+                        [S('return'),[S('n')]]]])
         assert(stmt.toPythonTree()==('def f(n=None,x=9):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n=None,x=9):
     return n
 """)
 
     def testDefOnlyKwArgsNoDefaults(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&key'),S('n')],
-                        [S('return'),S('n')]])
+                        [S('return'),[S('n')]]]])
         assert(stmt.toPythonTree()==('def f(*,n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n):
     return n
 """)
 
     def testDefOnlyKwArgsWithDefaults(self):
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('&key'),(S('n'),6),(S('x'),None)],
-                        [S('return'),S('n')]])
+                        [S('return'),[S('n')]]]])
         assert(stmt.toPythonTree()==('def f(*,n=6,x=None):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n=6,x=None):
     return n
@@ -780,11 +780,11 @@ else:
     def testDefAllArgTypes(self):
         stmt=DefStmt('f',['a'],[('b',Constant(9))],['c',('d',Constant(7))],
                      ReturnStmt(VarExpr('a')))
-        stmt=buildStmt([S('def'),S('f'),
+        stmt=buildStmt([S('def'),[S('f'),
                         [S('a'),
                          S('&optional'),(S('b'),9),
                          S('&key'),S('c'),(S('d'),7)],
-                        [S('return'),S('a')]])
+                        [S('return'),[S('a')]]]])
         assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
         assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
     return a
@@ -798,7 +798,7 @@ else:
 """)
 
     def testClass1ParentNoBody(self):
-        stmt=buildStmt([S('class'),S('C'),[S('A')]])
+        stmt=buildStmt([S('class'),[S('C'),[S('A')]]])
         assert(stmt.toPythonTree()==('class C(A):',['pass']))
         assert(stmt.toPythonFlat()=="""class C(A):
     pass
@@ -806,7 +806,7 @@ else:
 
     def testClass2ParentsNoBody(self):
         stmt=ClassStmt('C',['A','B'],None)
-        stmt=buildStmt([S('class'),S('C'),[S('A'),S('B')]])
+        stmt=buildStmt([S('class'),[S('C'),[S('A'),S('B')]]])
         assert(stmt.toPythonTree()==('class C(A,B):',['pass']))
         assert(stmt.toPythonFlat()=="""class C(A,B):
     pass
@@ -819,7 +819,7 @@ else:
                             S('__init__'),
                             [S('n')],
                             [S(':='),[
-                                    [S('.'),S('self'),S('q')],
+                                    [S('.'),[S('self'),S('q')]],
                                     S('n')
                                     ]]
                          ]],

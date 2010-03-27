@@ -321,14 +321,20 @@ class Call(Expr):
         return True
 
     def compyle(self,stmtCollector):
-        if isinstance(self.f,VarRef) and self.f.name==S('defun'):
-            return UserFunction(self,None).compyle(stmtCollector)
+        isStmt=False
+        if isinstance(self.f,VarRef):
+            if self.f.name==S('defun'):
+                return UserFunction(self,None).compyle(stmtCollector)
+            if self.f.name==S('raise'):
+                isStmt=True
+
+        pyle=[self.f.compyle(stmtCollector),
+              list(map(lambda x: x.compyle(stmtCollector),
+                       self.args))]
+        if isStmt:
+            stmtCollector(pyle)
         else:
-            return ([self.f.compyle(stmtCollector),
-                    list(map(lambda x: x.compyle(stmtCollector),
-                             self.args)),
-                     []]
-                    )
+            return pyle
 
 class Function:
     def isPure(self):
@@ -398,8 +404,7 @@ class UserFunction(Function):
     def compyle(self,stmtCollector):
         defStmt=[S('def'),
                  [self.name.compyle(stmtCollector),
-                  list(map(lambda sym: sym.name,self.argList))],
-                 []
+                  list(map(lambda sym: sym.name,self.argList))]
                  ]
 
         def innerCollector(stmt):
@@ -411,9 +416,8 @@ class UserFunction(Function):
         for expr in self.bodyExprs:
             pyleExpr=expr.compyle(innerCollector)
             innerCollector([S(':='),
-                            [scratchVar,pyleExpr],
-                            []])
-        innerCollector([S('return'),[scratchVar],[]])
+                            [scratchVar,pyleExpr]])
+        innerCollector([S('return'),[scratchVar]])
 
         stmtCollector(defStmt)
         return self.name
