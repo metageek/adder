@@ -61,9 +61,6 @@ def modF(a,b):
 def inF(a,b):
     return a in b
 
-def raiseF(e):
-    raise e
-
 def getitemF(l,i):
     return l[i]
 
@@ -108,7 +105,6 @@ def mkStdEnv():
         ('//',idivF,True),
         ('%',modF,True),
         ('in',inF,True),
-        ('raise',raiseF,False),
         ('print',print,False),
         ('gensym',adder.common.gensym,False),
         ('[]',getitemF,False), # impure for arb objects

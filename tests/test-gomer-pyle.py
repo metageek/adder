@@ -156,6 +156,16 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython=="l[17:23]"
         assert self.pythonFlat==''
 
+    def testCallHead(self):
+        self.compile([S('head'),S('l')])
+        assert self.exprPython=="l[1]"
+        assert self.pythonFlat==''
+
+    def testCallTail(self):
+        self.compile([S('tail'),S('l')])
+        assert self.exprPython=="l[1:]"
+        assert self.pythonFlat==''
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),
      )

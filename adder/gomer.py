@@ -71,6 +71,14 @@ class Scope:
         self.localDefs={}
         self.varAccesses={}
 
+        if not parent:
+            for (name,f) in [('defun',Defun()),
+                             ('raise',Raise()),
+                             ('head',Head()),
+                             ('tail',Tail()),
+                             ]:
+                self.addDef(S(name),Constant(self,f))
+
     def isDescendant(self,other):
         if not other:
             return False
@@ -321,24 +329,60 @@ class Call(Expr):
         return True
 
     def compyle(self,stmtCollector):
-        isStmt=False
-        if isinstance(self.f,VarRef):
-            if self.f.name==S('defun'):
-                return UserFunction(self,None).compyle(stmtCollector)
-            if self.f.name==S('raise'):
-                isStmt=True
+        fv=None
+        try:
+            fv=self.f.constValue()
+        except NotConstant:
+            pass
+        except Undefined:
+            pass
 
-        pyle=[self.f.compyle(stmtCollector),
-              list(map(lambda x: x.compyle(stmtCollector),
-                       self.args))]
-        if isStmt:
-            stmtCollector(pyle)
+        if fv:
+            return fv.compyleCall(self.args,stmtCollector)
         else:
-            return pyle
-
+            return [self.f.compyle(stmtCollector),
+                    list(map(lambda x: x.compyle(stmtCollector),
+                             self.args))]
 class Function:
+    def __init__(self):
+        self.special=False
+
     def isPure(self):
         return False
+
+    def compyleCall(self,args,stmtCollector):
+        return [self.f.compyle(stmtCollector),
+                list(map(lambda x: x.compyle(stmtCollector),
+                         args))]
+
+class Defun(Function):
+    def compyleCall(self,args,stmtCollector):
+        return UserFunction(args[1:],
+                            None,
+                            name=args[0]).compyle(stmtCollector)
+
+class Raise(Function):
+    def compyleCall(self,args,stmtCollector):
+        pyle=[S('raise'),[args[0].compyle(stmtCollector)]]
+        stmtCollector(pyle)
+        return None
+
+    def __call__(self,e):
+        raise e
+
+class Head(Function):
+    def compyleCall(self,args,stmtCollector):
+        return [S('[]'),[args[0].compyle(stmtCollector),1]]
+
+    def __call__(self,l):
+        return l[0]
+
+class Tail(Function):
+    def compyleCall(self,args,stmtCollector):
+        return [S('slice'),[args[0].compyle(stmtCollector),1]]
+
+    def __call__(self,l):
+        return l[0]
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):
@@ -354,27 +398,17 @@ class NativeFunction(Function):
 
 class UserFunction(Function):
     # The fExpr should be the (define) or (lambda) that created this function.
-    def __init__(self,fExpr,outerEnv):
+    def __init__(self,defArgs,outerEnv,*,name=None):
+        Function.__init__(self)
         self.special=False
-        self.fExpr=fExpr
-        assert isinstance(fExpr,Call)
-        assert isinstance(fExpr.f,VarRef)
-        assert fExpr.f.name in {'defun','lambda'}
-        assert fExpr.args
-        if fExpr.f.name=='defun':
-            offset=1
-            self.name=fExpr.args[0]
-        else:
-            offset=0
-            self.name=gensym('lambda')
+        assert defArgs
+        self.name=name or gensym('lambda')
         
-        assert isinstance(fExpr.args[offset+0],list)
-        for arg in fExpr.args[offset+0]:
-            if not isinstance(arg,VarRef):
-                print (offset,fExpr.args)
+        assert isinstance(defArgs[0],list)
+        for arg in defArgs[0]:
             assert isinstance(arg,VarRef)
-        self.argList=fExpr.args[offset+0]
-        self.bodyExprs=fExpr.args[(offset+1):]
+        self.argList=defArgs[0]
+        self.bodyExprs=defArgs[(1):]
         if self.bodyExprs:
             self.innerScope=self.bodyExprs[0].scope
             self.outerEnv=outerEnv

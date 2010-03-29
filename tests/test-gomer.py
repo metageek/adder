@@ -379,7 +379,9 @@ class ExprTestCase(unittest.TestCase):
                                                           [a,b,c]),
                                                      True)))
 
-        scope2.addDef(S('f'),Constant(scope2,UserFunction(fExpr,env3)))
+        scope2.addDef(S('f'),
+                      Constant(scope2,
+                               UserFunction(fExpr.args,env3)))
 
         call=Call(scope3,
                   VarRef(scope3,S('f')),
