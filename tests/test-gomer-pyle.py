@@ -166,6 +166,41 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython=="l[1:]"
         assert self.pythonFlat==''
 
+    def testCallList(self):
+        self.compile([S('list'),S('x')])
+        assert self.exprPython=="list(x)"
+        assert self.pythonFlat==''
+
+    def testCallTuple(self):
+        self.compile([S('tuple'),S('x')])
+        assert self.exprPython=="tuple(x)"
+        assert self.pythonFlat==''
+
+    def testCallSet(self):
+        self.compile([S('set'),S('x')])
+        assert self.exprPython=="set(x)"
+        assert self.pythonFlat==''
+
+    def testCallIsinstance(self):
+        self.compile([S('isinstance'),S('x'),S('str')])
+        assert self.exprPython=="isinstance(x, str)"
+        assert self.pythonFlat==''
+
+    def testCallMkList(self):
+        self.compile([S('mk-list'),S('a'),1,2,3])
+        assert self.exprPython=="[a, 1, 2, 3]"
+        assert self.pythonFlat==''
+
+    def testCallMkTuple(self):
+        self.compile([S('mk-tuple'),S('a'),1,2,3])
+        assert self.exprPython=="(a, 1, 2, 3)"
+        assert self.pythonFlat==''
+
+    def testCallMkSet(self):
+        self.compile([S('mk-set'),S('a'),1,2,3])
+        assert self.exprPython=="{a, 1, 2, 3}"
+        assert self.pythonFlat==''
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),
      )
