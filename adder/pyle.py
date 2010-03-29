@@ -16,6 +16,11 @@ def withParens(s,inParens):
     else:
         return s
 
+def treemap(f,x):
+    if isinstance(x,list):
+        return list(map(lambda elt: treemap(f,elt),x))
+    return f(x)
+
 def buildExpr(pyle):
     if isinstance(pyle,S):
         return VarExpr(pyle)
@@ -31,10 +36,24 @@ def buildExpr(pyle):
         assert not isinstance(pyle[0],t)
     assert not (isinstance(pyle[0],str) and not isinstance(pyle[0],S))
 
+    if pyle[0]==S('quote'):
+        assert len(pyle[1])==1
+        return Constant(pyle[1][0])
+
     if pyle[0]==S('[]'):
         assert len(pyle[1])==2
         return IndexOperator(buildExpr(pyle[1][0]),
                              buildExpr(pyle[1][1]))
+
+    if pyle[0]==S('slice'):
+        assert len(pyle[1]) in [2,3]
+        if len(pyle[1])==2:
+            return SliceOperator(buildExpr(pyle[1][0]),
+                                 buildExpr(pyle[1][1]))
+        else:
+            return SliceOperator(buildExpr(pyle[1][0]),
+                                 buildExpr(pyle[1][1]),
+                                 buildExpr(pyle[1][2]))
 
     if pyle[0]==S('if'):
         assert len(pyle[1])==3
@@ -215,6 +234,16 @@ class VarExpr(SimpleExpr):
     def isLvalue(self):
         return True
 
+class Quote(Expr):
+    def __init__(self,arg):
+        self.arg=arg
+
+    def toPython(self,inParens):
+        if isinstance(self.arg,Expr):
+            return self.arg.toPython(inParens)
+        else:
+            return repr(self.arg)
+
 noPaddingRe=re.compile('^[^a-zA-Z]+$')
 
 class BinaryOperator(Expr):
@@ -244,6 +273,19 @@ class IndexOperator(Expr):
         return '%s[%s]' % (self.left.toPython(True),
                            self.right.toPython(False)
                            )
+
+class SliceOperator(Expr):
+    def __init__(self,left,low,high=None):
+        self.left=left
+        self.low=low
+        self.high=high
+
+    def toPython(self,inParens):
+        return '%s[%s:%s]' % (self.left.toPython(True),
+                              self.low.toPython(False),
+                              ('' if self.high is None
+                               else self.high.toPython(False))
+                              )
 
 
 class UnaryOperator(Expr):

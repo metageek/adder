@@ -213,7 +213,7 @@ class Constant(Expr):
 
     def compyle(self,stmtCollector):
         if isinstance(self.value,S):
-            return ['adder.common.Symbol',str(self.value)]
+            return [S('adder.common.Symbol'),[str(self.value)]]
         if self.value is None:
             return self.value
         for t in [str,int,float,bool,tuple]:
@@ -222,11 +222,11 @@ class Constant(Expr):
         if isinstance(self.value,UserFunction):
             return self.value.compyle(stmtCollector)
         assert isinstance(self.value,list)
-        return ([S('mk-list')]
-                +list(map(lambda x: Constant(self.scope,
-                                             x).compyle(stmtCollector),
-                          self.value))
-                )
+        return [S('mk-list'),
+                list(map(lambda x: Constant(self.scope,
+                                            x).compyle(stmtCollector),
+                         self.value))
+                ]
 
 class VarRef(Expr):
     def __init__(self,scope,name):
@@ -451,6 +451,12 @@ def build(scope,gomer):
                      +list(map(lambda g: build(innerScope,g),body))
                      )
                     )
+    if gomer[0]==S('quote'):
+        assert len(gomer)==2
+        if isinstance(gomer[1],list):
+            return Constant(scope,gomer[1])
+        else:
+            return Constant(scope,gomer[1])
 
     return Call(scope,
                 build(scope,gomer[0]),

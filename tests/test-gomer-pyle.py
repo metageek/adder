@@ -13,22 +13,28 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.pythonFlat=''
         self.exprPython=None
         adder.common.gensym.nextId=1
+        self.verbose=False
 
     def tearDown(self):
         self.pyleStmtLists=None
         self.pythonTrees=None
         self.pythonFlat=None
         self.exprPython=None
+        self.verbose=None
 
     def compile(self,gomerList):
         gomerAST=adder.gomer.build(adder.gomer.Scope(None),
                                    gomerList)
-        exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
-        if exprPyleList:
-            exprPyleAST=adder.pyle.buildExpr(exprPyleList)
-            self.exprPython=exprPyleAST.toPython(False)
+        self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
+        if self.verbose:
+            print(self.exprPyleList)
+        if self.exprPyleList:
+            self.exprPyleAST=adder.pyle.buildExpr(self.exprPyleList)
+            self.exprPython=self.exprPyleAST.toPython(False)
         else:
             self.exprPython=None
+        if self.verbose:
+            print(repr(self.exprPython))
         for pyleList in self.pyleStmtLists:
             pyleAST=adder.pyle.buildStmt(pyleList)
             pythonTree=pyleAST.toPythonTree()
@@ -38,6 +44,31 @@ class GomerToPythonTestCase(unittest.TestCase):
 
     def testConstInt(self):
         assert self.compile(1)=='1'
+        assert self.pythonFlat==''
+
+    def testCallQuoteInt(self):
+        self.compile([S('quote'),2])
+        assert self.exprPython=='2'
+        assert self.pythonFlat==''
+
+    def testCallQuoteFloat(self):
+        self.compile([S('quote'),2.7])
+        assert self.exprPython=='2.7'
+        assert self.pythonFlat==''
+
+    def testCallQuoteStr(self):
+        self.compile([S('quote'),"fred"])
+        assert self.exprPython=="'fred'"
+        assert self.pythonFlat==''
+
+    def testCallQuoteSym(self):
+        self.compile([S('quote'),S("fred")])
+        assert self.exprPython=="adder.common.Symbol('fred')"
+        assert self.pythonFlat==''
+
+    def testCallQuoteList(self):
+        self.compile([S('quote'),[S("fred"),17]])
+        assert self.exprPython=="[adder.common.Symbol('fred'), 17]"
         assert self.pythonFlat==''
 
     def testCallEq(self):
@@ -95,6 +126,35 @@ class GomerToPythonTestCase(unittest.TestCase):
     def testCallRaise(self):
         assert self.compile([S('raise'),[S('Exception')]])==None
         assert self.pythonFlat=='raise Exception()\n'
+
+    def testCallPrint(self):
+        assert self.compile([S('print'),17,19])=='print(17, 19)'
+        assert self.pythonFlat==''
+
+    def testCallGensym(self):
+        self.compile([S('gensym'),[S('quote'),S('fred')]])
+        assert self.exprPython=="gensym(adder.common.Symbol('fred'))"
+        assert self.pythonFlat==''
+
+    def testCallGetitem(self):
+        self.compile([S('[]'),S('l'),17])
+        assert self.exprPython=="l[17]"
+        assert self.pythonFlat==''
+
+    def testCallGetattr(self):
+        self.compile([S('getattr'),S('o'),'x'])
+        assert self.exprPython=="getattr(o, 'x')"
+        assert self.pythonFlat==''
+
+    def testCallSlice1(self):
+        self.compile([S('slice'),S('l'),17])
+        assert self.exprPython=="l[17:]"
+        assert self.pythonFlat==''
+
+    def testCallSlice2(self):
+        self.compile([S('slice'),S('l'),17,23])
+        assert self.exprPython=="l[17:23]"
+        assert self.pythonFlat==''
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),

@@ -392,6 +392,19 @@ class ExprTestCase(unittest.TestCase):
         assert call.evaluate(env3)==[1649,1625,1603]
         assert call.constValue()==[1649,1625,1603]
 
+class BuildTestCase(unittest.TestCase):
+    def testQuoteInt(self):
+        scope=Scope(None)
+        x=build(scope,[S('quote'),17])
+        assert isinstance(x,Constant)
+        assert x.value==17
+
+    def testQuoteList(self):
+        scope=Scope(None)
+        x=build(scope,[S('quote'),[11,13,17]])
+        assert isinstance(x,Constant)
+        assert x.value==[11,13,17]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
@@ -443,19 +456,37 @@ class CompyleTestCase(unittest.TestCase):
         scope=Scope(None)
         x=Constant(scope,S('fred'))
         assert x.compyle(self.stmtCollector)==[S('adder.common.Symbol'),
-                                               'fred']
+                                               ['fred']]
         assert self.stmts==[]
 
     def testConstantList(self):
         scope=Scope(None)
         x=Constant(scope,[1,2,3])
-        assert x.compyle(self.stmtCollector)==[S('mk-list'),1,2,3]
+        assert x.compyle(self.stmtCollector)==[S('mk-list'),[1,2,3]]
         assert self.stmts==[]
 
     def testVar(self):
         scope=Scope(None)
         x=VarRef(scope,S('fred'))
         assert x.compyle(self.stmtCollector)==S('fred')
+        assert self.stmts==[]
+
+    def testQuoteInt(self):
+        scope=Scope(None)
+        x=build(scope,[S('quote'),17])
+        assert x.compyle(self.stmtCollector)==17
+        assert self.stmts==[]
+
+    def testQuoteSym(self):
+        scope=Scope(None)
+        x=build(scope,[S('quote'),S('x')])
+        assert x.compyle(self.stmtCollector)==['adder.common.Symbol',['x']]
+        assert self.stmts==[]
+
+    def testQuoteList(self):
+        scope=Scope(None)
+        x=build(scope,[S('quote'),[11,13,17]])
+        assert x.compyle(self.stmtCollector)==[S('mk-list'),[11,13,17]]
         assert self.stmts==[]
 
     def testDefun(self):
@@ -723,6 +754,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(StdEnvTestCase,'test'),
+      unittest.makeSuite(BuildTestCase,'test'),
       unittest.makeSuite(CompyleTestCase,'test'),
      )
     )
