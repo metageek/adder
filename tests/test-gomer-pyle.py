@@ -181,6 +181,13 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython=="set(x)"
         assert self.pythonFlat==''
 
+    def testCallDict(self):
+        self.compile([S('dict'),
+                      [S('quote'),[[S('x'),17],[S('a'),23]]]
+                      ])
+        assert self.exprPython=="dict([[adder.common.Symbol('x'), 17], [adder.common.Symbol('a'), 23]])"
+        assert self.pythonFlat==''
+
     def testCallIsinstance(self):
         self.compile([S('isinstance'),S('x'),S('str')])
         assert self.exprPython=="isinstance(x, str)"
