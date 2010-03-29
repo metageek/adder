@@ -77,9 +77,12 @@ def buildExpr(pyle):
         return SetConstructor(list(map(buildExpr,pyle[1])))
 
     if pyle[0]==S('mk-dict'):
+        assert not pyle[1]
+        assert len(pyle)>2
+        assert pyle[2]
         return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
                                                     buildExpr(kx[1])),
-                                        pyle[1])))
+                                        pyle[2])))
 
     if pyle[0]=='-':
         assert len(pyle[1]) in [1,2]
@@ -372,7 +375,8 @@ class DictConstructor(Expr):
         return ('{%s}'
                 % ', '.join(map(lambda p: '%s: %s' % (p[0].toPython(False),
                                                       p[1].toPython(False)),
-                                self.pairExprs))
+                                sorted(self.pairExprs,
+                                       key=lambda p: p[0].py)))
                 )
 
 class SetConstructor(Expr):

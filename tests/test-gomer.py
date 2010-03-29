@@ -346,6 +346,45 @@ class ExprTestCase(unittest.TestCase):
             S('l'),S('james1'),S('charles1'),S('charles2')
             ]
 
+    def testCallNativeWithKW(self):
+        scope1=Scope(None)
+        scope2=Scope(scope1)
+        scope3=Scope(scope2)
+
+        scope1.addDef(S('james1'),Constant(scope1,1603))
+        scope2.addDef(S('charles1'),Constant(scope2,1625))
+        scope3.addDef(S('charles2'),Constant(scope3,1649))
+
+        scope2.addDef(S('l'),Constant(scope2,
+                                      NativeFunction((lambda a,b,c,*,james2:
+                                                          [a,b,c,james2]),
+                                                     True)))
+
+        call=Call(scope3,
+                  VarRef(scope3,S('l')),
+                  [VarRef(scope3,S('james1')),
+                   VarRef(scope3,S('charles1')),
+                   VarRef(scope3,S('charles2')),
+                   VarRef(scope3,S('&james2')),Constant(scope3,'syphillis'),
+                   ])
+
+        assert len(call.posArgs)==3
+        assert len(call.kwArgs)==1
+        assert list(call.kwArgs.keys())==['james2']
+
+        assert call.constValue()==[1603,1625,1649,'syphillis']
+        assert call.scopeRequired() is scope1
+        assert call.isPureIn(scope3)
+
+        vrs=list(call.varRefs())
+        assert len(vrs)==4
+        for vr in vrs:
+            assert vr.scope==scope3
+
+        assert list(map(lambda vr: vr.name,vrs))==[
+            S('l'),S('james1'),S('charles1'),S('charles2')
+            ]
+
     def testCallUser(self):
         scope1=Scope(None)
         scope2=Scope(scope1)
@@ -363,17 +402,6 @@ class ExprTestCase(unittest.TestCase):
         scope4.addFuncArg(S('b'))
         scope4.addFuncArg(S('c'))
 
-        fExpr=Call(scope2,
-                   VarRef(scope2,S('lambda')),
-                   [[VarRef(scope4,S('a')),
-                     VarRef(scope4,S('b')),
-                     VarRef(scope4,S('c'))],
-                    Call(scope4,
-                         VarRef(scope4,S('l')),
-                         [VarRef(scope4,S('c')),
-                          VarRef(scope4,S('b')),
-                          VarRef(scope4,S('a'))])])
-
         scope2.addDef(S('l'),Constant(scope2,
                                       NativeFunction((lambda a,b,c:
                                                           [a,b,c]),
@@ -381,7 +409,16 @@ class ExprTestCase(unittest.TestCase):
 
         scope2.addDef(S('f'),
                       Constant(scope2,
-                               UserFunction(fExpr.args,env3)))
+                               UserFunction([[VarRef(scope4,S('a')),
+                                              VarRef(scope4,S('b')),
+                                              VarRef(scope4,S('c'))],
+                                             Call(scope4,
+                                                  VarRef(scope4,S('l')),
+                                                  [VarRef(scope4,S('c')),
+                                                   VarRef(scope4,S('b')),
+                                                   VarRef(scope4,S('a'))])],
+                                            None,
+                                            env3)))
 
         call=Call(scope3,
                   VarRef(scope3,S('f')),
@@ -489,6 +526,21 @@ class CompyleTestCase(unittest.TestCase):
         scope=Scope(None)
         x=build(scope,[S('quote'),[11,13,17]])
         assert x.compyle(self.stmtCollector)==[S('mk-list'),[11,13,17]]
+        assert self.stmts==[]
+
+    def testCallOnlyPos(self):
+        scope=Scope(None)
+        x=build(scope,[S('f'),11,13,17])
+        assert x.compyle(self.stmtCollector)==[S('f'),[11,13,17]]
+        assert self.stmts==[]
+
+    def testCallBoth(self):
+        scope=Scope(None)
+        x=build(scope,[S('f'),11,13,17,S('&alpha'),23])
+        assert x.compyle(self.stmtCollector)==[S('f'),
+                                               [11,13,17],
+                                               [[S('alpha'),23]]
+                                               ]
         assert self.stmts==[]
 
     def testDefun(self):

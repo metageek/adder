@@ -33,6 +33,31 @@ class Undefined(Exception):
     def __str__(self):
         return 'Undefined variable: %s' % self.args
 
+class KeywordsHaveNoValue(Exception):
+    def __init__(self,varRef):
+        Exception.__init__(self,varRef)
+        self.varRef=varRef
+
+    def __str__(self):
+        return 'Cannot use a keyword as a value: %s' % self.args
+
+class TwoConsecutiveKeywords(Exception):
+    def __init__(self,varRef):
+        Exception.__init__(self,varRef1,varRef2)
+        self.varRef1=varRef1
+        self.varRef2=varRef2
+
+    def __str__(self):
+        return 'Two consecutive keywords: %s, %s' % self.args
+
+class KeywordWithNoArg(Exception):
+    def __init__(self,varRef):
+        Exception.__init__(self,varRef)
+        self.varRef=varRef
+
+    def __str__(self):
+        return 'Keyword at end of arglist: %s' % self.args
+
 class DefinedAfterUse(Exception):
     def __init__(self,var,initExpr,accesses):
         Exception.__init__(self,var,initExpr,accesses)
@@ -238,19 +263,31 @@ class Constant(Expr):
 
 class VarRef(Expr):
     def __init__(self,scope,name):
+        assert(name)
         Expr.__init__(self,scope)
         self.name=name
 
+    def isKeyword(self):
+        return self.name[0]=='&'
+
     def evaluate(self,env):
+        if self.isKeyword():
+            raise KeywordsHaveNoValue(self)
         return env[self]
 
     def constValue(self):
+        if self.isKeyword():
+            raise KeywordsHaveNoValue(self)
+
         try:
             return self.scope[self].constValue()
         except NotConstant: # the one from VarEntry will have None for its expr
             raise NotConstant(self)
 
     def scopeRequired(self):
+        if self.isKeyword():
+            return None
+
         cur=self.scope
         while cur:
             if cur.isLocal(self.name):
@@ -259,9 +296,15 @@ class VarRef(Expr):
         raise Undefined(self)
 
     def varRefs(self):
-        return [self]
+        if self.isKeyword():
+            return []
+        else:
+            return [self]
 
     def isPureIn(self,containingScope):
+        if self.isKeyword():
+            return True
+
         try:
             required=self.scopeRequired()
         except Undefined:
@@ -282,40 +325,73 @@ class VarRef(Expr):
         return self.name
 
     def compyle(self,stmtCollector):
+        if self.isKeyword():
+            raise KeywordsHaveNoValue(self)
+
         return S(self.name)
 
 class Call(Expr):
     def __init__(self,scope,f,args):
         Expr.__init__(self,scope)
         self.f=f
-        self.args=list(args)
+        self.posArgs=[]
+        self.kwArgs={}
+        curKeyword=None
+        for arg in args:
+            isKeyword=isinstance(arg,VarRef) and arg.isKeyword()
+
+            if curKeyword:
+                if isKeyword:
+                    raise TwoConsecutiveKeywords(curKeyword,arg)
+                self.kwArgs[S(curKeyword.name[1:])]=arg
+                curKeyword=None
+            else:
+                if isKeyword:
+                    assert len(arg.name)>1
+                    curKeyword=arg
+                else:
+                    self.posArgs.append(arg)
+
+        if args and isKeyword:
+            raise KeywordWithNoArg(curKeyword)
 
     def evaluate(self,env):
         fv=self.f.evaluate(env)
         if fv.special:
-            return fv(env,*self.args)
+            return fv(env,*self.posArgs,**self.kwArgs)
         else:
-            args=list(map(lambda a: a.evaluate(env),self.args))
-            return fv(*args)
+            posArgs=list(map(lambda a: a.evaluate(env),self.posArgs))
+            kwArgs={}
+            for (key,expr) in self.kwArgs.items():
+                kwArgs[key]=expr.evaluate(env)
+            return fv(*posArgs,**kwArgs)
 
     def constValue(self):
         fv=self.f.constValue()
         if not fv.isPure():
             raise NotConstant(self)
-        argVs=list(map(lambda a: a.constValue(),self.args))
-        return fv(*argVs)
+        argVs=list(map(lambda a: a.constValue(),self.posArgs))
+        kwArgs={}
+        for (key,expr) in self.kwArgs.items():
+            kwArgs[key]=expr.constValue()
+        return fv(*argVs,**kwArgs)
+
+    def allArgExprs(self):
+        return itertools.chain(self.posArgs,self.kwArgs.values())
 
     def scopeRequired(self):
         required=self.f.scopeRequired()
-        for arg in self.args:
-            required=required.commonAncestor(arg.scopeRequired())
+        for arg in self.allArgExprs():
+            scope=arg.scopeRequired()
+            if scope:
+                required=required.commonAncestor(scope)
         return required
 
     def varRefs(self):
         for var in self.f.varRefs():
             yield var
 
-        for arg in self.args:
+        for arg in self.allArgExprs():
             for var in arg.varRefs():
                 yield var
 
@@ -323,7 +399,7 @@ class Call(Expr):
         fv=self.f.constValue()
         if not fv.isPure():
             return False
-        for arg in self.args:
+        for arg in self.allArgExprs():
             if not arg.isPureIn(containingScope):
                 return False
         return True
@@ -338,11 +414,20 @@ class Call(Expr):
             pass
 
         if fv:
-            return fv.compyleCall(self.args,stmtCollector)
+            if isinstance(fv,int):
+                print(self.f,fv)
+            return fv.compyleCall(self.posArgs,self.kwArgs,stmtCollector)
         else:
-            return [self.f.compyle(stmtCollector),
-                    list(map(lambda x: x.compyle(stmtCollector),
-                             self.args))]
+            f=self.f.compyle(stmtCollector)
+            posArgs=list(map(lambda x: x.compyle(stmtCollector),
+                             self.posArgs))
+            kwArgs=list(map(lambda k: [k,self.kwArgs[k].compyle(stmtCollector)],
+                            self.kwArgs))
+            if kwArgs:
+                return [f,posArgs,kwArgs]
+            else:
+                return [f,posArgs]
+
 class Function:
     def __init__(self):
         self.special=False
@@ -350,19 +435,26 @@ class Function:
     def isPure(self):
         return False
 
-    def compyleCall(self,args,stmtCollector):
-        return [self.f.compyle(stmtCollector),
-                list(map(lambda x: x.compyle(stmtCollector),
-                         args))]
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        f=self.f.compyle(stmtCollector)
+        posArgs=list(map(lambda x: x.compyle(stmtCollector),
+                         args))
+        kwArgs=list(map(lambda k: [k,kwArgs[k].compyle(stmtCollector)],
+                        kwArgs))
+        if kwArgs:
+            return [f,posArgs,kwArgs]
+        else:
+            return [f,posArgs]
 
 class Defun(Function):
-    def compyleCall(self,args,stmtCollector):
-        return UserFunction(args[1:],
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        return UserFunction(args[1:],kwArgs,
                             None,
                             name=args[0]).compyle(stmtCollector)
 
 class Raise(Function):
-    def compyleCall(self,args,stmtCollector):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
         pyle=[S('raise'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
         return None
@@ -371,14 +463,16 @@ class Raise(Function):
         raise e
 
 class Head(Function):
-    def compyleCall(self,args,stmtCollector):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
         return [S('[]'),[args[0].compyle(stmtCollector),1]]
 
     def __call__(self,l):
         return l[0]
 
 class Tail(Function):
-    def compyleCall(self,args,stmtCollector):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
         return [S('slice'),[args[0].compyle(stmtCollector),1]]
 
     def __call__(self,l):
@@ -390,15 +484,15 @@ class NativeFunction(Function):
         self.f=f
         self.special=special
 
-    def __call__(self,*args):
-        return self.f(*args)
+    def __call__(self,*args,**kwArgs):
+        return self.f(*args,**kwArgs)
 
     def isPure(self):
         return self.pure
 
 class UserFunction(Function):
     # The fExpr should be the (define) or (lambda) that created this function.
-    def __init__(self,defArgs,outerEnv,*,name=None):
+    def __init__(self,defArgs,kwArgs,outerEnv,*,name=None):
         Function.__init__(self)
         self.special=False
         assert defArgs

@@ -201,6 +201,17 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython=="{a, 1, 2, 3}"
         assert self.pythonFlat==''
 
+    def testCallMkDict1(self):
+        self.compile([S('mk-dict'),S('&a'),1,S('&b'),3])
+        assert self.exprPython=="{a: 1, b: 3}"
+        assert self.pythonFlat==''
+
+    def testCallMkDict2(self):
+        self.compile([S('mk-dict'),S('&b'),3,S('&a'),1])
+        assert self.exprPython=="{a: 1, b: 3}"
+        assert self.pythonFlat==''
+        
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),
      )
