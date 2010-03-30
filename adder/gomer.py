@@ -268,7 +268,7 @@ class VarRef(Expr):
         self.name=name
 
     def isKeyword(self):
-        return self.name[0]=='&'
+        return self.name[0]==':'
 
     def evaluate(self,env):
         if self.isKeyword():

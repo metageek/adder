@@ -365,7 +365,7 @@ class ExprTestCase(unittest.TestCase):
                   [VarRef(scope3,S('james1')),
                    VarRef(scope3,S('charles1')),
                    VarRef(scope3,S('charles2')),
-                   VarRef(scope3,S('&james2')),Constant(scope3,'syphillis'),
+                   VarRef(scope3,S(':james2')),Constant(scope3,'syphillis'),
                    ])
 
         assert len(call.posArgs)==3
@@ -536,7 +536,7 @@ class CompyleTestCase(unittest.TestCase):
 
     def testCallBoth(self):
         scope=Scope(None)
-        x=build(scope,[S('f'),11,13,17,S('&alpha'),23])
+        x=build(scope,[S('f'),11,13,17,S(':alpha'),23])
         assert x.compyle(self.stmtCollector)==[S('f'),
                                                [11,13,17],
                                                [[S('alpha'),23]]

@@ -79,10 +79,9 @@ def buildExpr(pyle):
     if pyle[0]==S('mk-dict'):
         assert not pyle[1]
         assert len(pyle)>2
-        assert pyle[2]
         return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
                                                     buildExpr(kx[1])),
-                                        pyle[2])))
+                                        pyle[2] or [])))
 
     if pyle[0]=='-':
         assert len(pyle[1]) in [1,2]

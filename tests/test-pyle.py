@@ -150,8 +150,9 @@ class ExprTestCase(unittest.TestCase):
     def testDictConstructor2(self):
         expr=DictConstructor([(VarExpr('a'),Constant(9)),
                               (Constant('x'),Constant(7))])
-        assert expr.toPython(False)=="{a: 9, 'x': 7}"
-        assert expr.toPython(True)=="{a: 9, 'x': 7}"
+        matches=["{a: 9, 'x': 7}","{'x': 7, a: 9}"]
+        assert expr.toPython(False) in matches
+        assert expr.toPython(True) in matches
 
     def testDot0(self):
         expr=DotExpr(VarExpr('a'),[])
@@ -374,12 +375,12 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.elementExprs[1].py=='7'
 
     def testDictConstructor0(self):
-        expr=buildExpr([S('mk-dict'),[]])
+        expr=buildExpr([S('mk-dict'),None,[]])
         assert isinstance(expr,DictConstructor)
         assert expr.pairExprs==[]
 
     def testDictConstructor1(self):
-        expr=buildExpr([S('mk-dict'),[(S('a'), 9)]])
+        expr=buildExpr([S('mk-dict'),None,[[S('a'), 9]]])
         assert isinstance(expr,DictConstructor)
         assert len(expr.pairExprs)==1
         assert isinstance(expr.pairExprs[0][0],VarExpr)
@@ -388,7 +389,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.pairExprs[0][1].py=='9'
 
     def testDictConstructor2(self):
-        expr=buildExpr([S('mk-dict'),[(S('a'), 9),('x',7)]])
+        expr=buildExpr([S('mk-dict'),None,[[S('a'), 9],['x',7]]])
         assert isinstance(expr,DictConstructor)
         assert len(expr.pairExprs)==2
         assert isinstance(expr.pairExprs[0][0],VarExpr)
