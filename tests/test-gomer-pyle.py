@@ -53,7 +53,8 @@ class GomerToPythonTestCase(unittest.TestCase):
 
     def testCallQuoteFloat(self):
         self.compile([S('quote'),2.7])
-        assert self.exprPython=='2.7'
+        # Not an exact string match on x86-64.
+        assert float(self.exprPython)==2.7
         assert self.pythonFlat==''
 
     def testCallQuoteStr(self):
