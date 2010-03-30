@@ -35,11 +35,14 @@ class GomerToPythonTestCase(unittest.TestCase):
             self.exprPython=None
         if self.verbose:
             print(repr(self.exprPython))
+            print(repr(self.pyleStmtLists))
         for pyleList in self.pyleStmtLists:
             pyleAST=adder.pyle.buildStmt(pyleList)
             pythonTree=pyleAST.toPythonTree()
             self.pythonTrees.append(pythonTree)
             self.pythonFlat+=adder.pyle.flatten(pythonTree)
+        if self.verbose:
+            print(repr(self.pythonTrees))
         return self.exprPython
 
     def testConstInt(self):
@@ -218,6 +221,17 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.compile([S('mk-dict'),S(':b'),3,S(':a'),1])
         assert self.exprPython=="{a: 1, b: 3}"
         assert self.pythonFlat==''
+        
+    def testCallReverse(self):
+        self.compile([S('reverse'),S('l')])
+        assert self.exprPython=="adder.runtime.reverse(l)"
+        assert self.pythonFlat==''
+        
+    def testCallReverseBang(self):
+        self.compile([S('reverse!'),S('l')])
+        scratch=S('#<gensym-scratch #1>').toPython()
+        assert self.exprPython==scratch
+        assert self.pythonFlat==('%s=l.reverse()\n' % scratch)
         
 
 suite=unittest.TestSuite(

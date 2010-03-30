@@ -101,6 +101,8 @@ class Scope:
                              ('raise',Raise()),
                              ('head',Head()),
                              ('tail',Tail()),
+                             ('reverse',Reverse()),
+                             ('reverse!',ReverseBang()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
 
@@ -477,6 +479,34 @@ class Tail(Function):
 
     def __call__(self,l):
         return l[0]
+
+class Reverse(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        assert len(args)==1
+        return [S('adder.runtime.reverse'),[args[0].compyle(stmtCollector)]]
+
+    def __call__(self,l):
+        l2=list(l)
+        l2.reverse()
+        return l2
+
+class ReverseBang(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        assert len(args)==1
+        scratchVar=gensym('scratch')
+        stmtCollector([S(':='),
+                       [scratchVar,
+                        [[S('.'),
+                          [args[0].compyle(stmtCollector),S('reverse')]
+                          ],[]]
+                        ]
+                       ])
+        return scratchVar
+
+    def __call__(self,l):
+        l.reverse()
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):

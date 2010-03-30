@@ -70,11 +70,6 @@ def sliceF(l,a,b=None):
     else:
         return l[a:b]
 
-def reverseF(l):
-    l2=list(l)
-    l2.reverse()
-    return l2
-
 def evalGomerF(expr,env):
     return build(env.scope,expr).evaluate(env)
 
@@ -118,8 +113,6 @@ def mkStdEnv():
         ('mk-tuple',lambda *a: a,True),
         ('mk-set',lambda *a: set(a),True),
         ('mk-dict',lambda *a: dict(a),True),
-        ('reverse',reverseF,True),
-        ('reverse!',lambda l: l.reverse(),False),
         ('eval-gomer',evalGomerF,False),
         ('stdenv',lambda : mkStdEnv()[1],True),
         ('eval-py',eval,False),

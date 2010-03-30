@@ -36,72 +36,73 @@ def buildExpr(pyle):
         assert not isinstance(pyle[0],t)
     assert not (isinstance(pyle[0],str) and not isinstance(pyle[0],S))
 
-    if pyle[0]==S('quote'):
-        assert len(pyle[1])==1
-        return Constant(pyle[1][0])
+    if isinstance(pyle[0],S):
+        if pyle[0]==S('quote'):
+            assert len(pyle[1])==1
+            return Constant(pyle[1][0])
 
-    if pyle[0]==S('[]'):
-        assert len(pyle[1])==2
-        return IndexOperator(buildExpr(pyle[1][0]),
-                             buildExpr(pyle[1][1]))
-
-    if pyle[0]==S('slice'):
-        assert len(pyle[1]) in [2,3]
-        if len(pyle[1])==2:
-            return SliceOperator(buildExpr(pyle[1][0]),
+        if pyle[0]==S('[]'):
+            assert len(pyle[1])==2
+            return IndexOperator(buildExpr(pyle[1][0]),
                                  buildExpr(pyle[1][1]))
-        else:
-            return SliceOperator(buildExpr(pyle[1][0]),
-                                 buildExpr(pyle[1][1]),
-                                 buildExpr(pyle[1][2]))
 
-    if pyle[0]==S('if'):
-        assert len(pyle[1])==3
-        return IfOperator(buildExpr(pyle[1][0]),
-                          buildExpr(pyle[1][1]),
-                          buildExpr(pyle[1][2]))
+        if pyle[0]==S('slice'):
+            assert len(pyle[1]) in [2,3]
+            if len(pyle[1])==2:
+                return SliceOperator(buildExpr(pyle[1][0]),
+                                     buildExpr(pyle[1][1]))
+            else:
+                return SliceOperator(buildExpr(pyle[1][0]),
+                                     buildExpr(pyle[1][1]),
+                                     buildExpr(pyle[1][2]))
 
-    if pyle[0]==S('.'):
-        assert len(pyle)>=2
-        if len(pyle[1])==1:
-            return buildExpr(pyle[1][0])
-        return DotExpr(buildExpr(pyle[1][0]),pyle[1][1:])
+        if pyle[0]==S('if'):
+            assert len(pyle[1])==3
+            return IfOperator(buildExpr(pyle[1][0]),
+                              buildExpr(pyle[1][1]),
+                              buildExpr(pyle[1][2]))
 
-    if pyle[0]==S('mk-list'):
-        return ListConstructor(list(map(buildExpr,pyle[1])))
+        if pyle[0]==S('.'):
+            assert len(pyle)>=2
+            if len(pyle[1])==1:
+                return buildExpr(pyle[1][0])
+            return DotExpr(buildExpr(pyle[1][0]),pyle[1][1:])
 
-    if pyle[0]==S('mk-tuple'):
-        return TupleConstructor(list(map(buildExpr,pyle[1])))
+        if pyle[0]==S('mk-list'):
+            return ListConstructor(list(map(buildExpr,pyle[1])))
 
-    if pyle[0]==S('mk-set'):
-        return SetConstructor(list(map(buildExpr,pyle[1])))
+        if pyle[0]==S('mk-tuple'):
+            return TupleConstructor(list(map(buildExpr,pyle[1])))
 
-    if pyle[0]==S('mk-dict'):
-        assert not pyle[1]
-        assert len(pyle)>2
-        return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
-                                                    buildExpr(kx[1])),
-                                        pyle[2] or [])))
+        if pyle[0]==S('mk-set'):
+            return SetConstructor(list(map(buildExpr,pyle[1])))
 
-    if pyle[0]=='-':
-        assert len(pyle[1]) in [1,2]
-        if len(pyle[1])==2:
+        if pyle[0]==S('mk-dict'):
+            assert not pyle[1]
+            assert len(pyle)>2
+            return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
+                                                        buildExpr(kx[1])),
+                                            pyle[2] or [])))
+
+        if pyle[0]==S('-'):
+            assert len(pyle[1]) in [1,2]
+            if len(pyle[1])==2:
+                return BinaryOperator(pyle[0],
+                                      buildExpr(pyle[1][0]),
+                                      buildExpr(pyle[1][1]))
+            else:
+                return UnaryOperator(pyle[0],
+                                     buildExpr(pyle[1][0]))
+
+        if pyle[0] in buildExpr.binaryOperators:
+            assert len(pyle[1])==2
             return BinaryOperator(pyle[0],
                                   buildExpr(pyle[1][0]),
                                   buildExpr(pyle[1][1]))
-        else:
-            return UnaryOperator(pyle[0],
-                                 buildExpr(pyle[1][0]))
 
-    if pyle[0] in buildExpr.binaryOperators:
-        assert len(pyle[1])==2
-        return BinaryOperator(pyle[0],
-                              buildExpr(pyle[1][0]),
-                              buildExpr(pyle[1][1]))
-
-    if pyle[0] in buildExpr.unaryOperators:
-        assert len(pyle[1])==1
-        return UnaryOperator(pyle[0],buildExpr(pyle[1][0]))
+        if pyle[0] in buildExpr.unaryOperators:
+            assert len(pyle[1])==1
+            return UnaryOperator(pyle[0],buildExpr(pyle[1][0]))
 
     if len(pyle)==2:
         kwArgs=[]
