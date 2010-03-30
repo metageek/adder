@@ -264,6 +264,45 @@ class GomerToPythonTestCase(unittest.TestCase):
                       ])
         assert self.exprPython=="f(*[1, 2, 3], **{'a': 1, 'b': 3})"
         assert self.pythonFlat==""
+        
+    def testCallTryNoFinally(self):
+        self.verbose=True
+        self.compile([S('try'),
+                      [S('f'),7],
+                      [S('g'),19],
+                      S(':Foo'),[S('foo'),[S('print'),S('foo')]],
+                      S(':Bar'),[S('bar'),[S('h'),S('bar')]],
+                      ])
+        assert self.exprPython==None
+        assert self.pythonFlat=="""try:
+  f(7)
+  g(19)
+except Foo as foo:
+  print(foo)
+except Bar as bar:
+  h(bar)
+"""
+
+    def testCallTryWithFinally(self):
+        return
+        self.compile([S('try'),
+                      [S('f'),7],
+                      [S('g'),19],
+                      S(':Foo'),[S('foo'),[S('print'),S('foo')]],
+                      S(':Bar'),[S('bar'),[S('h'),S('bar')]],
+                      S(':finally'),[S('pi')],
+                      ])
+        assert self.exprPython==None
+        assert self.pythonFlat=="""try:
+  f(7)
+  g(19)
+except Foo as foo:
+  print(foo)
+except Bar as bar:
+  h(bar)
+finally:
+  pi()
+"""
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),

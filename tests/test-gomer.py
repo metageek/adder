@@ -370,7 +370,7 @@ class ExprTestCase(unittest.TestCase):
 
         assert len(call.posArgs)==3
         assert len(call.kwArgs)==1
-        assert list(call.kwArgs.keys())==['james2']
+        assert call.kwArgs[0][0]=='james2'
 
         assert call.constValue()==[1603,1625,1649,'syphillis']
         assert call.scopeRequired() is scope1

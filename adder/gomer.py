@@ -98,7 +98,9 @@ class Scope:
 
         if not parent:
             for (name,f) in [('defun',Defun()),
+                             ('begin',Begin()),
                              ('raise',Raise()),
+                             ('try',Try()),
                              ('head',Head()),
                              ('tail',Tail()),
                              ('reverse',Reverse()),
@@ -340,7 +342,7 @@ class Call(Expr):
         Expr.__init__(self,scope)
         self.f=f
         self.posArgs=[]
-        self.kwArgs={}
+        self.kwArgs=[]
         curKeyword=None
         for arg in args:
             isKeyword=isinstance(arg,VarRef) and arg.isKeyword()
@@ -348,7 +350,7 @@ class Call(Expr):
             if curKeyword:
                 if isKeyword:
                     raise TwoConsecutiveKeywords(curKeyword,arg)
-                self.kwArgs[curKeyword.name[1:]]=arg
+                self.kwArgs.append([curKeyword.name[1:],arg])
                 curKeyword=None
             else:
                 if isKeyword:
@@ -363,11 +365,11 @@ class Call(Expr):
     def evaluate(self,env):
         fv=self.f.evaluate(env)
         if fv.special:
-            return fv(env,*self.posArgs,**self.kwArgs)
+            return fv(env,*self.posArgs,**dict(self.kwArgs))
         else:
             posArgs=list(map(lambda a: a.evaluate(env),self.posArgs))
             kwArgs={}
-            for (key,expr) in self.kwArgs.items():
+            for (key,expr) in self.kwArgs:
                 kwArgs[key]=expr.evaluate(env)
             return fv(*posArgs,**kwArgs)
 
@@ -377,12 +379,14 @@ class Call(Expr):
             raise NotConstant(self)
         argVs=list(map(lambda a: a.constValue(),self.posArgs))
         kwArgs={}
-        for (key,expr) in self.kwArgs.items():
+        for (key,expr) in self.kwArgs:
             kwArgs[key]=expr.constValue()
         return fv(*argVs,**kwArgs)
 
     def allArgExprs(self):
-        return itertools.chain(self.posArgs,self.kwArgs.values())
+        return itertools.chain(self.posArgs,
+                               map(lambda kx: kx[1],self.kwArgs)
+                               )
 
     def scopeRequired(self):
         required=self.f.scopeRequired()
@@ -426,7 +430,9 @@ class Call(Expr):
             f=self.f.compyle(stmtCollector)
             posArgs=list(map(lambda x: x.compyle(stmtCollector),
                              self.posArgs))
-            kwArgs=list(map(lambda k: [k,self.kwArgs[k].compyle(stmtCollector)],
+            kwArgs=list(map(lambda kx: [kx[0],
+                                        kx[1].compyle(stmtCollector)
+                                        ],
                             self.kwArgs))
             if kwArgs:
                 return [f,posArgs,kwArgs]
@@ -444,7 +450,7 @@ class Function:
         f=self.f.compyle(stmtCollector)
         posArgs=list(map(lambda x: x.compyle(stmtCollector),
                          args))
-        kwArgs=list(map(lambda k: [k,kwArgs[k].compyle(stmtCollector)],
+        kwArgs=list(map(lambda kx: [kx[0],kx[1].compyle(stmtCollector)],
                         kwArgs))
         if kwArgs:
             return [f,posArgs,kwArgs]
@@ -529,6 +535,57 @@ class ExecPy(Function):
         assert len(args)==1
         stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
 
+class Begin(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        if not args:
+            # (begin) with empty body is a no-op
+            return
+
+        body=[]
+        def innerCollector(stmt):
+            body.append(stmt)
+
+        for a in args[:-1]:
+            pyleExpr=a.compyle(innerCollector)
+            if pyleExpr:
+                innerCollector(pyleExpr)
+
+        scratchVar=gensym('scratch')
+        innerCollector([S(':='),
+                        [scratchVar,args[-1].compyle(innerCollector)]
+                        ])
+
+        stmtCollector([S('begin')]+body)
+        return scratchVar
+
+class Try(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        if not args:
+            # try: with empty body is a no-op, no matter what
+            #  its except: and finally: clauses may be.
+            return
+
+        body=[]
+        def innerCollector(stmt):
+            body.append(stmt)
+
+        scratchVar=gensym('scratch')
+        stmtCollector([S(':='),[scratchVar,None]])
+
+        innerCollector([S(':='),
+                        [scratchVar,
+                         Begin().compyleCall(args,None,innerCollector)]
+                        ])
+
+        stmtCollector([S('try'),
+                       body,
+                       list(map(lambda kx: [kx[0],
+                                            kx[1].compyle(stmtCollector)],
+                                kwArgs))
+                       ])
+        return scratchVar
+
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):
         self.pure=pure
@@ -547,6 +604,7 @@ class UserFunction(Function):
         Function.__init__(self)
         self.special=False
         assert defArgs
+        assert not kwArgs
         self.name=name or gensym('lambda')
         
         assert isinstance(defArgs[0],list)
