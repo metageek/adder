@@ -529,16 +529,6 @@ class ExecPy(Function):
         assert len(args)==1
         stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
 
-class Apply(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
-        assert not kwArgs
-        posArgsPyle=args[0].compyle(stmtCollector)
-        if len(args)==2:
-            kwArgsPyle=args[1].compyle(stmtCollector)
-        else:
-            kwArgsPyle=None
-        return [S('apply'),[posArgsPyle,kwArgsPyle]]
-
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):
         self.pure=pure
