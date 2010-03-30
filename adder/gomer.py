@@ -103,6 +103,9 @@ class Scope:
                              ('tail',Tail()),
                              ('reverse',Reverse()),
                              ('reverse!',ReverseBang()),
+                             ('stdenv',Stdenv()),
+                             ('eval-py',EvalPy()),
+                             ('exec-py',ExecPy()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
 
@@ -507,6 +510,24 @@ class ReverseBang(Function):
 
     def __call__(self,l):
         l.reverse()
+
+class Stdenv(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        assert len(args)==0
+        return [S('adder.runtime.stdenv'),[]]
+
+class EvalPy(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        assert len(args)==1
+        return [S('eval'),[args[0].compyle(stmtCollector)]]
+
+class ExecPy(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        assert len(args)==1
+        stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):

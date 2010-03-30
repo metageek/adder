@@ -158,6 +158,11 @@ def buildStmt(pyle):
         assert len(pyle[1])==1
         return RaiseStmt(buildExpr(pyle[1][0]),)
 
+    if pyle[0]==S('exec'):
+        assert len(pyle)==2
+        assert len(pyle[1])==1
+        return ExecStmt(buildExpr(pyle[1][0]),)
+
     if pyle[0]==S('def'):
         assert len(pyle[1])>=2
         assert isinstance(pyle[1][0],S)
@@ -475,6 +480,13 @@ class RaiseStmt(Stmt):
 
     def toPythonTree(self):
         return 'raise %s' % self.raiseExpr.toPython(False)
+
+class ExecStmt(Stmt):
+    def __init__(self,execExpr):
+        self.execExpr=execExpr
+
+    def toPythonTree(self):
+        return 'exec(%s)' % self.execExpr.toPython(False)
 
 class DefStmt(Stmt):
     def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body,globals=None,nonlocals=None):

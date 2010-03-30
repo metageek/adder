@@ -233,6 +233,20 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython==scratch
         assert self.pythonFlat==('%s=l.reverse()\n' % scratch)
         
+    def testCallStdenv(self):
+        self.compile([S('stdenv')])
+        assert self.exprPython=="adder.runtime.stdenv()"
+        assert self.pythonFlat==''
+        
+    def testCallEvalPy(self):
+        self.compile([S('eval-py'),S('x')])
+        assert self.exprPython=="eval(x)"
+        assert self.pythonFlat==''
+        
+    def testCallExecPy(self):
+        self.compile([S('exec-py'),S('x')])
+        assert self.exprPython==None
+        assert self.pythonFlat=='exec(x)\n'
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,'test'),
