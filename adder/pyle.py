@@ -128,7 +128,11 @@ buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
 buildExpr.unaryOperators=set(map(S,['not','and','or']))
 
 def buildStmt(pyle):
+    if not isinstance(pyle,list):
+        pdb.set_trace()
     assert isinstance(pyle,list)
+    if not pyle:
+        pdb.set_trace()
     assert pyle
     assert isinstance(pyle[0],S)
     assert len(pyle)>1
@@ -221,7 +225,20 @@ def buildStmt(pyle):
 
         return ImportStmt(pyle[1])
 
-    assert False
+    if pyle[0]==S('begin'):
+        return maybeBlock(pyle[1])
+
+    if pyle[0]==S('try'):
+        def buildExn(kx):
+            (klass,clause)=kx
+            if klass=='finally':
+                return (klass,[buildStmt(clause[0])])
+            else:
+                return (klass,[clause[0],list(map(buildStmt,clause[1]))])
+        return TryStmt(list(map(buildStmt,pyle[1])),
+                       list(map(buildExn,pyle[2])))
+
+    return ExprStmt(buildExpr(pyle))
 
 class Expr:
     def isLvalue(self):
@@ -571,3 +588,31 @@ class ImportStmt(Stmt):
 
     def toPythonTree(self):
         return 'import %s' % (', '.join(self.modules))
+
+class ExprStmt(Stmt):
+    def __init__(self,expr):
+        self.expr=expr
+
+    def toPythonTree(self):
+        return self.expr.toPython(False)
+
+class TryStmt(Stmt):
+    def __init__(self,body,exns):
+        self.body=body
+        self.exns=exns
+
+    def toPythonTree(self):
+        res=['try:',
+             list(map(lambda stmt: stmt.toPythonTree(),self.body))]
+        sawFinally=False
+        for (klass,clause) in self.exns:
+            assert not sawFinally
+            if klass=='finally':
+                res.append('finally:')
+                sawFinally=True
+            else:
+                (var,clause)=clause
+                res.append('except %s as %s:' % (klass,var))
+            res.append(list(map(lambda stmt: stmt.toPythonTree(),
+                                clause)))
+        return tuple(res)

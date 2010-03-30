@@ -556,7 +556,7 @@ class Begin(Function):
                         [scratchVar,args[-1].compyle(innerCollector)]
                         ])
 
-        stmtCollector([S('begin')]+body)
+        stmtCollector([S('begin'),body])
         return scratchVar
 
 class Try(Function):
@@ -566,9 +566,8 @@ class Try(Function):
             #  its except: and finally: clauses may be.
             return
 
-        body=[]
-        def innerCollector(stmt):
-            body.append(stmt)
+        bodyPyle=[]
+        innerCollector=bodyPyle.append
 
         scratchVar=gensym('scratch')
         stmtCollector([S(':='),[scratchVar,None]])
@@ -578,12 +577,12 @@ class Try(Function):
                          Begin().compyleCall(args,None,innerCollector)]
                         ])
 
-        stmtCollector([S('try'),
-                       body,
-                       list(map(lambda kx: [kx[0],
-                                            kx[1].compyle(stmtCollector)],
-                                kwArgs))
-                       ])
+        exnPyles=[]
+
+        for (klass,clause) in kwArgs:
+            exnPyles.append([klass,clause.compyle(innerCollector)])
+
+        stmtCollector([S('try'),bodyPyle,exnPyles])
         return scratchVar
 
 class NativeFunction(Function):

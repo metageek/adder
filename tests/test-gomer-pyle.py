@@ -266,43 +266,53 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==""
         
     def testCallTryNoFinally(self):
-        self.verbose=True
         self.compile([S('try'),
                       [S('f'),7],
                       [S('g'),19],
-                      S(':Foo'),[S('foo'),[S('print'),S('foo')]],
+                      S(':Foo'),[S('foo'),
+                                 [S('print'),S('foo')],
+                                 [S('flip')]
+                                 ],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       ])
-        assert self.exprPython==None
-        assert self.pythonFlat=="""try:
-  f(7)
-  g(19)
+        scratch1=S('#<gensym-scratch #1>').toPython()
+        scratch2=S('#<gensym-scratch #2>').toPython()
+        assert self.exprPython==scratch1
+        assert self.pythonFlat==("""%s=None
+try:
+    f(7)
+    %s=g(19)
+    %s=%s
 except Foo as foo:
-  print(foo)
+    print(foo)
+    flip()
 except Bar as bar:
-  h(bar)
-"""
+    h(bar)
+""" % (scratch1,scratch2,scratch1,scratch2))
 
     def testCallTryWithFinally(self):
-        return
         self.compile([S('try'),
                       [S('f'),7],
                       [S('g'),19],
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
-                      S(':finally'),[S('pi')],
+                      S(':finally'),[[S('pi')]],
                       ])
-        assert self.exprPython==None
-        assert self.pythonFlat=="""try:
-  f(7)
-  g(19)
+        scratch1=S('#<gensym-scratch #1>').toPython()
+        scratch2=S('#<gensym-scratch #2>').toPython()
+        assert self.exprPython==scratch1
+        assert self.pythonFlat==("""%s=None
+try:
+    f(7)
+    %s=g(19)
+    %s=%s
 except Foo as foo:
-  print(foo)
+    print(foo)
 except Bar as bar:
-  h(bar)
+    h(bar)
 finally:
-  pi()
-"""
+    pi()
+""" % (scratch1,scratch2,scratch1,scratch2))
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),
