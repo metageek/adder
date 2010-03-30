@@ -78,11 +78,18 @@ def buildExpr(pyle):
             return SetConstructor(list(map(buildExpr,pyle[1])))
 
         if pyle[0]==S('mk-dict'):
-            assert not pyle[1]
-            assert len(pyle)>2
+            assert len(pyle)==3
             return DictConstructor(list(map(lambda kx: (buildExpr(kx[0]),
                                                         buildExpr(kx[1])),
                                             pyle[2] or [])))
+
+        if pyle[0]==S('apply'):
+            f=buildExpr(pyle[1][0])
+            posArgs=buildExpr(pyle[1][1])
+            if len(pyle[1])==3:
+                return Apply(f,posArgs,buildExpr(pyle[1][2]))
+            else:
+                return Apply(f,posArgs,None)
 
         if pyle[0]==S('-'):
             assert len(pyle[1]) in [1,2]
@@ -395,6 +402,24 @@ class SetConstructor(Expr):
                     )
         else:
             return 'set()'
+
+class Apply(Expr):
+    def __init__(self,f,posArgs,kwArgs):
+        self.f=f
+        self.posArgs=posArgs
+        self.kwArgs=kwArgs
+
+    def isLvalue(self):
+        return False
+
+    def toPython(self,inParens):
+        if self.kwArgs:
+            return '%s(*%s, **%s)' % (self.f.toPython(True),
+                                      self.posArgs.toPython(True),
+                                      self.kwArgs.toPython(True))
+        else:
+            return '%s(*%s)' % (self.f.toPython(True),
+                                self.posArgs.toPython(True))
 
 def flatten(tree,depth=0):
     if isinstance(tree,str):

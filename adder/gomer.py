@@ -348,7 +348,7 @@ class Call(Expr):
             if curKeyword:
                 if isKeyword:
                     raise TwoConsecutiveKeywords(curKeyword,arg)
-                self.kwArgs[S(curKeyword.name[1:])]=arg
+                self.kwArgs[curKeyword.name[1:]]=arg
                 curKeyword=None
             else:
                 if isKeyword:
@@ -419,8 +419,8 @@ class Call(Expr):
             pass
 
         if fv:
-            if isinstance(fv,int):
-                print(self.f,fv)
+            if isinstance(fv,str):
+                print('f:',self.f,fv)
             return fv.compyleCall(self.posArgs,self.kwArgs,stmtCollector)
         else:
             f=self.f.compyle(stmtCollector)
@@ -528,6 +528,16 @@ class ExecPy(Function):
         assert not kwArgs
         assert len(args)==1
         stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
+
+class Apply(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        posArgsPyle=args[0].compyle(stmtCollector)
+        if len(args)==2:
+            kwArgsPyle=args[1].compyle(stmtCollector)
+        else:
+            kwArgsPyle=None
+        return [S('apply'),[posArgsPyle,kwArgsPyle]]
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):

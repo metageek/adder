@@ -747,21 +747,6 @@ class StdEnvTestCase(unittest.TestCase):
                          [S('+'),1,2,3,4],
                          self.env)==10
 
-    def testStdenv(self):
-        env=self.call('stdenv')
-        assert isinstance(env,Env)
-        assert self.call('eval-gomer',
-                         [S('+'),1,2,3,4],
-                         env)==10
-
-    def testEvalPy(self):
-        assert self.call('eval-py','9*7')==63
-
-    def testApply(self):
-        assert self.call('apply',
-                         self.env[VarRef(self.scope,'+')],
-                         [1,2,3])==6
-
     def testConstants(self):
         for (name,value) in [
             ('stdin',sys.stdin),

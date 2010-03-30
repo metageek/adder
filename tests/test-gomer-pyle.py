@@ -214,12 +214,12 @@ class GomerToPythonTestCase(unittest.TestCase):
 
     def testCallMkDict1(self):
         self.compile([S('mk-dict'),S(':a'),1,S(':b'),3])
-        assert self.exprPython=="{a: 1, b: 3}"
+        assert self.exprPython=="{'a': 1, 'b': 3}"
         assert self.pythonFlat==''
 
     def testCallMkDict2(self):
         self.compile([S('mk-dict'),S(':b'),3,S(':a'),1])
-        assert self.exprPython=="{a: 1, b: 3}"
+        assert self.exprPython=="{'a': 1, 'b': 3}"
         assert self.pythonFlat==''
         
     def testCallReverse(self):
@@ -247,9 +247,26 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.compile([S('exec-py'),S('x')])
         assert self.exprPython==None
         assert self.pythonFlat=='exec(x)\n'
+        
+    def testCallApplyNoKw(self):
+        self.compile([S('apply'),
+                      S('f'),
+                      [S('mk-list'),1,2,3]
+                      ])
+        assert self.exprPython=='f(*[1, 2, 3])'
+        assert self.pythonFlat==''
+        
+    def testCallApplyWithKw(self):
+        self.compile([S('apply'),
+                      S('f'),
+                      [S('mk-list'),1,2,3],
+                      [S('mk-dict'),S(':b'),3,S(':a'),1]
+                      ])
+        assert self.exprPython=="f(*[1, 2, 3], **{'a': 1, 'b': 3})"
+        assert self.pythonFlat==""
 
 suite=unittest.TestSuite(
-    ( unittest.makeSuite(GomerToPythonTestCase,'test'),
+    ( unittest.makeSuite(GomerToPythonTestCase,"test"),
      )
     )
 

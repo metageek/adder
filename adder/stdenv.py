@@ -114,8 +114,6 @@ def mkStdEnv():
         ('mk-set',lambda *a: set(a),True),
         ('mk-dict',lambda *a: dict(a),True),
         ('eval-gomer',evalGomerF,False),
-        ('stdenv',lambda : mkStdEnv()[1],True),
-        ('eval-py',eval,False),
         ('apply',lambda f,args: f(*args),False),
         ]
     specials=[
