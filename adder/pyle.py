@@ -162,7 +162,7 @@ def buildStmt(pyle):
     if pyle[0]==S('while'):
         assert len(pyle)>=2
         return WhileStmt(buildExpr(pyle[1][0]),
-                         list(map(buildStmt,pyle[1][1:])))
+                         maybeBlock(list(map(buildStmt,pyle[1][1:]))))
 
     if pyle[0]==S('return'):
         assert len(pyle)==2

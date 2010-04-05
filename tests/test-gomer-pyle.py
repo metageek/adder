@@ -104,6 +104,28 @@ class GomerToPythonTestCase(CompilingTestCase):
         assert self.compile([S('if'),[S('<'),5,7],2,3])=='2 if (5<7) else 3'
         assert self.pythonFlat==''
 
+    def testCallWhile(self):
+        self.addDefs(('n',0))
+        assert self.compile([S('while'),
+                             [S('<'),S('n'),7],
+                             [S('print'),S('n')],
+                             [S(':='),S('n'),[S('+'),S('n'),1]]
+                             ])==None
+        assert self.pythonFlat=="""while n<7:
+    print(n)
+    n=n+1
+"""
+
+    def testDot1(self):
+        self.addDefs('o')
+        assert self.compile([S('.'),S('o'),S('x')])=='o.x'
+        assert not self.pythonFlat
+
+    def testDot3(self):
+        self.addDefs('o')
+        assert self.compile([S('.'),S('o'),S('x'),S('y'),S('z')])=='o.x.y.z'
+        assert not self.pythonFlat
+
     def testCallBegin(self):
         self.addDefs('x')
         self.compile([S('begin'),
@@ -448,6 +470,40 @@ class RunGomerTestCase(CompilingTestCase):
     def testCallQuoteList(self):
         assert self.runGomer([S('quote'),[S("fred"),17]])==[S("fred"),17]
         assert isinstance(self.runResult[0],S)
+
+    def testCallWhile(self):
+        self.addDefs(('n',1),('l',[]))
+        self.runGomer([S('while'),
+                       [S('<'),S('n'),7],
+                       [[S('.'),S('l'),S('append')],S('n')],
+                       [S(':='),S('n'),[S('*'),S('n'),2]]
+                       ])
+        assert self.globals['n']==8
+        assert self.globals['l']==[1,2,4]
+
+    def testDot1(self):
+        class O:
+            pass
+
+        o=O()
+        o.x=9
+
+        self.addDefs(('o',o))
+        assert self.runGomer([S('.'),S('o'),S('x')])==9
+        assert not self.pythonFlat
+
+    def testDot3(self):
+        class O:
+            pass
+
+        o=O()
+        o.x=O()
+        o.x.y=O()
+        o.x.y.z=7
+
+        self.addDefs(('o',o))
+        assert self.runGomer([S('.'),S('o'),S('x'),S('y'),S('z')])==7
+        assert not self.pythonFlat
 
     def testCallBegin(self):
         self.addDefs('x')

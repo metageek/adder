@@ -114,6 +114,8 @@ class Scope:
                              ('eval-py',EvalPy()),
                              ('exec-py',ExecPy()),
                              ('import',Import()),
+                             ('while',While()),
+                             ('.',Dot()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
             for name in ['if',
@@ -645,6 +647,23 @@ class Try(Function):
         stmtCollector([S('try'),bodyPyle,exnPyles])
         return scratchVar
 
+class While(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        stmtCollector([S('while'),
+                       list(map(lambda x: x.compyle(stmtCollector),args))
+                       ])
+
+class Dot(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        obj=args[0].compyle(stmtCollector)
+        return [S('.'),
+                ([obj]
+                 +list(map(lambda x: x.name,args[1:]))
+                 )
+                ]
+
 class Import(Function):
     def compyleCall(self,args,kwArgs,stmtCollector):
         assert len(args)==1
@@ -788,5 +807,9 @@ def build(scope,gomer):
 
     if gomer[0]==S('defvar'):
         res.posArgs[0].asDef=True
+
+    if gomer[0]==S('.'):
+        for arg in res.posArgs[1:]:
+            arg.asDef=True
 
     return res

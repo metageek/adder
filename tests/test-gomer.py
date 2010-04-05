@@ -579,6 +579,45 @@ class CompyleTestCase(unittest.TestCase):
         assert x.compyle(self.stmtCollector)==S('os')
         assert self.stmts==[[S('import'),[S('os')]]]
 
+    def testIf(self):
+        scope=Scope(None)
+        scope.addDef('n',None)
+        x=build(scope,
+                [S('if'),[S('<'),S('n'),2],
+                  1,
+                  7])
+        p=x.compyle(self.stmtCollector)
+        assert p==[S('if'),
+                   [[S('<'),[S('n'),2]],1,7]]
+
+    def testWhile(self):
+        scope=Scope(None)
+        scope.addDef('n',None)
+        x=build(scope,
+                [S('while'),[S('<'),S('n'),2],
+                  1,
+                  7])
+        p=x.compyle(self.stmtCollector)
+        assert not p
+        assert self.stmts==[[S('while'),
+                             [[S('<'),[S('n'),2]],1,7]]]
+
+    def testDot1(self):
+        scope=Scope(None)
+        scope.addDef('o',None)
+        x=build(scope,[S('.'),S('o'),S('x')])
+        p=x.compyle(self.stmtCollector)
+        assert p==[S('.'),[S('o'),S('x')]]
+        assert not self.stmts
+
+    def testDot3(self):
+        scope=Scope(None)
+        scope.addDef('o',None)
+        x=build(scope,[S('.'),S('o'),S('x'),S('y'),S('z')])
+        p=x.compyle(self.stmtCollector)
+        assert p==[S('.'),[S('o'),S('x'),S('y'),S('z')]]
+        assert not self.stmts
+
     def testDefun(self):
         scope=Scope(None)
         x=build(scope,
