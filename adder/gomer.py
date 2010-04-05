@@ -665,6 +665,10 @@ def build(scope,gomer):
         return Constant(scope,gomer)
     assert gomer
     assert gomer[0]
+    if gomer[0]==S('scope'):
+        innerScope=Scope(scope)
+        return build(innerScope,[S('begin')]+gomer[1:])
+
     if gomer[0]==S('defun'):
         innerScope=Scope(scope)
         name=gomer[1]

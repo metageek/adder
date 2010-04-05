@@ -444,6 +444,24 @@ class BuildTestCase(unittest.TestCase):
         assert isinstance(x,Constant)
         assert x.value==[11,13,17]
 
+    def testScope(self):
+        scope=Scope(None)
+        x=build(scope,[S('scope'),S('y'),S('z')])
+        assert isinstance(x,Call)
+        assert isinstance(x.f,VarRef)
+        assert x.f.name==S('begin')
+        assert len(x.posArgs)==2
+        assert not x.kwArgs
+        assert isinstance(x.posArgs[0],VarRef)
+        assert x.posArgs[0].name==S('y')
+        assert isinstance(x.posArgs[1],VarRef)
+        assert x.posArgs[1].name==S('z')
+        yScope=x.posArgs[0].scope
+        zScope=x.posArgs[1].scope
+        assert yScope is zScope
+        assert yScope is not scope
+        assert yScope.parent is scope
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
