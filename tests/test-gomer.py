@@ -573,6 +573,12 @@ class CompyleTestCase(unittest.TestCase):
                                                ]
         assert self.stmts==[]
 
+    def testCallImport(self):
+        scope=Scope(None)
+        x=build(scope,[S('import'),S('os')])
+        assert x.compyle(self.stmtCollector)==S('os')
+        assert self.stmts==[[S('import'),[S('os')]]]
+
     def testDefun(self):
         scope=Scope(None)
         x=build(scope,

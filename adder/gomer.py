@@ -113,6 +113,7 @@ class Scope:
                              ('stdenv',Stdenv()),
                              ('eval-py',EvalPy()),
                              ('exec-py',ExecPy()),
+                             ('import',Import()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
             for name in ['if',
@@ -123,7 +124,7 @@ class Scope:
                          'mk-tuple','mk-list','mk-set','mk-dict',
                          'mk-symbol',
                          '[]','slice','getattr','isinstance',
-                         'print','gensym','apply'
+                         'print','gensym','apply',
                          ]:
                 self.addDef(S(name),Constant(self,Pyle(self,name)))
 
@@ -643,6 +644,13 @@ class Try(Function):
 
         stmtCollector([S('try'),bodyPyle,exnPyles])
         return scratchVar
+
+class Import(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert len(args)==1
+        assert isinstance(args[0],VarRef)
+        stmtCollector([S('import'),[args[0].name]])
+        return args[0].name
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):

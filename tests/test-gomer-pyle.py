@@ -115,6 +115,12 @@ class GomerToPythonTestCase(CompilingTestCase):
 %s=9*x
 """ % scratch
 
+    def testCallImport(self):
+        self.compile([S('import'),S('os')])
+        assert self.exprPython=='os'
+        assert self.pythonFlat=="""import os
+"""
+
     def testCallDefvar(self):
         self.compile([S('defvar'),S('x'),7])
         assert self.exprPython=='x_1'
@@ -448,6 +454,10 @@ class RunGomerTestCase(CompilingTestCase):
         assert self.runGomer([S('begin'),
                               [S(':='),S('x'),7],
                               [S('*'),9,S('x')]])==63
+
+    def testCallImport(self):
+        assert self.runGomer([S('import'),S('os')]) is os
+        assert self.globals['os'] is os
 
     def testCallDefvar(self):
         assert self.runGomer([S('defvar'),S('x'),7])==7
