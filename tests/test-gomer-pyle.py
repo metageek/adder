@@ -298,6 +298,12 @@ x_2=9
         assert self.exprPython=="{'a': 1, 'b': 3}"
         assert self.pythonFlat==''
         
+    def testCallMkSymbol(self):
+        self.addDefs('a')
+        self.compile([S('mk-symbol'),S('a')])
+        assert self.exprPython=="adder.common.Symbol(a)"
+        assert self.pythonFlat==''
+
     def testCallReverse(self):
         self.addDefs('l')
         self.compile([S('reverse'),S('l')])
@@ -588,8 +594,15 @@ class RunGomerTestCase(CompilingTestCase):
         assert self.runGomer([S('mk-dict'),S(':a'),1,S(':b'),3])=={'a': 1, 'b': 3}
 
     def testCallMkDict2(self):
-        self.runGomer([S('mk-dict'),S(':b'),3,S(':a'),1])=={'a': 1, 'b': 3}
+        assert self.runGomer([S('mk-dict'),
+                              S(':b'),3,S(':a'),1
+                              ])=={'a': 1, 'b': 3}
         
+        
+    def testCallMkSymbol(self):
+        self.addDefs(('a',"fred"))
+        assert self.runGomer([S('mk-symbol'),S('a')])==S('fred')
+
     def testCallReverse(self):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runGomer([S('reverse'),S('l')])==[7,5,3,2]

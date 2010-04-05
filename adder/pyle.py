@@ -115,7 +115,12 @@ def buildExpr(pyle):
         kwArgs=[]
     else:
         kwArgs=pyle[2]
-    return CallExpr(buildExpr(pyle[0]),
+
+    f=pyle[0]
+    if f==S('mk-symbol'):
+        f=S('adder.common.Symbol')
+
+    return CallExpr(buildExpr(f),
                     list(map(buildExpr,pyle[1])),
                     dict(map(lambda kx: (kx[0], buildExpr(kx[1])),
                              kwArgs)

@@ -121,6 +121,7 @@ class Scope:
                          'in',
                          'tuple','list','set','dict',
                          'mk-tuple','mk-list','mk-set','mk-dict',
+                         'mk-symbol',
                          '[]','slice','getattr','isinstance',
                          'print','gensym','apply'
                          ]:
