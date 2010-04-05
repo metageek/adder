@@ -23,13 +23,75 @@
 <h3>Gomer</h3>
 
 <p>Gomer is actually a subset of Adder, a core language with no
-  macros.  As of this writing, there is a Gomer interpreter, but no
-  Gomer-to-Pyle compiler.  Eventually, this should be reversed.
+  macros. Gomer expressions get built into ASTs, which are annotated
+  with knowledge of lexical scopes (and probably other stuff,
+  eventually).
 </p>
 
-<p>Gomer expressions get built into ASTs, which are annotated with
-  knowledge of lexical scopes (and probably other stuff, eventually).
-</p>
+<h4>Gomer special forms</h4>
+
+<dl>
+<dt>begin</dt>
+<dt>defun</dt>
+<dt>if</dt>
+<dt>lambda</dt>
+<dt>let</dt>
+<dd>TODO</dd>
+<dt>quote</dt>
+<dt>try</dt>
+</dl>
+
+<h4>Gomer functions</h4>
+
+<dl>
+<dt>raise</dt>
+<dt>head</dt>
+<dt>tail</dt>
+<dt>reverse</dt>
+<dt>reverse!</dt>
+<dt>stdenv</dt>
+<dt>eval-py</dt>
+<dt>exec-py</dt>
+<dt>print</dt>
+<dt>getattr</dt>
+<dt>slice</dt>
+<dt>==</dt>
+<dt>!=</dt>
+<dt>&lt;=</dt>
+<dt>&lt;</dt>
+<dt>&gt;=</dt>
+<dt>&gt;</dt>
+<dt>+</dt>
+<dt>-</dt>
+<dt>*</dt>
+<dt>/</dt>
+<dt>//</dt>
+<dt>%</dt>
+<dt>in</dt>
+<dt>gensym</dt>
+<dt>[]</dt>
+<dt>getattr</dt>
+<dt>slice</dt>
+<dt>list</dt>
+<dt>tuple</dt>
+<dt>set</dt>
+<dt>dict</dt>
+<dt>isinstance</dt>
+<dt>mk-list</dt>
+<dt>mk-tuple</dt>
+<dt>mk-set</dt>
+<dt>mk-dict</dt>
+<dt>mk-symbol</dt>
+<dd>TODO</dd>
+<dt>reverse</dt>
+<dt>reverse!</dt>
+<dt>eval</dt>
+<dd>TODO: must wait for Adder-to-Gomer layer.</dd>
+<dt>stdenv</dt>
+<dt>apply</dt>
+<dt>load</dt>
+<dd>TODO: must wait for Adder-to-Gomer layer.</dd>
+</dl>
 
 <h3>Pyle</h3>
 

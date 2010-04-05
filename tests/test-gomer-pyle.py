@@ -79,6 +79,10 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.compile([S('=='),2,3])=='2==3'
         assert self.pythonFlat==''
 
+    def testCallIf(self):
+        assert self.compile([S('if'),[S('<'),5,7],2,3])=='2 if (5<7) else 3'
+        assert self.pythonFlat==''
+
     def testCallNe(self):
         assert self.compile([S('!='),2,3])=='2!=3'
         assert self.pythonFlat==''
