@@ -87,18 +87,6 @@ def mkStdEnv():
     env=Env(scope,None)
 
     functions=[
-        ('==',eqF,True),
-        ('!=',neF,True),
-        ('<',ltF,True),
-        ('>',gtF,True),
-        ('<=',leF,True),
-        ('>=',geF,True),
-        ('+',plusF,True),
-        ('-',minusF,True),
-        ('*',timesF,True),
-        ('/',fdivF,True),
-        ('//',idivF,True),
-        ('%',modF,True),
         ('in',inF,True),
         ('print',print,False),
         ('gensym',adder.common.gensym,False),
@@ -116,16 +104,9 @@ def mkStdEnv():
         ('eval-gomer',evalGomerF,False),
         ('apply',lambda f,args: f(*args),False),
         ]
-    specials=[
-        ('if',ifSF,True)
-        ]
 
     for (name,f,pure) in functions:
         scope.addDef(S(name),Constant(scope,NativeFunction(f,pure)))
-
-    for (name,f,pure) in specials:
-        scope.addDef(S(name),Constant(scope,NativeFunction(f,pure,
-                                                           special=True)))
 
     for (name,value) in [
         ('stdin',sys.stdin),

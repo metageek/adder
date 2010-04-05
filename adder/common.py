@@ -3,6 +3,9 @@ import pdb,types,re
 pythonLegal=re.compile('^[_a-z0-9A-Z]+$')
 
 class Symbol(str):
+    def isGensym(self):
+        return self.startswith('#<gensym')
+
     def __repr__(self):
         return 'adder.common.Symbol('+repr(str(self))+')'
 

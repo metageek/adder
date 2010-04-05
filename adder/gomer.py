@@ -114,6 +114,12 @@ class Scope:
                              ('exec-py',ExecPy()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
+            for name in ['if',
+                         '+','-','*','/','//','%',
+                         '<','>','<=','>=','==','!=',
+                         ]:
+                self.addDef(S(name),Constant(self,Pyle(self,name)))
+
 
     def isDescendant(self,other):
         if not other:
@@ -335,11 +341,21 @@ class VarRef(Expr):
     def __str__(self):
         return self.name
 
-    def compyle(self,stmtCollector):
+    def compyle(self,stmtCollector,*,asDef=False):
         if self.isKeyword():
             raise KeywordsHaveNoValue(self)
 
-        return S("%s_%d" % (self.name,self.scopeRequired().id))
+        if self.name.isGensym():
+            return S(self.name)
+
+        if asDef:
+            scope=self.scope
+        else:
+            scope=self.scopeRequired()
+            if scope.parent==None:
+                return S(self.name)
+
+        return S("%s_%d" % (self.name,scope.id))
 
 class Call(Expr):
     def __init__(self,scope,f,args):
@@ -423,6 +439,8 @@ class Call(Expr):
             fv=self.f.constValue()
         except NotConstant:
             pass
+        except NotInitialized:
+            pass
         except Undefined:
             pass
 
@@ -460,6 +478,10 @@ class Function:
             return [f,posArgs,kwArgs]
         else:
             return [f,posArgs]
+
+class Pyle(Function):
+    def __init__(self,scope,f):
+        self.f=VarRef(scope,S(f))
 
 class Defun(Function):
     def compyleCall(self,args,kwArgs,stmtCollector):
@@ -643,8 +665,10 @@ class UserFunction(Function):
 
     def compyle(self,stmtCollector):
         defStmt=[S('def'),
-                 [self.name.compyle(stmtCollector),
-                  list(map(lambda sym: sym.name,self.argList))]
+                 [self.name.compyle(stmtCollector,asDef=True),
+                  list(map(lambda sym: sym.compyle(stmtCollector,
+                                                   asDef=True),
+                           self.argList))]
                  ]
 
         def innerCollector(stmt):
@@ -660,7 +684,7 @@ class UserFunction(Function):
         innerCollector([S('return'),[scratchVar]])
 
         stmtCollector(defStmt)
-        return self.name
+        return self.name.compyle(stmtCollector,asDef=True)
 
 def build(scope,gomer):
     if isinstance(gomer,S):
@@ -678,10 +702,12 @@ def build(scope,gomer):
         name=gomer[1]
         argList=gomer[2]
         body=gomer[3:]
+        for arg in argList:
+            innerScope.addDef(arg,None)
         return Call(scope,
                     build(scope,gomer[0]),
                     ([build(scope,name)]
-                     +[list(map(lambda a: build(scope,a),argList))]
+                     +[list(map(lambda a: build(innerScope,a),argList))]
                      +list(map(lambda g: build(innerScope,g),body))
                      )
                     )
