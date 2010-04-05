@@ -134,7 +134,7 @@ def buildStmt(pyle):
     if not pyle:
         pdb.set_trace()
     assert pyle
-    assert isinstance(pyle[0],S)
+    #assert isinstance(pyle[0],S)
     assert len(pyle)>1
 
     if pyle[0]==S(':='):

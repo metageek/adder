@@ -4,7 +4,7 @@
 
 import unittest,pdb,sys,os
 from adder.common import Symbol as S
-import adder.stdenv,adder.common,adder.gomer,adder.pyle
+import adder.common,adder.gomer,adder.pyle,adder.runtime
 
 class GomerToPythonTestCase(unittest.TestCase):
     def setUp(self):
@@ -13,8 +13,11 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.pythonFlat=''
         self.exprPython=None
         adder.common.gensym.nextId=1
+        adder.gomer.Scope.nextId=1
         self.verbose=False
         self.scope=adder.gomer.Scope(None)
+        self.globals={'adder': adder,
+                      'gensym': adder.common.gensym}
 
     def tearDown(self):
         self.pyleStmtLists=None
@@ -22,10 +25,27 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.pythonFlat=None
         self.exprPython=None
         self.verbose=None
+        self.globals=None
+
+    def addFuncDef(self,name,f):
+        self.addDefs(name,
+                     adder.gomer.Constant(self.scope,
+                                          adder.gomer.Pyle(self.scope,
+                                                           name)
+                                          )
+                     )
+        self.globals[name]=f
 
     def addDefs(self,*names):
         for name in names:
-            self.scope.addDef(S(name),None)
+            if isinstance(name,tuple):
+                (name,value)=name
+            else:
+                value=None
+            self.scope.addDef(S(name),
+                              None if (value is None) else adder.gomer.Constant(self.scope,value)
+                              )
+            self.globals[name]=value
 
     def compile(self,gomerList):
         gomerAST=adder.gomer.build(self.scope,gomerList)
@@ -204,7 +224,6 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallDict(self):
-        self.addDefs('x','a')
         self.compile([S('dict'),
                       [S('quote'),[[S('x'),17],[S('a'),23]]]
                       ])
@@ -256,7 +275,9 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.compile([S('reverse!'),S('l')])
         scratch=S('#<gensym-scratch #1>').toPython()
         assert self.exprPython==scratch
-        assert self.pythonFlat==('%s=l.reverse()\n' % scratch)
+        assert self.pythonFlat==("""%s=l
+%s.reverse()
+""" % (scratch,scratch))
         
     def testCallStdenv(self):
         self.compile([S('stdenv')])
@@ -313,11 +334,11 @@ try:
     f(7)
     %s=g(19)
     %s=%s
-except Foo as foo:
-    print(foo)
+except Foo as foo_2:
+    print(foo_2)
     flip()
-except Bar as bar:
-    h(bar)
+except Bar as bar_3:
+    h(bar_3)
 """ % (scratch1,scratch2,scratch1,scratch2))
 
     def testCallTryWithFinally(self):
@@ -337,16 +358,284 @@ try:
     f(7)
     %s=g(19)
     %s=%s
-except Foo as foo:
-    print(foo)
-except Bar as bar:
-    h(bar)
+except Foo as foo_2:
+    print(foo_2)
+except Bar as bar_3:
+    h(bar_3)
+finally:
+    pi()
+""" % (scratch1,scratch2,scratch1,scratch2))
+
+class RunGomerTestCase(GomerToPythonTestCase):
+    def runGomer(self,gomerList):
+        exprPython=self.compile(gomerList)
+        if self.verbose:
+            print('globals before',self.globals)
+            print('self.pythonFlat',self.pythonFlat)
+        if self.pythonFlat:
+            exec(self.pythonFlat,self.globals)
+        if self.verbose:
+            print('globals after exec',self.globals)
+            print('exprPython',type(exprPython),exprPython)
+        if exprPython is not None:
+            self.runResult=eval(exprPython,self.globals)
+            if self.verbose:
+                print(self.runResult)
+            return self.runResult
+
+    def testConstInt(self):
+        assert self.runGomer(1)==1
+
+    def testCallQuoteInt(self):
+        assert self.runGomer([S('quote'),2])==2
+
+    def testCallQuoteFloat(self):
+        assert self.runGomer([S('quote'),2.7])==2.7
+
+    def testCallQuoteStr(self):
+        assert self.runGomer([S('quote'),"fred"])=="fred"
+
+    def testCallQuoteSym(self):
+        assert self.runGomer([S('quote'),S("fred")])==S("fred")
+        assert isinstance(self.runResult,S)
+
+    def testCallQuoteList(self):
+        assert self.runGomer([S('quote'),[S("fred"),17]])==[S("fred"),17]
+        assert isinstance(self.runResult[0],S)
+
+    def testCallEq(self):
+        assert self.runGomer([S('=='),2,3])==False
+
+    def testCallIf(self):
+        assert self.runGomer([S('if'),[S('<'),5,7],2,3])==2
+
+    def testCallNe(self):
+        assert self.runGomer([S('!='),2,3])==True
+
+    def testCallLt(self):
+        assert self.runGomer([S('<'),2,3])==True
+
+    def testCallLe(self):
+        assert self.runGomer([S('<='),2,3])==True
+
+    def testCallGt(self):
+        assert self.runGomer([S('>'),2,3])==False
+
+    def testCallGe(self):
+        assert self.runGomer([S('>='),2,3])==False
+
+    def testCallPlus(self):
+        assert self.runGomer([S('+'),2,3])==5
+
+    def testCallMinus(self):
+        assert self.runGomer([S('-'),2,3])==-1
+
+    def testCallTimes(self):
+        assert self.runGomer([S('*'),2,3])==6
+
+    def testCallFDiv(self):
+        assert self.runGomer([S('/'),2,3])==2/3
+
+    def testCallIDiv(self):
+        assert self.runGomer([S('//'),2,3])==0
+
+    def testCallMod(self):
+        assert self.runGomer([S('%'),2,3])==2
+
+    def testCallIn(self):
+        self.addDefs(('l',[1,2,3]))
+        assert self.runGomer([S('in'),2,S('l')])==True
+
+    def testCallRaise(self):
+        class X(Exception):
+            pass
+
+        self.addFuncDef('Exception',X)
+        try:
+            self.runGomer([S('raise'),[S('Exception'),17]])
+        except X as e:
+            assert e.args==(17,)
+
+    def testCallGensym(self):
+        self.runGomer([S('gensym'),[S('quote'),S('fred')]])
+        adder.common.gensym.nextId=1
+        assert self.runResult==adder.common.gensym(adder.common.Symbol('fred'))
+
+    def testCallGetitem(self):
+        self.addDefs(('l',[2,3,5,7]))
+        assert self.runGomer([S('[]'),S('l'),3])==7
+
+    def testCallGetattr(self):
+        class O:
+            def __init__(self):
+                self.x=23
+
+        o=O()
+
+        self.addDefs(('o',o))
+        assert self.runGomer([S('getattr'),S('o'),'x'])==23
+
+    def testCallSlice1(self):
+        self.addDefs(('l',[2,3,5,7]))
+        assert self.runGomer([S('slice'),S('l'),1])==[3,5,7]
+
+    def testCallSlice2(self):
+        self.addDefs(('l',[2,3,5,7]))
+        assert self.runGomer([S('slice'),S('l'),1,2])==[3]
+
+    def testCallHead(self):
+        self.addDefs(('l',[2,3,5,7]))
+        self.runGomer([S('head'),S('l')])==2
+
+    def testCallTail(self):
+        self.addDefs(('l',[2,3,5,7]))
+        self.runGomer([S('tail'),S('l')])==[3,5,7]
+
+    def testCallList(self):
+        self.addDefs(('x',(2,3,5,7)))
+        assert self.runGomer([S('list'),S('x')])==[2,3,5,7]
+
+    def testCallTuple(self):
+        self.addDefs(('x',[2,3,5,7]))
+        assert self.runGomer([S('tuple'),S('x')])==(2,3,5,7)
+
+    def testCallSet(self):
+        self.addDefs(('x',[2,3,5,7]))
+        assert self.runGomer([S('set'),S('x')])=={2,3,5,7}
+
+    def testCallDict(self):
+        assert self.runGomer([S('dict'),
+                              [S('quote'),[[S('x'),17],[S('a'),23]]]
+                              ])=={S('x'): 17, S('a'): 23}
+
+    def testCallDictNoQuote(self):
+        self.addDefs(('x',"fred"),('a',127))
+        assert self.runGomer([S('dict'),
+                              [S('mk-list'),
+                               [S('mk-list'),S('x'),17],
+                               [S('mk-list'),S('a'),23]
+                               ]
+                              ])=={'fred': 17, 127: 23}
+
+    def testCallIsinstance(self):
+        self.addDefs(('x',17),('str',str))
+        assert self.runGomer([S('isinstance'),S('x'),S('str')])==False
+
+    def testCallMkList(self):
+        self.addDefs(('a',(5,7)))
+        assert self.runGomer([S('mk-list'),S('a'),1,2,3])==[(5,7), 1, 2, 3]
+
+    def testCallMkTuple(self):
+        self.addDefs(('a',(5,7)))
+        assert self.runGomer([S('mk-tuple'),S('a'),1,2,3])==((5,7), 1, 2, 3)
+
+    def testCallMkSet(self):
+        self.addDefs(('a',(5,7)))
+        assert self.runGomer([S('mk-set'),S('a'),1,2,3])=={(5,7), 1, 2, 3}
+
+    def testCallMkDict1(self):
+        assert self.runGomer([S('mk-dict'),S(':a'),1,S(':b'),3])=={'a': 1, 'b': 3}
+
+    def testCallMkDict2(self):
+        self.runGomer([S('mk-dict'),S(':b'),3,S(':a'),1])=={'a': 1, 'b': 3}
+        
+    def testCallReverse(self):
+        self.addDefs(('l',[2,3,5,7]))
+        assert self.runGomer([S('reverse'),S('l')])==[7,5,3,2]
+        
+    def testCallReverseBang(self):
+        l=[2,3,5,7]
+        self.addDefs(('l',l))
+        assert self.runGomer([S('reverse!'),S('l')]) is l
+        assert l==[7,5,3,2]
+        
+    def testCallStdenv(self):
+        self.runGomer([S('stdenv')])
+        assert isinstance(self.runResult,adder.gomer.Env)
+        assert self.runResult.parent is None
+        assert self.runResult.scope.parent is None
+        
+    def testCallEvalPy(self):
+        self.addDefs(('x',"23"))
+        assert self.runGomer([S('eval-py'),S('x')])==23
+        
+    def testCallExecPy(self):
+        self.addDefs(('x',"y=17"))
+        assert self.runGomer([S('exec-py'),S('x')]) is None
+        assert self.globals['y']==17
+        
+    def testCallApplyNoKw(self):
+        self.addFuncDef('f',lambda a,b,c: a+b+c)
+        assert self.runGomer([S('apply'),
+                              S('f'),
+                              [S('mk-list'),1,2,3]
+                              ])==6
+        
+    def testCallApplyWithKw(self):
+        def f(a,b,c,*,aWeight=1,bWeight=1,cWeight=1):
+            return a*aWeight+b*bWeight+c*cWeight
+
+        self.addFuncDef('f',f)
+        self.runGomer([S('apply'),
+                       S('f'),
+                       [S('mk-list'),1,2,3],
+                       [S('mk-dict'),S(':bWeight'),3,S(':bWeight'),5]
+                       ])==14
+        
+    def testCallTryNoFinally(self):
+        class XF(Exception):
+            pass
+        class XG(Exception):
+            pass
+        def f(x):
+            raise XF(x)
+        def g(x):
+            raise XG(x)
+        self.addFuncDef('f',f)
+        self.addFuncDef('g',g)
+        self.addFuncDef('XF',XF)
+        self.addFuncDef('XG',XG)
+
+        self.addDefs('xf','xg')
+
+        self.runGomer([S('try'),
+                       [S('f'),7],
+                       [S('g'),19],
+                       S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
+                       S(':XG'),[S('eg'),[S(':='),S('xg'),S('eg')]],
+                       ])
+        assert 'xf' in self.globals
+        assert isinstance(self.globals['xf'],XF)
+        assert self.globals['xf'].args==(7,)
+
+    def testCallTryWithFinally(self):
+        self.addDefs('f','g','foo','bar','h','pi')
+        self.compile([S('try'),
+                      [S('f'),7],
+                      [S('g'),19],
+                      S(':Foo'),[S('foo'),[S('print'),S('foo')]],
+                      S(':Bar'),[S('bar'),[S('h'),S('bar')]],
+                      S(':finally'),[[S('pi')]],
+                      ])
+        scratch1=S('#<gensym-scratch #1>').toPython()
+        scratch2=S('#<gensym-scratch #2>').toPython()
+        assert self.exprPython==scratch1
+        assert self.pythonFlat==("""%s=None
+try:
+    f(7)
+    %s=g(19)
+    %s=%s
+except Foo as foo_2:
+    print(foo_2)
+except Bar as bar_3:
+    h(bar_3)
 finally:
     pi()
 """ % (scratch1,scratch2,scratch1,scratch2))
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),
+      unittest.makeSuite(RunGomerTestCase,"test"),
      )
     )
 

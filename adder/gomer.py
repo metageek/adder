@@ -116,7 +116,7 @@ class Scope:
                 self.addDef(S(name),Constant(self,f))
             for name in ['if',
                          '+','-','*','/','//','%',
-                         '<','>','<=','>=','==','!=',
+                         '<','>','<=','>=','==','!=',':=',
                          'in',
                          'tuple','list','set','dict',
                          'mk-tuple','mk-list','mk-set','mk-dict',
@@ -230,6 +230,14 @@ class Expr:
     def __init__(self,scope):
         self.scope=scope
 
+    def contents(self):
+        return []
+
+    def setScope(self,scope):
+        for x in self.contents():
+            x.setScope(scope)
+        self.scope=scope
+
     def constValue(self):
         raise NotConstant(self)
 
@@ -284,13 +292,14 @@ class Constant(Expr):
                 ]
 
 class VarRef(Expr):
-    def __init__(self,scope,name):
+    def __init__(self,scope,name,*,asDef=False):
         assert(name)
         Expr.__init__(self,scope)
         self.name=name
+        self.asDef=asDef
 
     def isKeyword(self):
-        return self.name[0]==':'
+        return (self.name[0]==':') and (self.name!=':=')
 
     def evaluate(self,env):
         if self.isKeyword():
@@ -346,14 +355,14 @@ class VarRef(Expr):
     def __str__(self):
         return self.name
 
-    def compyle(self,stmtCollector,*,asDef=False):
+    def compyle(self,stmtCollector):
         if self.isKeyword():
             raise KeywordsHaveNoValue(self)
 
         if self.name.isGensym():
             return S(self.name)
 
-        if asDef:
+        if self.asDef:
             scope=self.scope
         else:
             scope=self.scopeRequired()
@@ -366,6 +375,7 @@ class Call(Expr):
     def __init__(self,scope,f,args):
         Expr.__init__(self,scope)
         self.f=f
+        self.allArgs=args
         self.posArgs=[]
         self.kwArgs=[]
         curKeyword=None
@@ -386,6 +396,9 @@ class Call(Expr):
 
         if args and isKeyword:
             raise KeywordWithNoArg(curKeyword)
+
+    def contents(self):
+        return [self.f]+self.allArgs
 
     def evaluate(self,env):
         fv=self.f.evaluate(env)
@@ -537,12 +550,12 @@ class ReverseBang(Function):
         assert len(args)==1
         scratchVar=gensym('scratch')
         stmtCollector([S(':='),
-                       [scratchVar,
-                        [[S('.'),
-                          [args[0].compyle(stmtCollector),S('reverse')]
-                          ],[]]
-                        ]
+                       [scratchVar,args[0].compyle(stmtCollector)]
                        ])
+        stmtCollector([[S('.'),
+                        [scratchVar,S('reverse')]
+                        ],
+                       []])
         return scratchVar
 
     def __call__(self,l):
@@ -646,6 +659,11 @@ class UserFunction(Function):
             self.innerScope=self.bodyExprs[0].scope
             self.outerEnv=outerEnv
 
+        if name:
+            self.name.asDef=True
+        for arg in self.argList:
+            arg.asDef=True
+
     def __call__(self,*args):
         if not self.bodyExprs:
             return None
@@ -670,9 +688,8 @@ class UserFunction(Function):
 
     def compyle(self,stmtCollector):
         defStmt=[S('def'),
-                 [self.name.compyle(stmtCollector,asDef=True),
-                  list(map(lambda sym: sym.compyle(stmtCollector,
-                                                   asDef=True),
+                 [self.name.compyle(stmtCollector),
+                  list(map(lambda sym: sym.compyle(stmtCollector),
                            self.argList))]
                  ]
 
@@ -689,7 +706,7 @@ class UserFunction(Function):
         innerCollector([S('return'),[scratchVar]])
 
         stmtCollector(defStmt)
-        return self.name.compyle(stmtCollector,asDef=True)
+        return self.name.compyle(stmtCollector)
 
 def build(scope,gomer):
     if isinstance(gomer,S):
@@ -722,7 +739,7 @@ def build(scope,gomer):
         body=gomer[2:]
         return Call(scope,
                     build(scope,gomer[0]),
-                    ([list(map(lambda a: build(scope,a),argList))]
+                    ([list(map(lambda a: build(innerScope,a),argList))]
                      +list(map(lambda g: build(innerScope,g),body))
                      )
                     )
@@ -733,7 +750,16 @@ def build(scope,gomer):
         else:
             return Constant(scope,gomer[1])
 
-    return Call(scope,
-                build(scope,gomer[0]),
-                list(map(lambda g: build(scope,g),
-                         gomer[1:])))
+    res=Call(scope,
+             build(scope,gomer[0]),
+             list(map(lambda g: build(scope,g),
+                      gomer[1:])))
+    if gomer[0]==S('try'):
+        for (klass,clause) in res.kwArgs:
+            if klass=='finally':
+                continue
+            innerScope=Scope(scope)
+            innerScope.addDef(clause.f.name,None)
+            clause.setScope(innerScope)
+            clause.f.asDef=True
+    return res
