@@ -6,7 +6,7 @@ import unittest,pdb,sys,os
 from adder.common import Symbol as S
 import adder.common,adder.gomer,adder.pyle,adder.runtime
 
-class GomerToPythonTestCase(unittest.TestCase):
+class CompilingTestCase(unittest.TestCase):
     def setUp(self):
         self.pyleStmtLists=[]
         self.pythonTrees=[]
@@ -69,6 +69,7 @@ class GomerToPythonTestCase(unittest.TestCase):
             print(repr(self.pythonTrees))
         return self.exprPython
 
+class GomerToPythonTestCase(CompilingTestCase):
     def testConstInt(self):
         assert self.compile(1)=='1'
         assert self.pythonFlat==''
@@ -99,12 +100,23 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.exprPython=="[adder.common.Symbol('fred'), 17]"
         assert self.pythonFlat==''
 
-    def testCallEq(self):
-        assert self.compile([S('=='),2,3])=='2==3'
-        assert self.pythonFlat==''
-
     def testCallIf(self):
         assert self.compile([S('if'),[S('<'),5,7],2,3])=='2 if (5<7) else 3'
+        assert self.pythonFlat==''
+
+    def testCallBegin(self):
+        self.addDefs('x')
+        self.compile([S('begin'),
+                      [S(':='),S('x'),7],
+                      [S('*'),9,S('x')]])
+        scratch=S('#<gensym-scratch #1>').toPython()
+        assert self.exprPython==scratch
+        assert self.pythonFlat=="""x=7
+%s=9*x
+""" % scratch
+
+    def testCallEq(self):
+        assert self.compile([S('=='),2,3])=='2==3'
         assert self.pythonFlat==''
 
     def testCallNe(self):
@@ -366,7 +378,7 @@ finally:
     pi()
 """ % (scratch1,scratch2,scratch1,scratch2))
 
-class RunGomerTestCase(GomerToPythonTestCase):
+class RunGomerTestCase(CompilingTestCase):
     def runGomer(self,gomerList):
         exprPython=self.compile(gomerList)
         if self.verbose:
@@ -402,6 +414,12 @@ class RunGomerTestCase(GomerToPythonTestCase):
     def testCallQuoteList(self):
         assert self.runGomer([S('quote'),[S("fred"),17]])==[S("fred"),17]
         assert isinstance(self.runResult[0],S)
+
+    def testCallBegin(self):
+        self.addDefs('x')
+        assert self.runGomer([S('begin'),
+                              [S(':='),S('x'),7],
+                              [S('*'),9,S('x')]])==63
 
     def testCallEq(self):
         assert self.runGomer([S('=='),2,3])==False
