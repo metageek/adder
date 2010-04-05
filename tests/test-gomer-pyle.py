@@ -121,6 +121,22 @@ class GomerToPythonTestCase(CompilingTestCase):
         assert self.pythonFlat=="""x_1=7
 """
 
+    def testCallDefineInScope(self):
+        self.compile([S('begin'),
+                      [S('define'),S('x'),7],
+                      [S('scope'),
+                       [S('define'),S('x'),9]
+                       ]
+                      ])
+        scratch1=S('#<gensym-scratch #1>').toPython()
+        scratch2=S('#<gensym-scratch #2>').toPython()
+        assert self.exprPython==scratch1
+        assert self.pythonFlat=="""x_1=7
+x_2=9
+%s=x_2
+%s=%s
+""" % (scratch2,scratch1,scratch2)
+
     def testCallEq(self):
         assert self.compile([S('=='),2,3])=='2==3'
         assert self.pythonFlat==''
@@ -429,6 +445,14 @@ class RunGomerTestCase(CompilingTestCase):
 
     def testCallDefine(self):
         assert self.runGomer([S('define'),S('x'),7])==7
+
+    def testCallDefineInScope(self):
+        assert self.runGomer([S('begin'),
+                              [S('define'),S('x'),7],
+                              [S('scope'),
+                               [S('define'),S('x'),9]
+                               ]
+                              ])==9
 
     def testCallEq(self):
         assert self.runGomer([S('=='),2,3])==False

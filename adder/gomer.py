@@ -606,7 +606,7 @@ class Begin(Function):
 
         for a in args[:-1]:
             pyleExpr=a.compyle(innerCollector)
-            if pyleExpr:
+            if pyleExpr and not isinstance(pyleExpr,S):
                 innerCollector(pyleExpr)
 
         scratchVar=gensym('scratch')
