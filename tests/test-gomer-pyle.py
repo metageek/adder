@@ -14,6 +14,7 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.exprPython=None
         adder.common.gensym.nextId=1
         self.verbose=False
+        self.scope=adder.gomer.Scope(None)
 
     def tearDown(self):
         self.pyleStmtLists=None
@@ -22,9 +23,12 @@ class GomerToPythonTestCase(unittest.TestCase):
         self.exprPython=None
         self.verbose=None
 
+    def addDefs(self,*names):
+        for name in names:
+            self.scope.addDef(S(name),None)
+
     def compile(self,gomerList):
-        gomerAST=adder.gomer.build(adder.gomer.Scope(None),
-                                   gomerList)
+        gomerAST=adder.gomer.build(self.scope,gomerList)
         self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
         if self.verbose:
             print(self.exprPyleList)
@@ -132,6 +136,7 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallRaise(self):
+        self.addDefs('Exception')
         assert self.compile([S('raise'),[S('Exception')]])==None
         assert self.pythonFlat=='raise Exception()\n'
 
@@ -145,51 +150,61 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallGetitem(self):
+        self.addDefs('l')
         self.compile([S('[]'),S('l'),17])
         assert self.exprPython=="l[17]"
         assert self.pythonFlat==''
 
     def testCallGetattr(self):
+        self.addDefs('o')
         self.compile([S('getattr'),S('o'),'x'])
         assert self.exprPython=="getattr(o, 'x')"
         assert self.pythonFlat==''
 
     def testCallSlice1(self):
+        self.addDefs('l')
         self.compile([S('slice'),S('l'),17])
         assert self.exprPython=="l[17:]"
         assert self.pythonFlat==''
 
     def testCallSlice2(self):
+        self.addDefs('l')
         self.compile([S('slice'),S('l'),17,23])
         assert self.exprPython=="l[17:23]"
         assert self.pythonFlat==''
 
     def testCallHead(self):
+        self.addDefs('l')
         self.compile([S('head'),S('l')])
         assert self.exprPython=="l[1]"
         assert self.pythonFlat==''
 
     def testCallTail(self):
+        self.addDefs('l')
         self.compile([S('tail'),S('l')])
         assert self.exprPython=="l[1:]"
         assert self.pythonFlat==''
 
     def testCallList(self):
+        self.addDefs('x')
         self.compile([S('list'),S('x')])
         assert self.exprPython=="list(x)"
         assert self.pythonFlat==''
 
     def testCallTuple(self):
+        self.addDefs('x')
         self.compile([S('tuple'),S('x')])
         assert self.exprPython=="tuple(x)"
         assert self.pythonFlat==''
 
     def testCallSet(self):
+        self.addDefs('x')
         self.compile([S('set'),S('x')])
         assert self.exprPython=="set(x)"
         assert self.pythonFlat==''
 
     def testCallDict(self):
+        self.addDefs('x','a')
         self.compile([S('dict'),
                       [S('quote'),[[S('x'),17],[S('a'),23]]]
                       ])
@@ -197,21 +212,25 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
 
     def testCallIsinstance(self):
+        self.addDefs('x','str')
         self.compile([S('isinstance'),S('x'),S('str')])
         assert self.exprPython=="isinstance(x, str)"
         assert self.pythonFlat==''
 
     def testCallMkList(self):
+        self.addDefs('a')
         self.compile([S('mk-list'),S('a'),1,2,3])
         assert self.exprPython=="[a, 1, 2, 3]"
         assert self.pythonFlat==''
 
     def testCallMkTuple(self):
+        self.addDefs('a')
         self.compile([S('mk-tuple'),S('a'),1,2,3])
         assert self.exprPython=="(a, 1, 2, 3)"
         assert self.pythonFlat==''
 
     def testCallMkSet(self):
+        self.addDefs('a')
         self.compile([S('mk-set'),S('a'),1,2,3])
         assert self.exprPython=="{a, 1, 2, 3}"
         assert self.pythonFlat==''
@@ -227,11 +246,13 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
         
     def testCallReverse(self):
+        self.addDefs('l')
         self.compile([S('reverse'),S('l')])
         assert self.exprPython=="adder.runtime.reverse(l)"
         assert self.pythonFlat==''
         
     def testCallReverseBang(self):
+        self.addDefs('l')
         self.compile([S('reverse!'),S('l')])
         scratch=S('#<gensym-scratch #1>').toPython()
         assert self.exprPython==scratch
@@ -243,16 +264,19 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
         
     def testCallEvalPy(self):
+        self.addDefs('x')
         self.compile([S('eval-py'),S('x')])
         assert self.exprPython=="eval(x)"
         assert self.pythonFlat==''
         
     def testCallExecPy(self):
+        self.addDefs('x')
         self.compile([S('exec-py'),S('x')])
         assert self.exprPython==None
         assert self.pythonFlat=='exec(x)\n'
         
     def testCallApplyNoKw(self):
+        self.addDefs('f')
         self.compile([S('apply'),
                       S('f'),
                       [S('mk-list'),1,2,3]
@@ -261,6 +285,7 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==''
         
     def testCallApplyWithKw(self):
+        self.addDefs('f')
         self.compile([S('apply'),
                       S('f'),
                       [S('mk-list'),1,2,3],
@@ -270,6 +295,7 @@ class GomerToPythonTestCase(unittest.TestCase):
         assert self.pythonFlat==""
         
     def testCallTryNoFinally(self):
+        self.addDefs('f','g','foo','flip','bar','h')
         self.compile([S('try'),
                       [S('f'),7],
                       [S('g'),19],
@@ -295,6 +321,7 @@ except Bar as bar:
 """ % (scratch1,scratch2,scratch1,scratch2))
 
     def testCallTryWithFinally(self):
+        self.addDefs('f','g','foo','bar','h','pi')
         self.compile([S('try'),
                       [S('f'),7],
                       [S('g'),19],

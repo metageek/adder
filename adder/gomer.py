@@ -117,6 +117,11 @@ class Scope:
             for name in ['if',
                          '+','-','*','/','//','%',
                          '<','>','<=','>=','==','!=',
+                         'in',
+                         'tuple','list','set','dict',
+                         'mk-tuple','mk-list','mk-set','mk-dict',
+                         '[]','slice','getattr','isinstance',
+                         'print','gensym','apply'
                          ]:
                 self.addDef(S(name),Constant(self,Pyle(self,name)))
 
