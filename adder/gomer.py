@@ -127,6 +127,7 @@ class Scope:
                          'mk-symbol',
                          '[]','slice','getattr','isinstance',
                          'print','gensym','apply',
+                         'break','continue',
                          ]:
                 self.addDef(S(name),Constant(self,Pyle(self,name)))
 

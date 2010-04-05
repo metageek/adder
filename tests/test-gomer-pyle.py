@@ -116,6 +116,35 @@ class GomerToPythonTestCase(CompilingTestCase):
     n=n+1
 """
 
+    def testCallWhileBreak(self):
+        self.addDefs(('n',0))
+        assert self.compile([S('while'),
+                             [S('<'),S('n'),7],
+                             [S('print'),S('n')],
+                             [S('break')]
+                             ])==None
+        assert self.pythonFlat=="""while n<7:
+    print(n)
+    break
+"""
+
+    def testCallWhileContinue(self):
+        self.addDefs(('n',0))
+        assert self.compile([S('while'),
+                             [S('<'),S('n'),7],
+                             [S('print'),S('n')],
+                             [S('continue')]
+                             ])==None
+        assert self.pythonFlat=="""while n<7:
+    print(n)
+    continue
+"""
+
+    def testDot0(self):
+        self.addDefs('o')
+        assert self.compile([S('.'),S('o')])=='o'
+        assert not self.pythonFlat
+
     def testDot1(self):
         self.addDefs('o')
         assert self.compile([S('.'),S('o'),S('x')])=='o.x'
@@ -480,6 +509,26 @@ class RunGomerTestCase(CompilingTestCase):
                        ])
         assert self.globals['n']==8
         assert self.globals['l']==[1,2,4]
+
+    def testCallWhileBreak(self):
+        self.addDefs(('n',1),('l',[]))
+        self.runGomer([S('while'),
+                       [S('<'),S('n'),7],
+                       [[S('.'),S('l'),S('append')],S('n')],
+                       [S('break')]
+                       ])
+        assert self.globals['n']==1
+        assert self.globals['l']==[1]
+
+    def testDot0(self):
+        class O:
+            pass
+
+        o=O()
+
+        self.addDefs(('o',o))
+        assert self.runGomer([S('.'),S('o')]) is o
+        assert not self.pythonFlat
 
     def testDot1(self):
         class O:

@@ -139,8 +139,6 @@ def buildStmt(pyle):
     if not pyle:
         pdb.set_trace()
     assert pyle
-    #assert isinstance(pyle[0],S)
-    assert len(pyle)>1
 
     if pyle[0]==S(':='):
         assert len(pyle[1])==2
@@ -160,9 +158,17 @@ def buildStmt(pyle):
                       elseStmt)
 
     if pyle[0]==S('while'):
-        assert len(pyle)>=2
+        assert len(pyle[1])>=1
         return WhileStmt(buildExpr(pyle[1][0]),
                          maybeBlock(list(map(buildStmt,pyle[1][1:]))))
+
+    if pyle[0]==S('break'):
+        assert len(pyle[1])==0
+        return BreakStmt()
+
+    if pyle[0]==S('continue'):
+        assert len(pyle[1])==0
+        return ContinueStmt()
 
     if pyle[0]==S('return'):
         assert len(pyle)==2
@@ -513,6 +519,14 @@ class WhileStmt(Stmt):
     def toPythonTree(self):
         return ('while %s:' % self.condExpr.toPython(False),
                 [self.body.toPythonTree() if self.body else 'pass'])
+
+class BreakStmt(Stmt):
+    def toPythonTree(self):
+        return 'break'
+
+class ContinueStmt(Stmt):
+    def toPythonTree(self):
+        return 'continue'
 
 class ReturnStmt(Stmt):
     def __init__(self,returnExpr):

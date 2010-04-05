@@ -477,6 +477,18 @@ else:
     x=9*7
 """)
 
+    def testBreak(self):
+        stmt=BreakStmt()
+        assert(stmt.toPythonTree()=='break')
+        assert(stmt.toPythonFlat()=="""break
+""")
+
+    def testContinue(self):
+        stmt=ContinueStmt()
+        assert(stmt.toPythonTree()=='continue')
+        assert(stmt.toPythonFlat()=="""continue
+""")
+
     def testReturn(self):
         stmt=ReturnStmt(Constant(0))
         assert(stmt.toPythonTree()=='return 0')
@@ -676,6 +688,18 @@ foo.bar=x*7
     x=1
 else:
     x=9*7
+""")
+
+    def testBreak(self):
+        stmt=buildStmt([S('break')])
+        assert(stmt.toPythonTree()=='break')
+        assert(stmt.toPythonFlat()=="""break
+""")
+
+    def testContinue(self):
+        stmt=buildStmt([S('continue')])
+        assert(stmt.toPythonTree()=='continue')
+        assert(stmt.toPythonFlat()=="""continue
 """)
 
     def testReturn(self):

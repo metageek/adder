@@ -602,6 +602,14 @@ class CompyleTestCase(unittest.TestCase):
         assert self.stmts==[[S('while'),
                              [[S('<'),[S('n'),2]],1,7]]]
 
+    def testDot0(self):
+        scope=Scope(None)
+        scope.addDef('o',None)
+        x=build(scope,[S('.'),S('o')])
+        p=x.compyle(self.stmtCollector)
+        assert p==[S('.'),[S('o')]]
+        assert not self.stmts
+
     def testDot1(self):
         scope=Scope(None)
         scope.addDef('o',None)
