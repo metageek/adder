@@ -115,6 +115,12 @@ class GomerToPythonTestCase(CompilingTestCase):
 %s=9*x
 """ % scratch
 
+    def testCallDefine(self):
+        self.compile([S('define'),S('x'),7])
+        assert self.exprPython=='x'
+        assert self.pythonFlat=="""x=7
+"""
+
     def testCallEq(self):
         assert self.compile([S('=='),2,3])=='2==3'
         assert self.pythonFlat==''

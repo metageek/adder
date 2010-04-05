@@ -102,6 +102,7 @@ class Scope:
 
         if not parent:
             for (name,f) in [('defun',Defun()),
+                             ('define',Define()),
                              ('begin',Begin()),
                              ('raise',Raise()),
                              ('try',Try()),
@@ -507,6 +508,19 @@ class Defun(Function):
                             None,
                             name=args[0]).compyle(stmtCollector)
 
+class Define(Function):
+    def compyleCall(self,args,kwArgs,stmtCollector):
+        assert args
+        assert len(args) in [1,2]
+        assert not kwArgs
+        if len(args)==2:
+            valuePyle=args[1].compyle(stmtCollector)
+        else:
+            valuePyle=None
+        var=args[0].compyle(stmtCollector),
+        stmtCollector([S(':='),var,valuePyle])
+        return var
+
 class Raise(Function):
     def compyleCall(self,args,kwArgs,stmtCollector):
         assert not kwArgs
@@ -762,4 +776,8 @@ def build(scope,gomer):
             innerScope.addDef(clause.f.name,None)
             clause.setScope(innerScope)
             clause.f.asDef=True
+
+    if gomer[0]==S('define'):
+        res.posArgs[0].asDef=True
+
     return res
