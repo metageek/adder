@@ -466,6 +466,7 @@ class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
         adder.common.gensym.nextId=1
+        adder.gomer.Scope.nextId=1
 
     def tearDown(self):
         self.stmts=None
@@ -524,8 +525,9 @@ class CompyleTestCase(unittest.TestCase):
 
     def testVar(self):
         scope=Scope(None)
+        scope.addDef(S('fred'),None)
         x=VarRef(scope,S('fred'))
-        assert x.compyle(self.stmtCollector)==S('fred')
+        assert x.compyle(self.stmtCollector)==S('fred_1')
         assert self.stmts==[]
 
     def testQuoteInt(self):

@@ -91,7 +91,11 @@ class VarEntry:
 
 # Table of vars  known in a lexical scope
 class Scope:
+    nextId=1
     def __init__(self,parent):
+        self.id=Scope.nextId
+        Scope.nextId+=1
+
         self.parent=parent
         self.localDefs={}
         self.varAccesses={}
@@ -335,7 +339,7 @@ class VarRef(Expr):
         if self.isKeyword():
             raise KeywordsHaveNoValue(self)
 
-        return S(self.name)
+        return S("%s_%d" % (self.name,self.scopeRequired().id))
 
 class Call(Expr):
     def __init__(self,scope,f,args):
