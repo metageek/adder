@@ -115,17 +115,17 @@ class GomerToPythonTestCase(CompilingTestCase):
 %s=9*x
 """ % scratch
 
-    def testCallDefine(self):
-        self.compile([S('define'),S('x'),7])
+    def testCallDefvar(self):
+        self.compile([S('defvar'),S('x'),7])
         assert self.exprPython=='x_1'
         assert self.pythonFlat=="""x_1=7
 """
 
-    def testCallDefineInScope(self):
+    def testCallDefvarInScope(self):
         self.compile([S('begin'),
-                      [S('define'),S('x'),7],
+                      [S('defvar'),S('x'),7],
                       [S('scope'),
-                       [S('define'),S('x'),9]
+                       [S('defvar'),S('x'),9]
                        ]
                       ])
         scratch1=S('#<gensym-scratch #1>').toPython()
@@ -443,14 +443,14 @@ class RunGomerTestCase(CompilingTestCase):
                               [S(':='),S('x'),7],
                               [S('*'),9,S('x')]])==63
 
-    def testCallDefine(self):
-        assert self.runGomer([S('define'),S('x'),7])==7
+    def testCallDefvar(self):
+        assert self.runGomer([S('defvar'),S('x'),7])==7
 
-    def testCallDefineInScope(self):
+    def testCallDefvarInScope(self):
         assert self.runGomer([S('begin'),
-                              [S('define'),S('x'),7],
+                              [S('defvar'),S('x'),7],
                               [S('scope'),
-                               [S('define'),S('x'),9]
+                               [S('defvar'),S('x'),9]
                                ]
                               ])==9
 

@@ -102,7 +102,7 @@ class Scope:
 
         if not parent:
             for (name,f) in [('defun',Defun()),
-                             ('define',Define()),
+                             ('defvar',Defvar()),
                              ('begin',Begin()),
                              ('raise',Raise()),
                              ('try',Try()),
@@ -508,7 +508,7 @@ class Defun(Function):
                             None,
                             name=args[0]).compyle(stmtCollector)
 
-class Define(Function):
+class Defvar(Function):
     def compyleCall(self,args,kwArgs,stmtCollector):
         assert args
         assert len(args) in [1,2]
@@ -656,7 +656,7 @@ class NativeFunction(Function):
         return self.pure
 
 class UserFunction(Function):
-    # The fExpr should be the (define) or (lambda) that created this function.
+    # The fExpr should be the (defun) or (lambda) that created this function.
     def __init__(self,defArgs,kwArgs,outerEnv,*,name=None):
         Function.__init__(self)
         self.special=False
@@ -777,7 +777,7 @@ def build(scope,gomer):
             clause.setScope(innerScope)
             clause.f.asDef=True
 
-    if gomer[0]==S('define'):
+    if gomer[0]==S('defvar'):
         res.posArgs[0].asDef=True
 
     return res
