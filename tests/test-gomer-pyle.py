@@ -117,8 +117,8 @@ class GomerToPythonTestCase(CompilingTestCase):
 
     def testCallDefine(self):
         self.compile([S('define'),S('x'),7])
-        assert self.exprPython=='x'
-        assert self.pythonFlat=="""x=7
+        assert self.exprPython=='x_1'
+        assert self.pythonFlat=="""x_1=7
 """
 
     def testCallEq(self):
@@ -426,6 +426,9 @@ class RunGomerTestCase(CompilingTestCase):
         assert self.runGomer([S('begin'),
                               [S(':='),S('x'),7],
                               [S('*'),9,S('x')]])==63
+
+    def testCallDefine(self):
+        assert self.runGomer([S('define'),S('x'),7])==7
 
     def testCallEq(self):
         assert self.runGomer([S('=='),2,3])==False

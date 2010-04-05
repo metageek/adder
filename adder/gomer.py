@@ -517,8 +517,8 @@ class Define(Function):
             valuePyle=args[1].compyle(stmtCollector)
         else:
             valuePyle=None
-        var=args[0].compyle(stmtCollector),
-        stmtCollector([S(':='),var,valuePyle])
+        var=args[0].compyle(stmtCollector)
+        stmtCollector([S(':='),[var,valuePyle]])
         return var
 
 class Raise(Function):
