@@ -135,9 +135,12 @@ class Scope:
                          'mk-symbol',
                          '[]','slice','getattr','isinstance',
                          'print','gensym','apply',
-                         'break','continue',
                          ]:
-                self.addDef(S(name),Constant(self,Pyle(self,name)))
+                self.addDef(S(name),Constant(self,PyleExpr(self,name)))
+
+            for name in ['break','continue',
+                         ]:
+                self.addDef(S(name),Constant(self,PyleStmt(self,name)))
 
     def nearestFuncAncestor(self):
         cur=self
@@ -516,9 +519,15 @@ class Function:
         else:
             return [f,posArgs]
 
-class Pyle(Function):
+class PyleExpr(Function):
     def __init__(self,scope,f):
         self.f=VarRef(scope,S(f))
+
+class PyleStmt(PyleExpr):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
+        stmtCollector(PyleExpr.compyleCall(self,f,
+                                           args,kwArgs,
+                                           stmtCollector))
 
 class Defun(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):
@@ -696,7 +705,16 @@ class Try(Function):
         exnPyles=[]
 
         for (klass,clause) in kwArgs:
-            exnPyles.append([klass,clause.compyle(innerCollector)])
+            exnStmts=[]
+            isFinally=(klass=='finally')
+            if isFinally:
+                (var,*clause)=clause
+            else:
+                var=None
+            exnExpr=clause.compyle(exnStmts.append)
+            if exnExpr:
+                exnStmts.append(exnExpr)
+            exnPyles.append([klass,exnStmts])
 
         stmtCollector([S('try'),bodyPyle,exnPyles])
         return scratchVar

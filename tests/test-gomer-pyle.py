@@ -30,8 +30,8 @@ class CompilingTestCase(unittest.TestCase):
     def addFuncDef(self,name,f):
         self.addDefs(name,
                      adder.gomer.Constant(self.scope,
-                                          adder.gomer.Pyle(self.scope,
-                                                           name)
+                                          adder.gomer.PyleExpr(self.scope,
+                                                               name)
                                           )
                      )
         self.globals[name]=f
@@ -129,6 +129,7 @@ class GomerToPythonTestCase(CompilingTestCase):
 """
 
     def testCallWhileContinue(self):
+        self.verbose=True
         self.addDefs(('n',0))
         assert self.compile([S('while'),
                              [S('<'),S('n'),7],
@@ -509,7 +510,7 @@ class RunGomerTestCase(CompilingTestCase):
         assert isinstance(self.runResult[0],S)
 
     def testCallWhile(self):
-        self.verbose=True
+        #self.verbose=True
         self.addDefs(('n',1),('l',[]))
         self.runGomer([S('while'),
                        [S('<'),S('n'),7],
@@ -652,7 +653,7 @@ class RunGomerTestCase(CompilingTestCase):
                               [S('list'),[S('f'),9]]])==[63,16]
 
     def testLambda(self):
-        self.verbose=True
+        #self.verbose=True
         self.addDefs(('x',7))
         f=self.runGomer([S('lambda'),[S('n')],
                          [S('defvar'),S('res'),[S('*'),S('n'),S('x')]],
@@ -798,6 +799,7 @@ class RunGomerTestCase(CompilingTestCase):
                        ])==14
         
     def testCallTryNoFinally(self):
+        #self.verbose=True
         class XF(Exception):
             pass
         class XG(Exception):
