@@ -14,6 +14,10 @@ class CompilingTestCase(unittest.TestCase):
         self.context=None
 
 class EvalTestCase(CompilingTestCase):
+    def tearDown(self):
+        CompilingTestCase.tearDown(self)
+        self.runResult=None
+
     def runAdder(self,expr):
         self.runResult=self.context.eval(expr)
         return self.runResult
@@ -355,6 +359,23 @@ class EvalTestCase(CompilingTestCase):
         assert 'xf' in self.context
         assert isinstance(self.context['xf'],XF)
         assert self.context['xf'].args==(7,)
+
+    def testSimpleMacro(self):
+        def and2Transformer(context,f,args,kwArgs):
+            assert len(args)==2
+            assert not kwArgs
+            return [S('if'),args[0],args[1],False]
+
+        def stop():
+            raise Exception('stop')
+
+        self.context.addMacroDef('and2',and2Transformer)
+        self.context.addFuncDef('stop',stop)
+
+        assert not self.runAdder([S('and2'),False,False])
+        assert not self.runAdder([S('and2'),False,True])
+        assert not self.runAdder([S('and2'),True,False])
+        assert self.runAdder([S('and2'),True,True])
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),

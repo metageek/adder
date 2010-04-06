@@ -1,19 +1,45 @@
 from adder.common import Symbol as S
 import adder.gomer,adder.runtime
 
+from adder.gomer import TwoConsecutiveKeywords,VarRef
+
 class Macro(adder.gomer.Function):
-    def __init__(self,context,transformer):
+    def __init__(self,name,context,transformer):
+        self.name=name
         self.context=context
         self.transformer=transformer
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector):
-        stmts=[]
+    def transform(self,srcExpr):
+        posArgs=[]
+        kwArgs=[]
+
+        curKeyword=None
+        for arg in srcExpr[1:]:
+            # Need to operate on symbols, not VarRefs.
+            isKeyword=isinstance(arg,S) and arg.startswith(':')
+
+            if curKeyword:
+                if isKeyword:
+                    varRef=VarRef(self.context.scope,curKeyword)
+                    raise TwoConsecutiveKeywords(varRef,arg)
+                kwArgs.append([curKeyword[1:],arg])
+                curKeyword=None
+            else:
+                if isKeyword:
+                    assert len(arg.name)>1
+                    curKeyword=arg
+                else:
+                    posArgs.append(arg)
+
         expr=self.transformer(self.context,
-                              f,args,kwArgs,
-                              stmts.append)
-        for stmt in stmts:
-            context.eval(stmt)
-        return context.compyle(expr,stmtCollector)
+                              srcExpr[0],
+                              posArgs,kwArgs)
+        if False:
+            print('Macro %s:' % self.name)
+            print('\tbefore:',srcExpr[0],posArgs,kwArgs)
+            print('\tafter:',expr)
+
+        return expr
 
 class Context:
     def __init__(self,parent):
@@ -40,6 +66,13 @@ class Context:
                            else adder.gomer.Constant(self.scope,value)
                            ))
         self.globals[name]=value
+
+    def addMacroDef(self,name,transformer):
+        self.scope.addDef(S(name),
+                          adder.gomer.Constant(self.scope,
+                                               Macro(name,self,transformer)
+                                               )
+                          )
 
     def addFuncDef(self,name,f):
         self.addDef(name,

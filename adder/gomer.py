@@ -176,8 +176,10 @@ class Scope:
         return self.parent.commonAncestor(other,errorp=errorp)
 
     def __contains__(self,var):
-        return (self.isLocal(var)
-                or (self.parent and var in self.parent)
+        return (isinstance(var,S)
+                and (self.isLocal(var)
+                     or (self.parent and var in self.parent)
+                     )
                 )
 
     def isLocal(self,var):
@@ -872,6 +874,18 @@ def build(scope,gomer):
         return Constant(scope,gomer)
     assert gomer
     assert gomer[0]
+
+    if gomer[0] in scope:
+        f=None
+        try:
+            f=scope[VarRef(scope,gomer[0])].constValue()
+        except NotConstant:
+            pass
+        except NotInitialized:
+            pass
+        if f and hasattr(f,'transform'):
+            return build(scope,f.transform(gomer))
+
     if gomer[0]==S('scope'):
         innerScope=Scope(scope)
         return build(innerScope,[S('begin')]+gomer[1:])
@@ -916,6 +930,7 @@ def build(scope,gomer):
              build(scope,gomer[0]),
              list(map(lambda g: build(scope,g),
                       gomer[1:])))
+
     if gomer[0]==S('-gomer-try'):
         for (klass,clause) in res.kwArgs:
             innerScope=Scope(scope)
