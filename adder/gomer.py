@@ -115,7 +115,7 @@ class Scope:
                              ('return',Return()),
                              ('yield',Yield()),
                              ('raise',Raise()),
-                             ('try',Try()),
+                             ('-gomer-try',Try()),
                              ('head',Head()),
                              ('tail',Tail()),
                              ('reverse',Reverse()),
@@ -916,7 +916,7 @@ def build(scope,gomer):
              build(scope,gomer[0]),
              list(map(lambda g: build(scope,g),
                       gomer[1:])))
-    if gomer[0]==S('try'):
+    if gomer[0]==S('-gomer-try'):
         for (klass,clause) in res.kwArgs:
             innerScope=Scope(scope)
             if klass!='finally':

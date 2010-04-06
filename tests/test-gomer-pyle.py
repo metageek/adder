@@ -422,7 +422,7 @@ x_2=9
         
     def testCallTryNoFinally(self):
         self.addDefs('f','g','foo','flip','bar','h')
-        self.compile([S('try'),
+        self.compile([S('-gomer-try'),
                       [S('f'),7],
                       [S('g'),19],
                       S(':Foo'),[S('foo'),
@@ -451,7 +451,7 @@ except Bar as bar_3:
 
     def testCallTryWithFinally(self):
         self.addDefs('f','g','foo','bar','h','pi')
-        self.compile([S('try'),
+        self.compile([S('-gomer-try'),
                       [S('f'),7],
                       [S('g'),19],
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
@@ -814,7 +814,7 @@ class RunGomerTestCase(CompilingTestCase):
 
         self.addDefs('xf','xg')
 
-        self.runGomer([S('try'),
+        self.runGomer([S('-gomer-try'),
                        [S('f'),7],
                        [S('g'),19],
                        S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
@@ -826,7 +826,7 @@ class RunGomerTestCase(CompilingTestCase):
 
     def testCallTryWithFinally(self):
         self.addDefs('f','g','foo','bar','h','pi')
-        self.compile([S('try'),
+        self.compile([S('-gomer-try'),
                       [S('f'),7],
                       [S('g'),19],
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
