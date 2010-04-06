@@ -565,7 +565,7 @@ class ExecStmt(Stmt):
 
 class DefStmt(Stmt):
     def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body,globals=None,nonlocals=None):
-        self.fname=fname
+        self.fname=S(fname)
         self.fixedArgs=fixedArgs
         self.optionalArgs=optionalArgs
         self.kwArgs=kwArgs
