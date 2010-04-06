@@ -60,6 +60,18 @@ is equivalent to (foo.bar.baz).
 <dt>or</dt>
 <dt>:=</dt>
 <dt>.</dt>
+<dd>Adder <code>(. foo bar baz)</code> is equivalent to
+  Python <code>foo.bar.baz</code>.
+</dd>
+</dl>
+
+<h3>Macros</h3>
+
+<dl>
+<dt>..</dt>
+<dd>A function generator.  <code>(.. bar baz)</code>
+ is equivalent to <code>(lambda (x) (. x bar baz))</code>.
+</dd>
 </dl>
 
 <h3>Functions</h3>
