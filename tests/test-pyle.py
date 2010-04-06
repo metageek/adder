@@ -691,13 +691,13 @@ else:
 """)
 
     def testBreak(self):
-        stmt=buildStmt([S('break')])
+        stmt=buildStmt([S('break'),[]])
         assert(stmt.toPythonTree()=='break')
         assert(stmt.toPythonFlat()=="""break
 """)
 
     def testContinue(self):
-        stmt=buildStmt([S('continue')])
+        stmt=buildStmt([S('continue'),[]])
         assert(stmt.toPythonTree()=='continue')
         assert(stmt.toPythonFlat()=="""continue
 """)
