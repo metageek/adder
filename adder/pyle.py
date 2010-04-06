@@ -216,6 +216,8 @@ def buildStmt(pyle):
                 if state=='optional' and not isinstance(arg,tuple):
                     arg=(arg,None)
             else:
+                if not isinstance(arg,S):
+                    print('arg-not-S',arg)
                 assert isinstance(arg,S)
             if isinstance(arg,tuple):
                 assert len(arg)==2
@@ -248,11 +250,8 @@ def buildStmt(pyle):
 
     if pyle[0]==S('try'):
         def buildExn(kx):
-            (klass,clause)=kx
-            if klass=='finally':
-                return (klass,[buildStmt(clause[0])])
-            else:
-                return (klass,[clause[0],list(map(buildStmt,clause[1]))])
+            (klass,var,clause)=kx
+            return (klass,var,buildStmt(clause))
         return TryStmt(list(map(buildStmt,pyle[1])),
                        list(map(buildExn,pyle[2])))
 
@@ -502,7 +501,15 @@ class Block(Stmt):
         self.stmts=stmts
 
     def toPythonTree(self):
-        return tuple(map(lambda s: s.toPythonTree(),self.stmts))
+        stmts=[]
+        for stmt in self.stmts:
+            if isinstance(stmt,Nop):
+                continue
+            stmts.append(stmt.toPythonTree())
+        if stmts:
+            return tuple(stmts)
+        else:
+            return (Nop().toPythonTree(),)
 
 class IfStmt(Stmt):
     def __init__(self,condExpr,thenStmt,elseStmt=None):
@@ -638,14 +645,14 @@ class TryStmt(Stmt):
         res=['try:',
              list(map(lambda stmt: stmt.toPythonTree(),self.body))]
         sawFinally=False
-        for (klass,clause) in self.exns:
+        for (klass,var,clause) in self.exns:
             assert not sawFinally
             if klass=='finally':
+                assert not var
                 res.append('finally:')
                 sawFinally=True
             else:
-                (var,clause)=clause
+                assert var
                 res.append('except %s as %s:' % (klass,var))
-            res.append(list(map(lambda stmt: stmt.toPythonTree(),
-                                clause)))
+            res.append([clause.toPythonTree(),])
         return tuple(res)

@@ -104,6 +104,8 @@ class Scope:
         self.localDefs={}
         self.varAccesses={}
 
+        self.transglobal=set()
+
         if not parent:
             for (name,f) in [('defun',Defun()),
                              ('lambda',Lambda()),
@@ -126,6 +128,7 @@ class Scope:
                              ('.',Dot()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
+                self.transglobal.add(S(name))
             for name in ['if',
                          '+','-','*','/','//','%',
                          '<','>','<=','>=','==','!=',
@@ -137,10 +140,12 @@ class Scope:
                          'print','gensym','apply',
                          ]:
                 self.addDef(S(name),Constant(self,PyleExpr(self,name)))
+                self.transglobal.add(S(name))
 
             for name in ['break','continue',
                          ]:
                 self.addDef(S(name),Constant(self,PyleStmt(self,name)))
+                self.transglobal.add(S(name))
 
     def nearestFuncAncestor(self):
         cur=self
@@ -338,7 +343,7 @@ class VarRef(Expr):
             raise NotConstant(self)
 
     def scopeRequired(self):
-        if self.isKeyword():
+        if self.isKeyword() or self.asDef:
             return None
 
         cur=self.scope
@@ -554,7 +559,6 @@ class Defvar(Function):
             valueExpr=valuePyle=None
         var=args[0].compyle(stmtCollector)
         stmtCollector([S(':='),[var,valuePyle]])
-        f.scope.addDef(args[0].name,valueExpr)
         return var
 
 class Assignment(Function):
@@ -706,15 +710,20 @@ class Try(Function):
 
         for (klass,clause) in kwArgs:
             exnStmts=[]
-            isFinally=(klass=='finally')
-            if isFinally:
-                (var,*clause)=clause
-            else:
+            if klass=='finally':
                 var=None
-            exnExpr=clause.compyle(exnStmts.append)
-            if exnExpr:
-                exnStmts.append(exnExpr)
-            exnPyles.append([klass,exnStmts])
+                assert len(clause.posArgs)==0
+                clausePyle=clause.f.compyle(exnStmts.append)
+                if clausePyle:
+                    exnStmts.append(clausePyle)
+            else:
+                var=clause.f.compyle(innerCollector)
+                assert len(clause.posArgs)==1
+                clausePyle=clause.posArgs[0].compyle(exnStmts.append)
+                if clausePyle:
+                    exnStmts.append(clausePyle)
+                
+            exnPyles.append([klass,var,[S('begin'),exnStmts]])
 
         stmtCollector([S('try'),bodyPyle,exnPyles])
         return scratchVar
@@ -730,7 +739,7 @@ class While(Function):
         for arg in args[1:]:
             expr=arg.compyle(innerStmts.append)
             if expr:
-                innerStmts.append([S(':='),[scratch,expr]])
+                innerStmts.append(expr)
 
         stmtCollector([S('while'),[condPyle]+innerStmts])
 
@@ -812,20 +821,25 @@ class UserFunction(Function):
         nonlocalRefs=set()
         for expr in self.bodyExprs:
             for varRef in expr.varRefs():
-                if varRef.scope==self.innerScope:
+                required=varRef.scopeRequired()
+                if not required:
                     continue
-                ((nonlocalRefs if varRef.scope.parent else globalRefs)
-                 .add(varRef.compyle(stmtCollector))
-                 )
+                if required==self.innerScope:
+                    continue
+                if required.parent:
+                    nonlocalRefs.add(varRef.compyle(stmtCollector))
+                else:
+                    if varRef.name not in required.transglobal:
+                        globalRefs.add(varRef.compyle(stmtCollector))
 
         argListPyle=list(map(lambda sym: sym.compyle(stmtCollector),
                              self.argList))
         if globalRefs:
-            argListPyle.append(':global')
+            argListPyle.append(S('&global'))
             argListPyle+=list(globalRefs)
 
         if nonlocalRefs:
-            argListPyle.append(':nonlocal')
+            argListPyle.append(S('&nonlocal'))
             argListPyle+=list(nonlocalRefs)
 
         defStmt=[S('def'),
@@ -904,15 +918,15 @@ def build(scope,gomer):
                       gomer[1:])))
     if gomer[0]==S('try'):
         for (klass,clause) in res.kwArgs:
-            if klass=='finally':
-                continue
             innerScope=Scope(scope)
-            innerScope.addDef(clause.f.name,None)
+            if klass!='finally':
+                innerScope.addDef(clause.f.name,None)
             clause.setScope(innerScope)
             clause.f.asDef=True
 
     if gomer[0]==S('defvar'):
         res.posArgs[0].asDef=True
+        res.scope.addDef(res.posArgs[0].name,None)
 
     if gomer[0]==S('.'):
         for arg in res.posArgs[1:]:
