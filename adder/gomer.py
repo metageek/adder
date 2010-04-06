@@ -2,7 +2,7 @@
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
 #  Includes a basic interpreter, for use in macro expansion.
 
-import itertools,re,pdb
+import itertools,re,pdb,adder.pyle
 from adder.common import Symbol as S, gensym
 
 class NoCommonAncestor(Exception):
@@ -933,3 +933,21 @@ def build(scope,gomer):
             arg.asDef=True
 
     return res
+
+def evalTopLevel(expr,scope,globals):
+    pyleStmts=[]
+    pythonFlat=''
+    exprPyleList=build(scope,expr).compyle(pyleStmts.append)
+    if exprPyleList:
+        exprPyleAST=adder.pyle.buildExpr(exprPyleList)
+        exprPython=exprPyleAST.toPython(False)
+    else:
+        exprPython=None
+    for pyleList in pyleStmts:
+        pyleAST=adder.pyle.buildStmt(pyleList)
+        pythonTree=pyleAST.toPythonTree()
+        pythonFlat+=adder.pyle.flatten(pythonTree)
+    if pythonFlat:
+        exec(pythonFlat,globals)
+    if exprPython is not None:
+        return eval(exprPython,globals)

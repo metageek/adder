@@ -25,6 +25,7 @@ class CompilingTestCase(unittest.TestCase):
         self.pythonFlat=None
         self.exprPython=None
         self.verbose=None
+        self.scope=None
         self.globals=None
 
     def addFuncDef(self,name,f):
@@ -849,9 +850,26 @@ finally:
     pi()
 """ % (scratch1,scratch2,scratch1,scratch2))
 
+class EvalTestCase(CompilingTestCase):
+    def setUp(self):
+        self.scope=adder.gomer.Scope(None)
+        self.globals={'adder': adder,
+                      'gensym': adder.common.gensym}
+
+    def tearDown(self):
+        self.scope=None
+        self.globals=None
+
+    def eval(self,expr):
+        return adder.gomer.evalTopLevel(expr,self.scope,self.globals)
+
+    def testSimple(self):
+        assert self.eval([S('*'),9,7])==63
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),
       unittest.makeSuite(RunGomerTestCase,"test"),
+      unittest.makeSuite(EvalTestCase,"test"),
      )
     )
 
