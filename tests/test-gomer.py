@@ -603,8 +603,8 @@ class CompyleTestCase(unittest.TestCase):
         scratch=S('#<gensym-scratch #1>')
         assert self.stmts==[[S('while'),
                              [[S('<'),[S('n'),2]],
-                              [S(':='),[scratch,1]],
-                              [S(':='),[scratch,7]]]]]
+                              1,
+                              7]]]
 
     def testReturn(self):
         scope=Scope(None)
