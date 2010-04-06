@@ -495,6 +495,12 @@ else:
         assert(stmt.toPythonFlat()=="""return 0
 """)
 
+    def testYield(self):
+        stmt=YieldStmt(Constant(0))
+        assert(stmt.toPythonTree()=='yield 0')
+        assert(stmt.toPythonFlat()=="""yield 0
+""")
+
     def testDefNoArgs(self):
         stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)))
         assert(stmt.toPythonTree()==('def f():',['return 0']))
@@ -706,6 +712,12 @@ else:
         stmt=buildStmt([S('return'),[0]])
         assert(stmt.toPythonTree()=='return 0')
         assert(stmt.toPythonFlat()=="""return 0
+""")
+
+    def testYield(self):
+        stmt=buildStmt([S('yield'),[0]])
+        assert(stmt.toPythonTree()=='yield 0')
+        assert(stmt.toPythonFlat()=="""yield 0
 """)
 
     def testDefNoArgs(self):

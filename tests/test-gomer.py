@@ -602,6 +602,20 @@ class CompyleTestCase(unittest.TestCase):
         assert self.stmts==[[S('while'),
                              [[S('<'),[S('n'),2]],1,7]]]
 
+    def testReturn(self):
+        scope=Scope(None)
+        x=build(scope,[S('return'),17])
+        p=x.compyle(self.stmtCollector)
+        assert not p
+        assert self.stmts==[[S('return'),[17]]]
+
+    def testYield(self):
+        scope=Scope(None)
+        x=build(scope,[S('yield'),17])
+        p=x.compyle(self.stmtCollector)
+        assert not p
+        assert self.stmts==[[S('yield'),[17]]]
+
     def testDot0(self):
         scope=Scope(None)
         scope.addDef('o',None)
@@ -634,10 +648,10 @@ class CompyleTestCase(unittest.TestCase):
                   1,
                   [S('*'),S('n'),[S('-'),S('n'),1]]]])
         p=x.compyle(self.stmtCollector)
-        assert p==S('fact_1')
+        assert p==S('fact')
         expected=[
             [S('def'),[
-                    S('fact_1'),
+                    S('fact'),
                     [S('n_2')],
                     [S(':='),[
                             S('#<gensym-scratch #1>'),

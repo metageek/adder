@@ -92,11 +92,15 @@ class VarEntry:
 # Table of vars  known in a lexical scope
 class Scope:
     nextId=1
-    def __init__(self,parent):
+    def __init__(self,parent,*,isFunc=False):
         self.id=Scope.nextId
         Scope.nextId+=1
 
         self.parent=parent
+        self.isFunc=isFunc
+
+        self.funcYields=False
+
         self.localDefs={}
         self.varAccesses={}
 
@@ -104,6 +108,8 @@ class Scope:
             for (name,f) in [('defun',Defun()),
                              ('defvar',Defvar()),
                              ('begin',Begin()),
+                             ('return',Return()),
+                             ('yield',Yield()),
                              ('raise',Raise()),
                              ('try',Try()),
                              ('head',Head()),
@@ -131,6 +137,11 @@ class Scope:
                          ]:
                 self.addDef(S(name),Constant(self,Pyle(self,name)))
 
+    def nearestFuncAncestor(self):
+        cur=self
+        while cur and not (cur.isFunc):
+            cur=cur.parent
+        return cur
 
     def isDescendant(self,other):
         if not other:
@@ -371,9 +382,13 @@ class VarRef(Expr):
         if self.asDef:
             scope=self.scope
         else:
-            scope=self.scopeRequired()
-            if scope.parent==None:
-                return S(self.name)
+            try:
+                scope=self.scopeRequired()
+            except Undefined:
+                pdb.set_trace()
+                raise
+        if scope.parent==None:
+            return S(self.name)
 
         return S("%s_%d" % (self.name,scope.id))
 
@@ -471,7 +486,7 @@ class Call(Expr):
         if fv:
             if isinstance(fv,str):
                 print('f:',self.f,fv)
-            return fv.compyleCall(self.posArgs,self.kwArgs,stmtCollector)
+            return fv.compyleCall(self.f,self.posArgs,self.kwArgs,stmtCollector)
         else:
             f=self.f.compyle(stmtCollector)
             posArgs=list(map(lambda x: x.compyle(stmtCollector),
@@ -492,7 +507,7 @@ class Function:
     def isPure(self):
         return False
 
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         f=self.f.compyle(stmtCollector)
         posArgs=list(map(lambda x: x.compyle(stmtCollector),
                          args))
@@ -508,13 +523,13 @@ class Pyle(Function):
         self.f=VarRef(scope,S(f))
 
 class Defun(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         return UserFunction(args[1:],kwArgs,
                             None,
                             name=args[0]).compyle(stmtCollector)
 
 class Defvar(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert args
         assert len(args) in [1,2]
         assert not kwArgs
@@ -527,7 +542,7 @@ class Defvar(Function):
         return var
 
 class Raise(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         pyle=[S('raise'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
@@ -536,8 +551,27 @@ class Raise(Function):
     def __call__(self,e):
         raise e
 
+class Return(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
+        assert not kwArgs
+        pyle=[S('return'),[args[0].compyle(stmtCollector)]]
+        stmtCollector(pyle)
+        return None
+
+class Yield(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
+        assert not kwArgs
+
+        scope=f.scope.nearestFuncAncestor()
+        if scope:
+            scope.funcYields=True
+
+        pyle=[S('yield'),[args[0].compyle(stmtCollector)]]
+        stmtCollector(pyle)
+        return None
+
 class Head(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         return [S('[]'),[args[0].compyle(stmtCollector),1]]
 
@@ -545,7 +579,7 @@ class Head(Function):
         return l[0]
 
 class Tail(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         return [S('slice'),[args[0].compyle(stmtCollector),1]]
 
@@ -553,7 +587,7 @@ class Tail(Function):
         return l[0]
 
 class Reverse(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         assert len(args)==1
         return [S('adder.runtime.reverse'),[args[0].compyle(stmtCollector)]]
@@ -564,7 +598,7 @@ class Reverse(Function):
         return l2
 
 class ReverseBang(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         assert len(args)==1
         scratchVar=gensym('scratch')
@@ -581,25 +615,25 @@ class ReverseBang(Function):
         l.reverse()
 
 class Stdenv(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         assert len(args)==0
         return [S('adder.runtime.stdenv'),[]]
 
 class EvalPy(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         assert len(args)==1
         return [S('eval'),[args[0].compyle(stmtCollector)]]
 
 class ExecPy(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         assert len(args)==1
         stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
 
 class Begin(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         if not args:
             # (begin) with empty body is a no-op
@@ -623,7 +657,7 @@ class Begin(Function):
         return scratchVar
 
 class Try(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         if not args:
             # try: with empty body is a no-op, no matter what
             #  its except: and finally: clauses may be.
@@ -637,7 +671,8 @@ class Try(Function):
 
         innerCollector([S(':='),
                         [scratchVar,
-                         Begin().compyleCall(args,None,innerCollector)]
+                         Begin().compyleCall(VarRef(f.scope,S('begin')),
+                                             args,None,innerCollector)]
                         ])
 
         exnPyles=[]
@@ -649,14 +684,14 @@ class Try(Function):
         return scratchVar
 
 class While(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         stmtCollector([S('while'),
                        list(map(lambda x: x.compyle(stmtCollector),args))
                        ])
 
 class Dot(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert not kwArgs
         obj=args[0].compyle(stmtCollector)
         return [S('.'),
@@ -666,7 +701,7 @@ class Dot(Function):
                 ]
 
 class Import(Function):
-    def compyleCall(self,args,kwArgs,stmtCollector):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
         assert len(args)==1
         assert isinstance(args[0],VarRef)
         stmtCollector([S('import'),[args[0].name]])
@@ -746,7 +781,10 @@ class UserFunction(Function):
             pyleExpr=expr.compyle(innerCollector)
             innerCollector([S(':='),
                             [scratchVar,pyleExpr]])
-        innerCollector([S('return'),[scratchVar]])
+
+        if self.bodyExprs:
+            if not self.bodyExprs[0].scope.funcYields:
+                innerCollector([S('return'),[scratchVar]])
 
         stmtCollector(defStmt)
         return self.name.compyle(stmtCollector)
@@ -763,21 +801,24 @@ def build(scope,gomer):
         return build(innerScope,[S('begin')]+gomer[1:])
 
     if gomer[0]==S('defun'):
-        innerScope=Scope(scope)
+        innerScope=Scope(scope,isFunc=True)
         name=gomer[1]
         argList=gomer[2]
         body=gomer[3:]
+        scope.addDef(name,None)
+        nameVar=build(scope,name)
+        nameVar.asDef=True
         for arg in argList:
             innerScope.addDef(arg,None)
         return Call(scope,
                     build(scope,gomer[0]),
-                    ([build(scope,name)]
+                    ([nameVar]
                      +[list(map(lambda a: build(innerScope,a),argList))]
                      +list(map(lambda g: build(innerScope,g),body))
                      )
                     )
     if gomer[0]==S('lambda'):
-        innerScope=Scope(scope)
+        innerScope=Scope(scope,isFunc=True)
         argList=gomer[1]
         body=gomer[2:]
         return Call(scope,

@@ -175,6 +175,11 @@ def buildStmt(pyle):
         assert len(pyle[1])==1
         return ReturnStmt(buildExpr(pyle[1][0]),)
 
+    if pyle[0]==S('yield'):
+        assert len(pyle)==2
+        assert len(pyle[1])==1
+        return YieldStmt(buildExpr(pyle[1][0]),)
+
     if pyle[0]==S('raise'):
         assert len(pyle)==2
         assert len(pyle[1])==1
@@ -534,6 +539,13 @@ class ReturnStmt(Stmt):
 
     def toPythonTree(self):
         return 'return %s' % self.returnExpr.toPython(False)
+
+class YieldStmt(Stmt):
+    def __init__(self,yieldExpr):
+        self.yieldExpr=yieldExpr
+
+    def toPythonTree(self):
+        return 'yield %s' % self.yieldExpr.toPython(False)
 
 class RaiseStmt(Stmt):
     def __init__(self,raiseExpr):

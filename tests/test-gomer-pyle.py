@@ -174,8 +174,8 @@ class GomerToPythonTestCase(CompilingTestCase):
 
     def testCallDefvar(self):
         self.compile([S('defvar'),S('x'),7])
-        assert self.exprPython=='x_1'
-        assert self.pythonFlat=="""x_1=7
+        assert self.exprPython=='x'
+        assert self.pythonFlat=="""x=7
 """
 
     def testCallDefvarInScope(self):
@@ -188,7 +188,7 @@ class GomerToPythonTestCase(CompilingTestCase):
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assert self.exprPython==scratch1
-        assert self.pythonFlat=="""x_1=7
+        assert self.pythonFlat=="""x=7
 x_2=9
 %s=x_2
 %s=%s
@@ -250,6 +250,14 @@ x_2=9
         self.addDefs('Exception')
         assert self.compile([S('raise'),[S('Exception')]])==None
         assert self.pythonFlat=='raise Exception()\n'
+
+    def testCallReturn(self):
+        assert self.compile([S('return'),17])==None
+        assert self.pythonFlat=='return 17\n'
+
+    def testCallYield(self):
+        assert self.compile([S('yield'),17])==None
+        assert self.pythonFlat=='yield 17\n'
 
     def testCallPrint(self):
         assert self.compile([S('print'),17,19])=='print(17, 19)'
@@ -627,6 +635,20 @@ class RunGomerTestCase(CompilingTestCase):
             self.runGomer([S('raise'),[S('Exception'),17]])
         except X as e:
             assert e.args==(17,)
+
+    def testCallReturn(self):
+        assert self.runGomer([S('begin'),
+                              [S('defun'),S('f'),[S('x')],
+                               [S('return'),[S('*'),S('x'),7]],
+                               12],
+                              [S('f'),9]])==63
+
+    def testCallYield(self):
+        assert self.runGomer([S('begin'),
+                              [S('defun'),S('f'),[S('x')],
+                               [S('yield'),[S('*'),S('x'),7]],
+                               [S('yield'),[S('+'),S('x'),7]]],
+                              [S('list'),[S('f'),9]]])==[63,16]
 
     def testCallGensym(self):
         self.runGomer([S('gensym'),[S('quote'),S('fred')]])
