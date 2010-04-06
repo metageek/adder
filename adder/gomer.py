@@ -106,7 +106,9 @@ class Scope:
 
         if not parent:
             for (name,f) in [('defun',Defun()),
+                             ('lambda',Lambda()),
                              ('defvar',Defvar()),
+                             (':=',Assignment()),
                              ('begin',Begin()),
                              ('return',Return()),
                              ('yield',Yield()),
@@ -126,7 +128,7 @@ class Scope:
                 self.addDef(S(name),Constant(self,f))
             for name in ['if',
                          '+','-','*','/','//','%',
-                         '<','>','<=','>=','==','!=',':=',
+                         '<','>','<=','>=','==','!=',
                          'in',
                          'tuple','list','set','dict',
                          'mk-tuple','mk-list','mk-set','mk-dict',
@@ -382,11 +384,7 @@ class VarRef(Expr):
         if self.asDef:
             scope=self.scope
         else:
-            try:
-                scope=self.scopeRequired()
-            except Undefined:
-                pdb.set_trace()
-                raise
+            scope=self.scopeRequired()
         if scope.parent==None:
             return S(self.name)
 
@@ -524,9 +522,16 @@ class Pyle(Function):
 
 class Defun(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):
-        return UserFunction(args[1:],kwArgs,
+        return UserFunction(f.scope,
+                            args[1:],kwArgs,
                             None,
                             name=args[0]).compyle(stmtCollector)
+
+class Lambda(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
+        return UserFunction(f.scope,
+                            args,kwArgs,
+                            None).compyle(stmtCollector)
 
 class Defvar(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):
@@ -534,9 +539,22 @@ class Defvar(Function):
         assert len(args) in [1,2]
         assert not kwArgs
         if len(args)==2:
-            valuePyle=args[1].compyle(stmtCollector)
+            valueExpr=args[1]
+            valuePyle=valueExpr.compyle(stmtCollector)
         else:
-            valuePyle=None
+            valueExpr=valuePyle=None
+        var=args[0].compyle(stmtCollector)
+        stmtCollector([S(':='),[var,valuePyle]])
+        f.scope.addDef(args[0].name,valueExpr)
+        return var
+
+class Assignment(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector):
+        assert args
+        assert len(args)==2
+        assert not kwArgs
+        valueExpr=args[1]
+        valuePyle=valueExpr.compyle(stmtCollector)
         var=args[0].compyle(stmtCollector)
         stmtCollector([S(':='),[var,valuePyle]])
         return var
@@ -685,10 +703,18 @@ class Try(Function):
 
 class While(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):
+        assert args
         assert not kwArgs
-        stmtCollector([S('while'),
-                       list(map(lambda x: x.compyle(stmtCollector),args))
-                       ])
+
+        scratch=gensym('scratch')
+        innerStmts=[]
+        condPyle=args[0].compyle(stmtCollector)
+        for arg in args[1:]:
+            expr=arg.compyle(innerStmts.append)
+            if expr:
+                innerStmts.append([S(':='),[scratch,expr]])
+
+        stmtCollector([S('while'),[condPyle]+innerStmts])
 
 class Dot(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):
@@ -721,12 +747,12 @@ class NativeFunction(Function):
 
 class UserFunction(Function):
     # The fExpr should be the (defun) or (lambda) that created this function.
-    def __init__(self,defArgs,kwArgs,outerEnv,*,name=None):
+    def __init__(self,scope,defArgs,kwArgs,outerEnv,*,name=None):
         Function.__init__(self)
         self.special=False
         assert defArgs
         assert not kwArgs
-        self.name=name or gensym('lambda')
+        self.name=name or VarRef(scope,gensym('lambda'),asDef=True)
         
         assert isinstance(defArgs[0],list)
         for arg in defArgs[0]:
@@ -758,17 +784,35 @@ class UserFunction(Function):
     def isPure(self):
         if not self.bodyExprs:
             return True
-        localScope=self.bodyExprs[0].scope
         for expr in self.bodyExprs:
-            if not expr.isPureIn(localScope):
+            if not expr.isPureIn(self.innerScope):
                 return False
         return True
 
     def compyle(self,stmtCollector):
+        globalRefs=set()
+        nonlocalRefs=set()
+        for expr in self.bodyExprs:
+            for varRef in expr.varRefs():
+                if varRef.scope==self.innerScope:
+                    continue
+                ((nonlocalRefs if varRef.scope.parent else globalRefs)
+                 .add(varRef.compyle(stmtCollector))
+                 )
+
+        argListPyle=list(map(lambda sym: sym.compyle(stmtCollector),
+                             self.argList))
+        if globalRefs:
+            argListPyle.append(':global')
+            argListPyle+=list(globalRefs)
+
+        if nonlocalRefs:
+            argListPyle.append(':nonlocal')
+            argListPyle+=list(nonlocalRefs)
+
         defStmt=[S('def'),
                  [self.name.compyle(stmtCollector),
-                  list(map(lambda sym: sym.compyle(stmtCollector),
-                           self.argList))]
+                  argListPyle]
                  ]
 
         def innerCollector(stmt):
@@ -783,7 +827,7 @@ class UserFunction(Function):
                             [scratchVar,pyleExpr]])
 
         if self.bodyExprs:
-            if not self.bodyExprs[0].scope.funcYields:
+            if not self.innerScope.funcYields:
                 innerCollector([S('return'),[scratchVar]])
 
         stmtCollector(defStmt)
@@ -821,6 +865,8 @@ def build(scope,gomer):
         innerScope=Scope(scope,isFunc=True)
         argList=gomer[1]
         body=gomer[2:]
+        for arg in argList:
+            innerScope.addDef(arg,None)
         return Call(scope,
                     build(scope,gomer[0]),
                     ([list(map(lambda a: build(innerScope,a),argList))]

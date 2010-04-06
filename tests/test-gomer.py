@@ -409,7 +409,8 @@ class ExprTestCase(unittest.TestCase):
 
         scope2.addDef(S('f'),
                       Constant(scope2,
-                               UserFunction([[VarRef(scope4,S('a')),
+                               UserFunction(scope2,
+                                            [[VarRef(scope4,S('a')),
                                               VarRef(scope4,S('b')),
                                               VarRef(scope4,S('c'))],
                                              Call(scope4,
@@ -599,8 +600,11 @@ class CompyleTestCase(unittest.TestCase):
                   7])
         p=x.compyle(self.stmtCollector)
         assert not p
+        scratch=S('#<gensym-scratch #1>')
         assert self.stmts==[[S('while'),
-                             [[S('<'),[S('n'),2]],1,7]]]
+                             [[S('<'),[S('n'),2]],
+                              [S(':='),[scratch,1]],
+                              [S(':='),[scratch,7]]]]]
 
     def testReturn(self):
         scope=Scope(None)
@@ -667,6 +671,36 @@ class CompyleTestCase(unittest.TestCase):
                             ]
                      ],
                     [S('return'),[S('#<gensym-scratch #1>')]]
+                    ]
+             ]
+            ]
+        assert self.stmts==expected
+
+    def testLambda(self):
+        scope=Scope(None)
+        x=build(scope,
+                [S('lambda'),[S('n')],
+                 [S('if'),[S('<'),S('n'),30],
+                  10,
+                  5]])
+        p=x.compyle(self.stmtCollector)
+        scratch=S('#<gensym-lambda #1>')
+        scratchPy=scratch.toPython()
+        assert p==scratch
+        expected=[
+            [S('def'),[
+                    scratch,
+                    [S('n_2')],
+                    [S(':='),[
+                            S('#<gensym-scratch #2>'),
+                            [S('if'),[
+                                    [S('<'),[S('n_2'),30]],
+                                    10,5
+                                    ]
+                             ]
+                            ]
+                     ],
+                    [S('return'),[S('#<gensym-scratch #2>')]]
                     ]
              ]
             ]

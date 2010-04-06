@@ -509,6 +509,7 @@ class RunGomerTestCase(CompilingTestCase):
         assert isinstance(self.runResult[0],S)
 
     def testCallWhile(self):
+        self.verbose=True
         self.addDefs(('n',1),('l',[]))
         self.runGomer([S('while'),
                        [S('<'),S('n'),7],
@@ -649,6 +650,19 @@ class RunGomerTestCase(CompilingTestCase):
                                [S('yield'),[S('*'),S('x'),7]],
                                [S('yield'),[S('+'),S('x'),7]]],
                               [S('list'),[S('f'),9]]])==[63,16]
+
+    def testLambda(self):
+        self.verbose=True
+        self.addDefs(('x',7))
+        f=self.runGomer([S('lambda'),[S('n')],
+                         [S('defvar'),S('res'),[S('*'),S('n'),S('x')]],
+                         [S(':='),S('x'),[S('+'),S('x'),1]],
+                         S('res')])
+        assert self.globals['x']==7
+        assert f(9)==63
+        assert self.globals['x']==8
+        assert f(9)==72
+        assert self.globals['x']==9
 
     def testCallGensym(self):
         self.runGomer([S('gensym'),[S('quote'),S('fred')]])

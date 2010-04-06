@@ -133,6 +133,8 @@ buildExpr.binaryOperators=set(map(S,['==','!=','<','<=','>','>=',
 buildExpr.unaryOperators=set(map(S,['not','and','or']))
 
 def buildStmt(pyle):
+    if isinstance(pyle,S):
+        return Nop()
     if not isinstance(pyle,list):
         pdb.set_trace()
     assert isinstance(pyle,list)
@@ -588,7 +590,7 @@ class DefStmt(Stmt):
         nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
         kwArgsPy=map(kwArgToPy,self.kwArgs)
 
-        return ('def %s(%s%s%s%s):' % (self.fname,
+        return ('def %s(%s%s%s%s):' % (self.fname.toPython(),
                                      ','.join(nonKwArgsPy),
                                      ',' if self.kwArgs and nonKwArgsPy else '',
                                      '*,' if self.kwArgs else '',
