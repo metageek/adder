@@ -136,8 +136,6 @@ is equivalent to (foo.bar.baz).
 <h3>Macros</h3>
 
 <dl>
-<dt>let*</dt>
-<dd>TODO</dd>
 <dt>cond</dt>
 <dd>TODO</dd>
 <dt>case</dt>
@@ -155,6 +153,11 @@ is equivalent to (foo.bar.baz).
 Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap
   enough.
+</dd>
+<dt>let*</dt>
+<dd>TODO.  The underlying (scope) and (defvar) setup will probably
+  make it easier to implement (let) on top of (let*), instead of the
+  other way around.
 </dd>
 <dt>define</dt>
 <dd>TODO.  Scheme-type syntax:
