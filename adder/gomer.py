@@ -604,8 +604,8 @@ class Assignment(Function):
         assert args
         assert len(args)==2
         assert not kwArgs
+        assert args[0].isLvalue()
         valueExpr=args[1]
-        assert valueExpr.isLvalue()
         valuePyle=valueExpr.compyle(stmtCollector)
         var=args[0].compyle(stmtCollector)
         stmtCollector([S(':='),[var,valuePyle]])
