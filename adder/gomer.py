@@ -920,7 +920,7 @@ def build(scope,gomer):
         argList=gomer[1]
         body=gomer[2:]
         for arg in argList:
-            innerScope.addDef(arg,None)
+            innerScope.addDef(arg,None,dontDisambiguate=True)
         return Call(scope,
                     build(scope,gomer[0]),
                     ([list(map(lambda a: build(innerScope,a),argList))]
