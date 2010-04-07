@@ -656,15 +656,15 @@ class CompyleTestCase(unittest.TestCase):
         expected=[
             [S('def'),[
                     S('fact'),
-                    [S('n_2')],
+                    [S('n')],
                     [S(':='),[
                             S('#<gensym-scratch #1>'),
                             [S('if'),[
-                                    [S('<'),[S('n_2'),2]],
+                                    [S('<'),[S('n'),2]],
                                     1,
                                     [S('*'), [
-                                            S('n_2'),
-                                            [S('-'),[S('n_2'),1]]
+                                            S('n'),
+                                            [S('-'),[S('n'),1]]
                                             ]]
                                     ]
                              ]
@@ -690,11 +690,11 @@ class CompyleTestCase(unittest.TestCase):
         expected=[
             [S('def'),[
                     scratch,
-                    [S('n_2')],
+                    [S('n')],
                     [S(':='),[
                             S('#<gensym-scratch #2>'),
                             [S('if'),[
-                                    [S('<'),[S('n_2'),30]],
+                                    [S('<'),[S('n'),30]],
                                     10,5
                                     ]
                              ]
