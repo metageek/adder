@@ -113,6 +113,7 @@ class Scope:
             for (name,f) in [('defun',Defun()),
                              ('lambda',Lambda()),
                              ('defvar',Defvar()),
+                             ('defconst',Defvar()),
                              (':=',Assignment()),
                              ('begin',Begin()),
                              ('return',Return()),
@@ -298,6 +299,9 @@ class Expr:
     def compyle(self,stmtCollector):
         pass
 
+    def isLvalue(self):
+        return False
+
 class Constant(Expr):
     def __init__(self,scope,value):
         Expr.__init__(self,scope)
@@ -355,6 +359,17 @@ class VarRef(Expr):
             return self.scope[self].constValue()
         except NotConstant: # the one from VarEntry will have None for its expr
             raise NotConstant(self)
+
+    def isLvalue(self):
+        if self.asDef:
+            return False
+
+        scope=self.scopeRequired()
+        if self.name in scope:
+            varEntry=scope[self]
+            return not varEntry.const
+
+        return False
 
     def scopeRequired(self):
         if self.isKeyword() or self.asDef:
@@ -590,6 +605,7 @@ class Assignment(Function):
         assert len(args)==2
         assert not kwArgs
         valueExpr=args[1]
+        assert valueExpr.isLvalue()
         valuePyle=valueExpr.compyle(stmtCollector)
         var=args[0].compyle(stmtCollector)
         stmtCollector([S(':='),[var,valuePyle]])
@@ -944,9 +960,11 @@ def build(scope,gomer):
             clause.setScope(innerScope)
             clause.f.asDef=True
 
-    if gomer[0]==S('defvar'):
+    if gomer[0] in [S('defvar'),S('defconst')]:
         res.posArgs[0].asDef=True
-        res.scope.addDef(res.posArgs[0].name,None)
+        res.scope.addDef(res.posArgs[0].name,None,
+                         const=(gomer[0]==S('defconst'))
+                         )
 
     if gomer[0]==S('.'):
         for arg in res.posArgs[1:]:
