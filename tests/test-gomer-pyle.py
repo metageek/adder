@@ -666,6 +666,18 @@ class RunGomerTestCase(CompilingTestCase):
         assert f(9)==72
         assert self.globals['x']==9
 
+    def testLambdaWithKw(self):
+        self.addDefs(('x',7))
+        f=self.runGomer([S('lambda'),[S('&key'),S('n')],
+                         [S('defvar'),S('res'),[S('*'),S('n'),S('x')]],
+                         [S(':='),S('x'),[S('+'),S('x'),1]],
+                         S('res')])
+        assert self.globals['x']==7
+        assert f(n=9)==63
+        assert self.globals['x']==8
+        assert f(n=9)==72
+        assert self.globals['x']==9
+
     def testCallGensym(self):
         self.runGomer([S('gensym'),[S('quote'),S('fred')]])
         adder.common.gensym.nextId=1
