@@ -74,13 +74,15 @@ class Redefined(Exception):
 
 # Information known about a variable
 class VarEntry:
-    def __init__(self,name,initExpr,*,dontDisambiguate=False):
+    def __init__(self,name,initExpr,*,dontDisambiguate=False,const=False):
         self.name=name
         self.initExpr=initExpr
         self.neverModified=True
         self.dontDisambiguate=dontDisambiguate
+        self.const=const
 
     def markModified(self):
+        assert not self.const
         self.neverModified=False
 
     def constValue(self):
@@ -149,7 +151,7 @@ class Scope:
             for (name,value) in [('true',True),
                                  ('false',False),
                                  ]:
-                self.addDef(S(name),Constant(self,value))
+                self.addDef(S(name),Constant(self,value),const=True)
                 self.transglobal.add(S(name))
 
     def nearestFuncAncestor(self):
@@ -200,13 +202,14 @@ class Scope:
             return self.parent[varRef]
         raise Undefined(varRef)
 
-    def addDef(self,var,initExpr,*,dontDisambiguate=False):
+    def addDef(self,var,initExpr,*,dontDisambiguate=False,const=False):
         if var in self.varAccesses:
             raise DefinedAfterUse(var,initExpr,self.varAccesses[var])
         if var in self.localDefs:
             raise Redefined(var,initExpr,self.localDefs[var])
         self.localDefs[var]=VarEntry(var,initExpr,
-                                     dontDisambiguate=dontDisambiguate)
+                                     dontDisambiguate=dontDisambiguate,
+                                     const=const)
 
     def addFuncArg(self,var):
         self.addDef(var,None)
@@ -404,10 +407,16 @@ class VarRef(Expr):
             scope=self.scope
         else:
             scope=self.scopeRequired()
-        if scope.parent==None:
-            return S(self.name)
 
-        if scope.dontDisambiguate(self.name):
+        if self.name in scope:
+            varEntry=scope[self]
+            if varEntry.const:
+                return varEntry.constValue()
+
+            if varEntry.dontDisambiguate:
+                return S(self.name)
+
+        if scope.parent==None:
             return S(self.name)
 
         return S("%s_%d" % (self.name,scope.id))
@@ -865,12 +874,6 @@ class UserFunction(Function):
 
 def build(scope,gomer):
     if isinstance(gomer,S):
-        if gomer in scope:
-            val=scope[VarRef(scope,gomer)]
-            if (isinstance(val.initExpr,Constant)
-                and type(val.initExpr.value) in [int,str,bool,float]
-                ):
-                return val.initExpr
         return VarRef(scope,gomer)
     if not isinstance(gomer,list):
         return Constant(scope,gomer)
