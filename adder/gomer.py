@@ -117,8 +117,6 @@ class Scope:
                              ('yield',Yield()),
                              ('raise',Raise()),
                              ('-gomer-try',Try()),
-                             ('head',Head()),
-                             ('tail',Tail()),
                              ('reverse',Reverse()),
                              ('reverse!',ReverseBang()),
                              ('stdenv',Stdenv()),
@@ -610,22 +608,6 @@ class Yield(Function):
         pyle=[S('yield'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
         return None
-
-class Head(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector):
-        assert not kwArgs
-        return [S('[]'),[args[0].compyle(stmtCollector),1]]
-
-    def __call__(self,l):
-        return l[0]
-
-class Tail(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector):
-        assert not kwArgs
-        return [S('slice'),[args[0].compyle(stmtCollector),1]]
-
-    def __call__(self,l):
-        return l[0]
 
 class Reverse(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector):

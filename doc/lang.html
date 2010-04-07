@@ -34,6 +34,8 @@ is equivalent to (foo.bar.baz).
 
 <h3>Special forms</h3>
 
+<p>Implemented in Gomer:</p>
+
 <dl>
 <dt>quote</dt>
 <dt>import</dt>
@@ -42,21 +44,9 @@ is equivalent to (foo.bar.baz).
 <dt>break</dt>
 <dt>continue</dt>
 <dt>begin</dt>
-<dt>try</dt>
 <dt>yield</dt>
 <dt>return</dt>
-<dt>let</dt>
-<dd>TODO.
-Yes, it can be defined in terms of lambda; but that depends on
-  having cheap function calls.  I don't know that Python is cheap
-  enough.
-</dd>
 <dt>lambda</dt>
-<dt>define</dt>
-<dd>Scheme-type syntax:
-<code>(define (f x) (* x x))</code> or <code>(define y 9)</code>.
-</dd>
-<dt>defmacro</dt>
 <dt>and</dt>
 <dt>or</dt>
 <dt>:=</dt>
@@ -66,16 +56,15 @@ Yes, it can be defined in terms of lambda; but that depends on
 </dd>
 </dl>
 
-<h3>Macros</h3>
+<p>Implemented in the Adder layer:</p>
 
 <dl>
-<dt>..</dt>
-<dd>A function generator.  <code>(.. bar baz)</code>
- is equivalent to <code>(lambda (x) (. x bar baz))</code>.
-</dd>
+<dt>defmacro</dt>
 </dl>
 
 <h3>Functions</h3>
+
+<p>Implemented in Gomer:</p>
 
 <dl>
 <dt>==</dt>
@@ -107,7 +96,6 @@ Yes, it can be defined in terms of lambda; but that depends on
 <dt>mk-set</dt>
 <dt>mk-dict</dt>
 <dt>mk-symbol</dt>
-<dd>TODO</dd>
 <dt>reverse</dt>
 <dt>reverse!</dt>
 <dt>eval</dt>
@@ -124,14 +112,23 @@ Yes, it can be defined in terms of lambda; but that depends on
 
 <dl>
 <dt>stdin</dt>
+<dd>TODO</dd>
 <dt>stdout</dt>
+<dd>TODO</dd>
 <dt>stderr</dt>
+<dd>TODO</dd>
 <dt>true</dt>
+<dd>TODO</dd>
 <dt>false</dt>
+<dd>TODO</dd>
 <dt>type-list</dt>
+<dd>TODO</dd>
 <dt>type-tuple</dt>
+<dd>TODO</dd>
 <dt>type-set</dt>
+<dd>TODO</dd>
 <dt>type-dict</dt>
+<dd>TODO</dd>
 </dl>
 
 <h2>Prelude</h2>
@@ -140,22 +137,51 @@ Yes, it can be defined in terms of lambda; but that depends on
 
 <dl>
 <dt>let*</dt>
+<dd>TODO</dd>
 <dt>cond</dt>
+<dd>TODO</dd>
 <dt>case</dt>
+<dd>TODO</dd>
 <dt>ecase</dt>
+<dd>TODO</dd>
+<dt>..</dt>
+<dd>TODO.  A function generator.  <code>(.. bar baz)</code>
+ is equivalent to <code>(lambda (x) (. x bar baz))</code>.
+</dd>
+<dt>try</dt>
+<dd>TODO</dd>
+<dt>let</dt>
+<dd>TODO.
+Yes, it can be defined in terms of lambda; but that depends on
+  having cheap function calls.  I don't know that Python is cheap
+  enough.
+</dd>
+<dt>define</dt>
+<dd>TODO.  Scheme-type syntax:
+<code>(define (f x) (* x x))</code> or <code>(define y 9)</code>.
+</dd>
 </dl>
+
 
 <h3>Functions</h3>
 
 <dl>
 <dt>list?</dt>
+<dd>TODO</dd>
 <dt>tuple?</dt>
+<dd>TODO</dd>
 <dt>set?</dt>
+<dd>TODO</dd>
 <dt>dict?</dt>
+<dd>TODO</dd>
 <dt>symbol?</dt>
+<dd>TODO</dd>
 <dt>int?</dt>
+<dd>TODO</dd>
 <dt>head</dt>
+<dd>TODO</dd>
 <dt>tail</dt>
+<dd>TODO</dd>
 </dl>
 
 </body>

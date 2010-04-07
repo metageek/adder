@@ -293,18 +293,6 @@ x_2=9
         assert self.exprPython=="l[17:23]"
         assert self.pythonFlat==''
 
-    def testCallHead(self):
-        self.addDefs('l')
-        self.compile([S('head'),S('l')])
-        assert self.exprPython=="l[1]"
-        assert self.pythonFlat==''
-
-    def testCallTail(self):
-        self.addDefs('l')
-        self.compile([S('tail'),S('l')])
-        assert self.exprPython=="l[1:]"
-        assert self.pythonFlat==''
-
     def testCallList(self):
         self.addDefs('x')
         self.compile([S('list'),S('x')])
@@ -704,14 +692,6 @@ class RunGomerTestCase(CompilingTestCase):
     def testCallSlice2(self):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runGomer([S('slice'),S('l'),1,2])==[3]
-
-    def testCallHead(self):
-        self.addDefs(('l',[2,3,5,7]))
-        self.runGomer([S('head'),S('l')])==2
-
-    def testCallTail(self):
-        self.addDefs(('l',[2,3,5,7]))
-        self.runGomer([S('tail'),S('l')])==[3,5,7]
 
     def testCallList(self):
         self.addDefs(('x',(2,3,5,7)))
