@@ -1,6 +1,8 @@
-from adder.common import Symbol as S
-import adder.gomer,adder.runtime
+import os,pdb
 
+import adder.gomer,adder.runtime
+from adder.common import Symbol as S
+from adder.parser import parse,parseFile
 from adder.gomer import TwoConsecutiveKeywords,VarRef
 
 class Macro(adder.gomer.Function):
@@ -49,6 +51,7 @@ class Context:
             self.globals={'adder': adder,
                           'gensym': adder.common.gensym}
         self.addMacroDef('defmacro',self.defmacroTransformer)
+        self.load('prelude.+',inSrcDir=True)
 
     def defmacroTransformer(self,posArgs,kwArgs):
         assert not kwArgs
@@ -93,6 +96,30 @@ class Context:
 
     def eval(self,expr):
         return adder.gomer.evalTopLevel(expr,self.scope,self.globals)
+
+    def evalStrN(self,exprStr):
+        return map(lambda expr: self.eval(expr),parse(exprStr))
+
+    # Ignores any expressions in exprStr after the first.
+    def evalStr1(self,exprStr):
+        return next(self.evalStrN(exprStr))
+
+    def load(self,path,*,inSrcDir=False):
+        def stripPositions(expr):
+            (expr,pos)=expr
+            if isinstance(expr,list):
+                return list(map(stripPositions,expr))
+            else:
+                return expr
+
+        if inSrcDir:
+            srcFile=self.__class__.load.__code__.co_filename
+            srcDir=os.path.split(srcFile)[0]
+            path=os.path.join(srcDir,path)
+        last=None
+        for expr in parseFile(path):
+            last=self.eval(stripPositions(expr))
+        return last
 
     def compyle(self,expr,stmtCollector):
         return adder.gomer.build(self.scope,expr).compyle(stmtCollector)

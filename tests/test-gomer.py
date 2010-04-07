@@ -524,6 +524,18 @@ class CompyleTestCase(unittest.TestCase):
         assert x.compyle(self.stmtCollector)==[S('mk-list'),[1,2,3]]
         assert self.stmts==[]
 
+    def testPredefinedTrue(self):
+        scope=Scope(None)
+        x=build(scope,S('true'))
+        assert x.compyle(self.stmtCollector)==True
+        assert self.stmts==[]
+
+    def testPredefinedFalse(self):
+        scope=Scope(None)
+        x=build(scope,S('false'))
+        assert x.compyle(self.stmtCollector)==False
+        assert self.stmts==[]
+
     def testVarAtRoot(self):
         scope=Scope(None)
         scope.addDef(S('fred'),None)

@@ -130,7 +130,10 @@ class ParserTestCase(unittest.TestCase):
                     q('foo'),'bar',S('quux')]]
 
     def testParseFile(self):
-        l=list(parseFile('test-parse.+'))
+        thisFile=self.__class__.testParseFile.__code__.co_filename
+        thisDir=os.path.split(thisFile)[0]
+        codeFile=os.path.join(thisDir,'test-parse.+')
+        l=list(parseFile(codeFile))
         l2=[([(S('defun'),1),(S('foo'),1),
               ([(S('x'),1),(S('y'),1)],1),
               ([(S('+'),2),(S('x'),2),

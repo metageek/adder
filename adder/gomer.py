@@ -146,6 +146,12 @@ class Scope:
                 self.addDef(S(name),Constant(self,PyleStmt(self,name)))
                 self.transglobal.add(S(name))
 
+            for (name,value) in [('true',True),
+                                 ('false',False),
+                                 ]:
+                self.addDef(S(name),Constant(self,value))
+                self.transglobal.add(S(name))
+
     def nearestFuncAncestor(self):
         cur=self
         while cur and not (cur.isFunc):
@@ -859,6 +865,12 @@ class UserFunction(Function):
 
 def build(scope,gomer):
     if isinstance(gomer,S):
+        if gomer in scope:
+            val=scope[VarRef(scope,gomer)]
+            if (isinstance(val.initExpr,Constant)
+                and type(val.initExpr.value) in [int,str,bool,float]
+                ):
+                return val.initExpr
         return VarRef(scope,gomer)
     if not isinstance(gomer,list):
         return Constant(scope,gomer)

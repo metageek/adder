@@ -1,0 +1,8 @@
+(defvar prelude-loaded true)
+(defun head (l)
+  ([] l 0)
+  )
+
+(defun tail (l)
+  (slice l 1)
+  )
