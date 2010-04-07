@@ -361,7 +361,7 @@ class EvalTestCase(CompilingTestCase):
         assert self.context['xf'].args==(7,)
 
     def testSimpleMacro(self):
-        def and2Transformer(context,f,args,kwArgs):
+        def and2Transformer(args,kwArgs):
             assert len(args)==2
             assert not kwArgs
             return [S('if'),args[0],args[1],False]
@@ -374,6 +374,18 @@ class EvalTestCase(CompilingTestCase):
 
         assert not self.runAdder([S('and2'),False,False])
         assert not self.runAdder([S('and2'),False,True])
+        assert not self.runAdder([S('and2'),False,[S('stop')]])
+        assert not self.runAdder([S('and2'),True,False])
+        assert self.runAdder([S('and2'),True,True])
+
+    def testDefmacro(self):
+        assert self.runAdder([S('defmacro'),
+                              S('and2'),[S('a'),S('b')],
+                              [S('if'),S('a'),S('b'),False]
+                              ]) is None
+        assert not self.runAdder([S('and2'),False,False])
+        assert not self.runAdder([S('and2'),False,True])
+        assert not self.runAdder([S('and2'),False,[S('stop')]])
         assert not self.runAdder([S('and2'),True,False])
         assert self.runAdder([S('and2'),True,True])
 

@@ -31,9 +31,7 @@ class Macro(adder.gomer.Function):
                 else:
                     posArgs.append(arg)
 
-        expr=self.transformer(self.context,
-                              srcExpr[0],
-                              posArgs,kwArgs)
+        expr=self.transformer(posArgs,kwArgs)
         if False:
             print('Macro %s:' % self.name)
             print('\tbefore:',srcExpr[0],posArgs,kwArgs)
@@ -50,6 +48,18 @@ class Context:
         else:
             self.globals={'adder': adder,
                           'gensym': adder.common.gensym}
+        self.addMacroDef('defmacro',self.defmacroTransformer)
+
+    def defmacroTransformer(self,posArgs,kwArgs):
+        assert not kwArgs
+        assert len(posArgs)>=2
+
+        transformerExpr=[S('lambda')]+posArgs[1:]
+        transformer=self.eval(transformerExpr)
+        self.addMacroDef(posArgs[0],
+                         lambda ps,ks: transformer(*ps,**(dict(ks)))
+                         )
+        return None
 
     def __getitem__(self,name):
         return self.globals[name]
