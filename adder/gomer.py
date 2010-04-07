@@ -74,10 +74,11 @@ class Redefined(Exception):
 
 # Information known about a variable
 class VarEntry:
-    def __init__(self,name,initExpr):
+    def __init__(self,name,initExpr,*,dontDisambiguate=False):
         self.name=name
         self.initExpr=initExpr
         self.neverModified=True
+        self.dontDisambiguate=dontDisambiguate
 
     def markModified(self):
         self.neverModified=False
@@ -182,6 +183,9 @@ class Scope:
                      )
                 )
 
+    def dontDisambiguate(self,name):
+        return self.isLocal(name) and self.localDefs[name].dontDisambiguate
+
     def isLocal(self,var):
         return var in self.localDefs
 
@@ -192,12 +196,13 @@ class Scope:
             return self.parent[varRef]
         raise Undefined(varRef)
 
-    def addDef(self,var,initExpr):
+    def addDef(self,var,initExpr,*,dontDisambiguate=False):
         if var in self.varAccesses:
             raise DefinedAfterUse(var,initExpr,self.varAccesses[var])
         if var in self.localDefs:
             raise Redefined(var,initExpr,self.localDefs[var])
-        self.localDefs[var]=VarEntry(var,initExpr)
+        self.localDefs[var]=VarEntry(var,initExpr,
+                                     dontDisambiguate=dontDisambiguate)
 
     def addFuncArg(self,var):
         self.addDef(var,None)
@@ -388,7 +393,7 @@ class VarRef(Expr):
         if self.isKeyword():
             raise KeywordsHaveNoValue(self)
 
-        if self.name.isGensym():
+        if self.name.isGensym() or self.name.startswith('&'):
             return S(self.name)
 
         if self.asDef:
@@ -396,6 +401,9 @@ class VarRef(Expr):
         else:
             scope=self.scopeRequired()
         if scope.parent==None:
+            return S(self.name)
+
+        if scope.dontDisambiguate(self.name):
             return S(self.name)
 
         return S("%s_%d" % (self.name,scope.id))
@@ -899,7 +907,7 @@ def build(scope,gomer):
         nameVar=build(scope,name)
         nameVar.asDef=True
         for arg in argList:
-            innerScope.addDef(arg,None)
+            innerScope.addDef(arg,None,dontDisambiguate=True)
         return Call(scope,
                     build(scope,gomer[0]),
                     ([nameVar]

@@ -850,6 +850,34 @@ finally:
     pi()
 """ % (scratch1,scratch2,scratch1,scratch2))
 
+    def testDefun(self):
+        assert self.runGomer([S('begin'),
+                              [S('defun'),S('fact'),[S('n')],
+                               [S('if'),[S('<'),S('n'),2],
+                                1,
+                                [S('*'),S('n'),
+                                 [S('fact'),
+                                  [S('-'),S('n'),1]
+                                  ]
+                                 ]
+                                ]
+                               ],
+                              [S('fact'),7]])==5040
+
+    def testDefunWithKw(self):
+        assert self.runGomer([S('begin'),
+                              [S('defun'),S('fact'),[S('&key'),S('n')],
+                               [S('if'),[S('<'),S('n'),2],
+                                1,
+                                [S('*'),S('n'),
+                                 [S('fact'),
+                                  S(':n'),[S('-'),S('n'),1]
+                                  ]
+                                 ]
+                                ]
+                               ],
+                              [S('fact'),S(':n'),7]])==5040
+
 class EvalTestCase(CompilingTestCase):
     def setUp(self):
         self.scope=adder.gomer.Scope(None)
