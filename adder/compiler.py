@@ -42,7 +42,7 @@ class Macro(adder.gomer.Function):
         return expr
 
 class Context:
-    def __init__(self,parent):
+    def __init__(self,parent,*,loadPrelude=True):
         self.parent=parent
         self.scope=adder.gomer.Scope(parent.scope if parent else None)
         if parent:
@@ -51,7 +51,8 @@ class Context:
             self.globals={'adder': adder,
                           'gensym': adder.common.gensym}
         self.addMacroDef('defmacro',self.defmacroTransformer)
-        self.load('prelude.+',inSrcDir=True)
+        if loadPrelude:
+            self.load('prelude.+',inSrcDir=True)
 
     def defmacroTransformer(self,posArgs,kwArgs):
         assert not kwArgs

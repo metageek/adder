@@ -5,8 +5,13 @@ from adder.common import Symbol as S
 import adder.compiler
 
 class CompilingTestCase(unittest.TestCase):
+    def loadPrelude(self):
+        return False
+
     def setUp(self):
-        self.context=adder.compiler.Context(None)
+        self.context=adder.compiler.Context(None,
+                                            loadPrelude=self.loadPrelude()
+                                            )
         adder.common.gensym.nextId=1
         adder.gomer.Scope.nextId=1
 
@@ -228,14 +233,6 @@ class EvalTestCase(CompilingTestCase):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runAdder([S('slice'),S('l'),1,2])==[3]
 
-    def testCallHead(self):
-        self.addDefs(('l',[2,3,5,7]))
-        self.runAdder([S('head'),S('l')])==2
-
-    def testCallTail(self):
-        self.addDefs(('l',[2,3,5,7]))
-        self.runAdder([S('tail'),S('l')])==[3,5,7]
-
     def testCallList(self):
         self.addDefs(('x',(2,3,5,7)))
         assert self.runAdder([S('list'),S('x')])==[2,3,5,7]
@@ -389,8 +386,21 @@ class EvalTestCase(CompilingTestCase):
         assert not self.runAdder([S('and2'),True,False])
         assert self.runAdder([S('and2'),True,True])
 
+class PreludeTestCase(EvalTestCase):
+    def loadPrelude(self):
+        return True
+
+    def testCallHead(self):
+        self.addDefs(('l',[2,3,5,7]))
+        self.runAdder([S('head'),S('l')])==2
+
+    def testCallTail(self):
+        self.addDefs(('l',[2,3,5,7]))
+        self.runAdder([S('tail'),S('l')])==[3,5,7]
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),
+      unittest.makeSuite(PreludeTestCase,"test"),
      )
     )
 
