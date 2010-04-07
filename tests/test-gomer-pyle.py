@@ -44,7 +44,9 @@ class CompilingTestCase(unittest.TestCase):
             else:
                 value=None
             self.scope.addDef(S(name),
-                              None if (value is None) else adder.gomer.Constant(self.scope,value)
+                              (None if (value is None)
+                               else adder.gomer.Constant(self.scope,value)
+                               )
                               )
             self.globals[name]=value
 
