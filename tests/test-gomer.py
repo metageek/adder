@@ -669,8 +669,7 @@ class CompyleTestCase(unittest.TestCase):
             [S('def'),[
                     S('fact'),
                     [S('n')],
-                    [S(':='),[
-                            S('#<gensym-scratch #1>'),
+                    [S('return'),[
                             [S('if'),[
                                     [S('<'),[S('n'),2]],
                                     1,
@@ -681,8 +680,7 @@ class CompyleTestCase(unittest.TestCase):
                                     ]
                              ]
                             ]
-                     ],
-                    [S('return'),[S('#<gensym-scratch #1>')]]
+                     ]
                     ]
              ]
             ]
@@ -703,16 +701,14 @@ class CompyleTestCase(unittest.TestCase):
             [S('def'),[
                     scratch,
                     [S('n')],
-                    [S(':='),[
-                            S('#<gensym-scratch #2>'),
+                    [S('return'),[
                             [S('if'),[
                                     [S('<'),[S('n'),30]],
                                     10,5
                                     ]
                              ]
                             ]
-                     ],
-                    [S('return'),[S('#<gensym-scratch #2>')]]
+                     ]
                     ]
              ]
             ]
