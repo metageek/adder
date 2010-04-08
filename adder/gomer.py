@@ -647,11 +647,12 @@ class PyleStmt(PyleExpr):
 
 class Defun(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        return UserFunction(f.scope,
-                            args[1:],kwArgs,
-                            None,
-                            name=args[0]).compyle(stmtCollector,
-                                                  asStmt=asStmt)
+        uf=UserFunction(f.scope,
+                        args[1:],kwArgs,
+                        None,
+                        name=args[0])
+        return uf.compyle(stmtCollector,
+                          asStmt=asStmt)
 
 class Lambda(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
@@ -714,9 +715,10 @@ class Assignment(Function):
             d=build(f.scope,
                     [S('defun'),
                      assigner,[assignerArg],
-                     [S(':='),args[0].name,assignerArg]
+                     [S(':='),args[0].name,assignerArg],
+                     args[0].name
                      ])
-            d.compyle(stmtCollector,asStmt=True)
+            d.compyle(stmtCollector,asStmt=False)
             return [assigner,[valuePyle]]
 
 class Raise(Function):
@@ -778,7 +780,7 @@ class Reverse(Function):
 
 class Stdenv(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        if not asStmt:
+        if asStmt:
             return None
         assert not kwArgs
         assert len(args)==0
@@ -797,9 +799,9 @@ class ExecPy(Function):
         assert len(args)==1
         assert asStmt
 
-        return [S('exec'),
-                [args[0].compyle(stmtCollector,
-                                 asStmt=False)]]
+        stmtCollector([S('exec'),
+                       [args[0].compyle(stmtCollector,
+                                        asStmt=False)]])
 
 class Begin(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
