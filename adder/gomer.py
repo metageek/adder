@@ -106,6 +106,9 @@ class Scope:
         self.id=Scope.nextId
         Scope.nextId+=1
 
+        if parent:
+            assert parent.id<self.id
+
         self.parent=parent
         self.isFunc=isFunc
 
@@ -813,6 +816,9 @@ class EvalPy(Function):
                                            asStmt=False)]]
 
 class ExecPy(Function):
+    def mustBeStmt(self):
+        return True
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
         assert len(args)==1
@@ -833,26 +839,36 @@ class Begin(Function):
         def innerCollector(stmt):
             body.append(stmt)
 
-        stmts=args if asStmt else args[:-1]
+        if (asStmt
+            or (args and args[-1].mustBeStmt())
+            ):
+            stmts=args
+            last=None
+        else:
+            stmts=args[:-1]
+            last=args[-1] if args else None
 
         for a in stmts:
-            pyleExpr=a.compyle(innerCollector,asStmt=True)
-            if pyleExpr and not isinstance(pyleExpr,S):
-                innerCollector(pyleExpr)
+            exprPyle=a.compyle(innerCollector,asStmt=True)
+            if exprPyle:
+                innerCollector(exprPyle)
 
-        if asStmt:
-            scratchVar=None
-        else:
+        if last:
             scratchVar=gensym('scratch')
             innerCollector([S(':='),
                             [scratchVar,
-                             args[-1].compyle(innerCollector,asStmt=False)]
+                             last.compyle(innerCollector,asStmt=False)]
                             ])
+        else:
+            scratchVar=None
 
         stmtCollector([S('begin'),body])
         return scratchVar
 
 class Try(Function):
+    def mustBeStmt(self):
+        return True
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         if not args:
             # try: with empty body is a no-op, no matter what
@@ -925,6 +941,9 @@ class Dot(Function):
                 ]
 
 class Import(Function):
+    def mustBeStmt(self):
+        return True
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert asStmt
         assert len(args)==1

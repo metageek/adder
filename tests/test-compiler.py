@@ -9,9 +9,9 @@ class CompilingTestCase(unittest.TestCase):
         return False
 
     def setUp(self):
-        self.context=adder.compiler.Context(loadPrelude=self.loadPrelude())
         adder.common.gensym.nextId=1
         adder.gomer.Scope.nextId=1
+        self.context=adder.compiler.Context(loadPrelude=self.loadPrelude())
 
     def tearDown(self):
         self.context=None
@@ -111,7 +111,9 @@ class EvalTestCase(CompilingTestCase):
                               [S('*'),9,S('x')]])==63
 
     def testCallImport(self):
-        assert self.runAdder([S('import'),S('os')]) is os
+        self.runAdder([S('begin'),
+                       [S('import'),S('os')]
+                       ])
         assert self.context['os'] is os
 
     def testCallDefvar(self):
@@ -290,12 +292,6 @@ class EvalTestCase(CompilingTestCase):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runAdder([S('reverse'),S('l')])==[7,5,3,2]
         
-    def testCallReverseBang(self):
-        l=[2,3,5,7]
-        self.addDefs(('l',l))
-        assert self.runAdder([S('reverse!'),S('l')]) is l
-        assert l==[7,5,3,2]
-        
     def testCallStdenv(self):
         self.runAdder([S('stdenv')])
         assert isinstance(self.runResult,adder.gomer.Env)
@@ -308,7 +304,9 @@ class EvalTestCase(CompilingTestCase):
         
     def testCallExecPy(self):
         self.addDefs(('x',"y=17"))
-        assert self.runAdder([S('exec-py'),S('x')]) is None
+        assert self.runAdder([S('begin'),
+                              [S('exec-py'),S('x')]
+                              ]) is None
         assert self.context['y']==17
         
     def testCallApplyNoKw(self):
@@ -345,12 +343,15 @@ class EvalTestCase(CompilingTestCase):
 
         self.addDefs('xf','xg')
 
-        self.runAdder([S('-gomer-try'),
-                       [S('f'),7],
-                       [S('g'),19],
-                       S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
-                       S(':XG'),[S('eg'),[S(':='),S('xg'),S('eg')]],
-                       ])
+        self.runAdder([S('begin'),
+                       [S('-gomer-try'),
+                        [S('f'),7],
+                        [S('g'),19],
+                        S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
+                        S(':XG'),[S('eg'),[S(':='),S('xg'),S('eg')]],
+                        ]
+                       ]
+                      )
         assert 'xf' in self.context
         assert isinstance(self.context['xf'],XF)
         assert self.context['xf'].args==(7,)
@@ -388,6 +389,12 @@ class PreludeTestCase(EvalTestCase):
     def loadPrelude(self):
         return True
 
+    def testCallReverseBang(self):
+        l=[2,3,5,7]
+        self.addDefs(('l',l))
+        assert self.runAdder([S('reverse!'),S('l')]) is l
+        assert l==[7,5,3,2]
+        
     def testCallHead(self):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runAdder([S('head'),S('l')])==2
