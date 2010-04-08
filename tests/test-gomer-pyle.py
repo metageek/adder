@@ -613,7 +613,7 @@ class RunGomerTestCase(CompilingTestCase):
                               [S('*'),9,S('x')]])==63
 
     def testCallImport(self):
-        assert self.runGomer([S('import'),S('os')]) is os
+        assert self.runGomer([S('import'),S('os')],asStmt=True) is None
         assert self.globals['os'] is os
 
     def testCallDefvar(self):
@@ -858,7 +858,7 @@ class RunGomerTestCase(CompilingTestCase):
                        [S('g'),19],
                        S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
                        S(':XG'),[S('eg'),[S(':='),S('xg'),S('eg')]],
-                       ])
+                       ],asStmt=True)
         assert 'xf' in self.globals
         assert isinstance(self.globals['xf'],XF)
         assert self.globals['xf'].args==(7,)
@@ -871,7 +871,7 @@ class RunGomerTestCase(CompilingTestCase):
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       S(':finally'),[[S('pi')]],
-                      ])
+                      ],asStmt=True)
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assert self.exprPython==scratch1
@@ -982,9 +982,9 @@ class EvalTestCase(CompilingTestCase):
 
 suite=unittest.TestSuite(
     (
-        #unittest.makeSuite(GomerToPythonTestCase,"test"),
+        unittest.makeSuite(GomerToPythonTestCase,"test"),
         unittest.makeSuite(RunGomerTestCase,"test"),
-        #unittest.makeSuite(EvalTestCase,"test"),
+        unittest.makeSuite(EvalTestCase,"test"),
      )
     )
 

@@ -320,6 +320,9 @@ class Expr:
     def __init__(self,scope):
         self.scope=scope
 
+    def mustBeStmt(self):
+        return False
+
     def contents(self):
         return []
 
@@ -529,6 +532,11 @@ class Call(Expr):
         if args and isKeyword:
             raise KeywordWithNoArg(curKeyword)
 
+    def mustBeStmt(self):
+        fv=self.getFV()
+        if fv:
+            return fv.mustBeStmt()
+
     def contents(self):
         return [self.f]+self.allArgs
 
@@ -583,10 +591,9 @@ class Call(Expr):
                 return False
         return True
 
-    def compyle(self,stmtCollector,*,asStmt=False):
-        fv=None
+    def getFV(self):
         try:
-            fv=self.f.constValue()
+            return self.f.constValue()
         except NotConstant:
             pass
         except NotInitialized:
@@ -594,6 +601,8 @@ class Call(Expr):
         except Undefined:
             pass
 
+    def compyle(self,stmtCollector,*,asStmt=False):
+        fv=self.getFV()
         if fv:
             if isinstance(fv,str):
                 print('f:',self.f,fv)
@@ -617,6 +626,9 @@ class Call(Expr):
 class Function:
     def __init__(self):
         self.special=False
+
+    def mustBeStmt(self):
+        return False
 
     def isPure(self):
         return False
@@ -733,7 +745,8 @@ class Raise(Function):
             d=build(f.scope,
                     [S('defun'),
                      raiser,[S('e')],
-                     [S('raise'),S('e')]
+                     [S('raise'),S('e')],
+                     None
                      ])
             d.compyle(stmtCollector,asStmt=True)
             return [raiser,[exnPyle]]
@@ -742,6 +755,9 @@ class Raise(Function):
         raise e
 
 class Return(Function):
+    def mustBeStmt(self):
+        return True
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
         assert asStmt
@@ -750,6 +766,9 @@ class Return(Function):
         return None
 
 class Yield(Function):
+    def mustBeStmt(self):
+        return True
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
         assert asStmt
@@ -1011,13 +1030,13 @@ class UserFunction(Function):
 
         scratchVar=gensym('scratch')
 
-        lastPyleExpr=None
         for expr in self.bodyExprs[:-1]:
             expr.compyle(innerCollector,asStmt=True)
 
         if self.bodyExprs:
-            pyleExpr=self.bodyExprs[-1].compyle(innerCollector,
-                                                asStmt=False)
+            lastExpr=self.bodyExprs[-1]
+            pyleExpr=lastExpr.compyle(innerCollector,
+                                      asStmt=lastExpr.mustBeStmt())
             if pyleExpr:
                 if self.innerScope.funcYields:
                     innerCollector(pyleExpr)
