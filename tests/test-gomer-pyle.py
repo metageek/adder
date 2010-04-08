@@ -181,6 +181,24 @@ class GomerToPythonTestCase(CompilingTestCase):
         assert self.pythonFlat=="""x=7
 """
 
+    def testCallDefconst(self):
+        self.compile([S('defconst'),S('x'),
+                      [S('*'),9,7]])
+        assert self.exprPython=='x'
+        assert self.pythonFlat=="""x=9*7
+"""
+
+    def testUseConst(self):
+        self.compile([S('begin'),
+                      [S('defconst'),S('x'),
+                      [S('*'),9,7]],
+                      S('x')])
+        scratch1=S('#<gensym-scratch #1>').toPython()
+        assert self.exprPython==scratch1
+        assert self.pythonFlat=="""x=9*7
+%s=x
+""" % scratch1
+
     def testCallDefvarInScope(self):
         self.compile([S('begin'),
                       [S('defvar'),S('x'),7],
