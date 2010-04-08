@@ -411,6 +411,18 @@ class PreludeTestCase(EvalTestCase):
     def testConstantStderr(self):
         assert self.runAdder(S('stderr')) is sys.stderr
 
+    def testConstantTypeList(self):
+        assert self.runAdder([S('.'),S('type-list')]) is list
+
+    def testConstantTypeTuple(self):
+        assert self.runAdder([S('.'),S('type-tuple')]) is tuple
+
+    def testConstantTypeSet(self):
+        assert self.runAdder([S('.'),S('type-set')]) is set
+
+    def testConstantTypeDict(self):
+        assert self.runAdder([S('.'),S('type-dict')]) is dict
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),
       unittest.makeSuite(PreludeTestCase,"test"),

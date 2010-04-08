@@ -10,6 +10,10 @@
 (defconst stdin (. python sys stdin))
 (defconst stdout (. python sys stdout))
 (defconst stderr (. python sys stderr))
+(defconst type-list (. python list))
+(defconst type-tuple (. python tuple))
+(defconst type-set (. python set))
+(defconst type-dict (. python dict))
 
 (defun cons (h t)
   (+ (mk-list h) t))
