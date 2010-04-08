@@ -101,9 +101,10 @@ class Context:
                     )
         self.globals[name]=f
 
-    def eval(self,expr,*,verbose=False):
+    def eval(self,expr,*,verbose=False,asStmt=False):
         return adder.gomer.evalTopLevel(expr,self.scope,self.globals,
-                                        verbose=verbose)
+                                        verbose=verbose,
+                                        asStmt=asStmt)
 
     def evalStrN(self,exprStr):
         return map(lambda expr: self.eval(expr),parse(exprStr))
@@ -126,7 +127,9 @@ class Context:
             path=os.path.join(srcDir,path)
         last=None
         for expr in parseFile(path):
-            last=self.eval(stripPositions(expr))
+            expr=stripPositions(expr)
+            #print(expr)
+            last=self.eval(expr,asStmt=True)
         return last
 
     def compyle(self,expr,stmtCollector):
