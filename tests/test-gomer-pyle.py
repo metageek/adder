@@ -50,9 +50,10 @@ class CompilingTestCase(unittest.TestCase):
                               )
             self.globals[name]=value
 
-    def compile(self,gomerList):
+    def compile(self,gomerList,*,asStmt=False):
         gomerAST=adder.gomer.build(self.scope,gomerList)
-        self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
+        self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append,
+                                           asStmt=asStmt)
         if self.verbose:
             print(self.exprPyleList)
         if self.exprPyleList:
@@ -201,7 +202,7 @@ class GomerToPythonTestCase(CompilingTestCase):
 %s=x
 """ % scratch1
 
-    def testCallDefvarInScope(self):
+    def testCallDefvarInScopeExpr(self):
         self.compile([S('begin'),
                       [S('defvar'),S('x'),7],
                       [S('scope'),
@@ -210,12 +211,32 @@ class GomerToPythonTestCase(CompilingTestCase):
                       ])
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
+        assign=S('#<gensym-assign-x #3>').toPython()
+        scratch4=S('#<gensym-scratch #4>').toPython()
         assert self.exprPython==scratch1
         assert self.pythonFlat=="""x=7
-x_2=9
-%s=x_2
+x_2=None
+def %s(y):
+    global x_2
+    x_2=y
+    %s=None
+    return %s
+%s=%s(9)
 %s=%s
-""" % (scratch2,scratch1,scratch2)
+""" % (assign,scratch4,scratch4,scratch2,assign,scratch1,scratch2)
+
+    def testCallDefvarInScopeStmt(self):
+        self.compile([S('begin'),
+                      [S('defvar'),S('x'),7],
+                      [S('scope'),
+                       [S('defvar'),S('x'),9]
+                       ]
+                      ],
+                     asStmt=True)
+        assert self.exprPython is None
+        assert self.pythonFlat=="""x=7
+x_2=9
+"""
 
     def testCallEq(self):
         assert self.compile([S('=='),2,3])=='2==3'
@@ -271,7 +292,7 @@ x_2=9
 
     def testCallRaise(self):
         self.addDefs('Exception')
-        assert self.compile([S('raise'),[S('Exception')]])==None
+        assert self.compile([S('raise'),[S('Exception')]],asStmt=True)==None
         assert self.pythonFlat=='raise Exception()\n'
 
     def testCallReturn(self):
@@ -399,7 +420,7 @@ x_2=9
         
     def testCallExecPy(self):
         self.addDefs('x')
-        self.compile([S('exec-py'),S('x')])
+        self.compile([S('exec-py'),S('x')],asStmt=True)
         assert self.exprPython==None
         assert self.pythonFlat=='exec(x)\n'
         
@@ -477,8 +498,8 @@ finally:
 """ % (scratch1,scratch2,scratch1,scratch2))
 
 class RunGomerTestCase(CompilingTestCase):
-    def runGomer(self,gomerList):
-        exprPython=self.compile(gomerList)
+    def runGomer(self,gomerList,*,asStmt=False):
+        exprPython=self.compile(gomerList,asStmt=asStmt)
         if self.verbose:
             print('globals before',self.globals)
             print('self.pythonFlat',self.pythonFlat)
@@ -777,7 +798,7 @@ class RunGomerTestCase(CompilingTestCase):
         
     def testCallExecPy(self):
         self.addDefs(('x',"y=17"))
-        assert self.runGomer([S('exec-py'),S('x')]) is None
+        assert self.runGomer([S('exec-py'),S('x')],asStmt=True) is None
         assert self.globals['y']==17
         
     def testCallApplyNoKw(self):
@@ -903,6 +924,7 @@ class EvalTestCase(CompilingTestCase):
         assert self.eval([S('*'),9,7])==63
 
     def testDefvar(self):
+        self.verbose=True
         assert self.eval([S('defvar'),S('x'),17])==17
         assert self.eval([S(':='),S('x'),9])==9
         assert self.globals['x']==9
@@ -939,9 +961,10 @@ class EvalTestCase(CompilingTestCase):
                            17]])==17
 
 suite=unittest.TestSuite(
-    ( unittest.makeSuite(GomerToPythonTestCase,"test"),
-      unittest.makeSuite(RunGomerTestCase,"test"),
-      unittest.makeSuite(EvalTestCase,"test"),
+    (
+        #unittest.makeSuite(GomerToPythonTestCase,"test"),
+        #unittest.makeSuite(RunGomerTestCase,"test"),
+        unittest.makeSuite(EvalTestCase,"testDefvar"),
      )
     )
 

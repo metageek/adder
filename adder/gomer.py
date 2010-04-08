@@ -120,7 +120,7 @@ class Scope:
             for (name,f) in [('defun',Defun()),
                              ('lambda',Lambda()),
                              ('defvar',Defvar()),
-                             ('defconst',Defvar()),
+                             ('defconst',Defconst()),
                              (':=',Assignment()),
                              ('begin',Begin()),
                              ('return',Return()),
@@ -168,6 +168,35 @@ class Scope:
             cur=cur.parent
         return cur
 
+    def isPyGlobal(self):
+        cur=self
+        while cur.parent:
+            if cur.isFunc:
+                return False
+            cur=cur.parent
+        return True
+
+    Local=1
+    Nonlocal=2
+    Global=3
+
+    # Which access is needed in this scope to get at the given var scope?
+    #  Returns None if impossible.
+    def accessMode(self,varScope):
+        cur=self
+        crossedFunctionBoundary=False
+        while cur and cur is not varScope:
+            if cur.isFunc:
+                crossedFunctionBoundary=True
+            cur=cur.parent
+        if not cur:
+            return None
+        if not crossedFunctionBoundary:
+            return Scope.Local
+        if varScope.isPyGlobal():
+            return Scope.Global
+        return Scope.Nonlocal
+
     def isDescendant(self,other):
         if not other:
             return False
@@ -191,11 +220,22 @@ class Scope:
         return self.parent.commonAncestor(other,errorp=errorp)
 
     def __contains__(self,var):
-        return (isinstance(var,S)
-                and (self.isLocal(var)
-                     or (self.parent and var in self.parent)
-                     )
-                )
+        if not isinstance(var,S):
+            return False
+
+        cur=self
+        depth=0
+        while cur:
+            assert cur.parent is not cur
+            if cur.parent:
+                assert cur.parent.id<cur.id
+
+            if cur.isLocal(var):
+                return True
+
+            cur=cur.parent
+
+        return False
 
     def dontDisambiguate(self,name):
         return self.isLocal(name) and self.localDefs[name].dontDisambiguate
@@ -204,10 +244,11 @@ class Scope:
         return var in self.localDefs
 
     def __getitem__(self,varRef):
-        if varRef.name in self.localDefs:
-            return self.localDefs[varRef.name]
-        if self.parent:
-            return self.parent[varRef]
+        cur=self
+        while cur:
+            if varRef.name in cur.localDefs:
+                return cur.localDefs[varRef.name]
+            cur=cur.parent
         raise Undefined(varRef)
 
     def addDef(self,var,initExpr,*,dontDisambiguate=False,const=False):
@@ -626,6 +667,7 @@ class Defvar(Function):
         assert args
         assert len(args) in [1,2]
         assert not kwArgs
+
         if len(args)==2:
             valueExpr=args[1]
             valuePyle=valueExpr.compyle(stmtCollector,asStmt=False)
@@ -638,15 +680,20 @@ class Defvar(Function):
                 assignerArg=S('y') if args[0].name==S('x') else S('x')
                 d=build(f.scope,
                         [S('defun'),
-                         [assigner,[assignerArg],
-                          [S(':='),args[0].name,assignerArg]
-                          ]])
+                         assigner,[assignerArg],
+                         [S(':='),args[0].name,assignerArg]
+                         ])
                 d.compyle(stmtCollector,asStmt=True)
                 return [assigner,[valuePyle]]
         else:
             stmtCollector([S(':='),[var,None]])
             if not asStmt:
                 return var
+
+class Defconst(Defvar):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+        assert asStmt
+        Defvar.compyleCall(self,f,args,kwArgs,stmtCollector,asStmt=asStmt)
 
 class Assignment(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
@@ -666,16 +713,16 @@ class Assignment(Function):
             assignerArg=S('y') if args[0].name==S('x') else S('x')
             d=build(f.scope,
                     [S('defun'),
-                     [assigner,[assignerArg],
-                      [S(':='),args[0].name,assignerArg]
-                      ]])
+                     assigner,[assignerArg],
+                     [S(':='),args[0].name,assignerArg]
+                     ])
             d.compyle(stmtCollector,asStmt=True)
             return [assigner,[valuePyle]]
 
 class Raise(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
-        exnPyle=args[0].compyle(stmtCollector,asStmt=asStmt)
+        exnPyle=args[0].compyle(stmtCollector,asStmt=False)
         if asStmt:
             pyle=[S('raise'),[exnPyle]]
             stmtCollector(pyle)
@@ -683,9 +730,8 @@ class Raise(Function):
             raiser=gensym('raise')
             d=build(f.scope,
                     [S('defun'),
-                     [raiser,[S('e')],
-                      [S('raise'),S('e')]
-                      ]
+                     raiser,[S('e')],
+                     [S('raise'),S('e')]
                      ])
             d.compyle(stmtCollector,asStmt=True)
             return [raiser,[exnPyle]]
@@ -749,17 +795,11 @@ class ExecPy(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
         assert len(args)==1
+        assert asStmt
 
-        execer=gensym('exec')
-        d=build(f.scope,
-                [S('defun'),
-                 [execer,[S('e')],
-                  [S('exec'),S('e')]
-                  ]
-                 ])
-        d.compyle(stmtCollector,asStmt=True)
-        return [execer,[args[0].compyle(stmtCollector,
-                                        asStmt=False)]]
+        return [S('exec'),
+                [args[0].compyle(stmtCollector,
+                                 asStmt=False)]]
 
 class Begin(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
@@ -779,7 +819,9 @@ class Begin(Function):
             if pyleExpr and not isinstance(pyleExpr,S):
                 innerCollector(pyleExpr)
 
-        if not asStmt:
+        if asStmt:
+            scratchVar=None
+        else:
             scratchVar=gensym('scratch')
             innerCollector([S(':='),
                             [scratchVar,
@@ -867,7 +909,6 @@ class Import(Function):
         assert len(args)==1
         assert isinstance(args[0],VarRef)
         stmtCollector([S('import'),[args[0].name]])
-        return args[0].name
 
 class NativeFunction(Function):
     def __init__(self,f,pure,*,special=False):
@@ -935,13 +976,16 @@ class UserFunction(Function):
                     continue
                 if required.isDescendant(self.innerScope):
                     continue
-                if required.parent:
+                accessMode=self.innerScope.accessMode(required)
+                assert accessMode
+                if accessMode==Scope.Nonlocal:
                     nonlocalRefs.add(varRef.compyle(stmtCollector,
                                                     asStmt=False))
                 else:
-                    if varRef.name not in required.transglobal:
-                        globalRefs.add(varRef.compyle(stmtCollector,
-                                                      asStmt=False))
+                    if accessMode==Scope.Global:
+                        if varRef.name not in required.transglobal:
+                            globalRefs.add(varRef.compyle(stmtCollector,
+                                                          asStmt=False))
 
         argListPyle=list(map(lambda sym: sym.compyle(stmtCollector,
                                                      asStmt=False),
@@ -966,14 +1010,17 @@ class UserFunction(Function):
         scratchVar=gensym('scratch')
 
         lastPyleExpr=None
-        for expr in self.bodyExprs:
-            pyleExpr=expr.compyle(innerCollector,asStmt=True)
-            innerCollector([S(':='),
-                            [scratchVar,pyleExpr]])
+        for expr in self.bodyExprs[:-1]:
+            expr.compyle(innerCollector,asStmt=True)
 
         if self.bodyExprs:
-            if not self.innerScope.funcYields:
-                innerCollector([S('return'),[scratchVar]])
+            pyleExpr=self.bodyExprs[-1].compyle(innerCollector,
+                                                asStmt=False)
+            if pyleExpr:
+                if self.innerScope.funcYields:
+                    innerCollector(pyleExpr)
+                else:
+                    innerCollector([S('return'),[pyleExpr]])
 
         stmtCollector(defStmt)
         return self.name.compyle(stmtCollector,asStmt=False)

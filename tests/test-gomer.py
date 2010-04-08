@@ -589,7 +589,7 @@ class CompyleTestCase(unittest.TestCase):
     def testCallImport(self):
         scope=Scope(None)
         x=build(scope,[S('import'),S('os')])
-        assert x.compyle(self.stmtCollector)==S('os')
+        x.compyle(self.stmtCollector,asStmt=True)
         assert self.stmts==[[S('import'),[S('os')]]]
 
     def testIf(self):
@@ -621,14 +621,14 @@ class CompyleTestCase(unittest.TestCase):
     def testReturn(self):
         scope=Scope(None)
         x=build(scope,[S('return'),17])
-        p=x.compyle(self.stmtCollector)
+        p=x.compyle(self.stmtCollector,asStmt=True)
         assert not p
         assert self.stmts==[[S('return'),[17]]]
 
     def testYield(self):
         scope=Scope(None)
         x=build(scope,[S('yield'),17])
-        p=x.compyle(self.stmtCollector)
+        p=x.compyle(self.stmtCollector,asStmt=True)
         assert not p
         assert self.stmts==[[S('yield'),[17]]]
 
