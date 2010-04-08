@@ -423,6 +423,17 @@ class PreludeTestCase(EvalTestCase):
     def testConstantTypeDict(self):
         assert self.runAdder([S('.'),S('type-dict')]) is dict
 
+    def testDotDot(self):
+        class O:
+            pass
+
+        o=O()
+        o.foo=O()
+        o.foo.bar=17
+
+        f=self.runAdder([S('..'),S('foo'),S('bar')])
+        assert f(o)==17
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),
       unittest.makeSuite(PreludeTestCase,"test"),
