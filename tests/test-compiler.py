@@ -392,11 +392,17 @@ class PreludeTestCase(EvalTestCase):
 
     def testCallHead(self):
         self.addDefs(('l',[2,3,5,7]))
-        self.runAdder([S('head'),S('l')])==2
+        assert self.runAdder([S('head'),S('l')])==2
 
     def testCallTail(self):
         self.addDefs(('l',[2,3,5,7]))
-        self.runAdder([S('tail'),S('l')])==[3,5,7]
+        assert self.runAdder([S('tail'),S('l')])==[3,5,7]
+
+    def testCallCond(self):
+        assert self.runAdder([S('cond'),
+                              [[S('<'),5,7],9],
+                              [True,12]
+                              ])==9
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),

@@ -198,11 +198,13 @@ def buildStmt(pyle):
         assert isinstance(pyle[1][1],list)
         fixedArgs=[]
         optionalArgs=[]
+        restArgs=[]
         kwArgs=[]
         globals=[]
         nonlocals=[]
         stateToCollector={'fixed': fixedArgs,
                           'optional': optionalArgs,
+                          'rest': restArgs,
                           'key': kwArgs,
                           'global': globals,
                           'nonlocal': nonlocals}
@@ -224,8 +226,13 @@ def buildStmt(pyle):
                 assert isinstance(arg[0],S)
                 arg=(arg[0],buildExpr(arg[1]))
             stateToCollector[state].append(arg)
+        if restArgs:
+            assert len(restArgs)==1
+            restArg=restArgs[0]
+        else:
+            restArg=None
         return DefStmt(pyle[1][0],
-                       fixedArgs,optionalArgs,kwArgs,
+                       fixedArgs,optionalArgs,restArg,kwArgs,
                        maybeBlock(list(map(buildStmt,pyle[1][2:]))),
                        globals,nonlocals)
 
@@ -571,10 +578,13 @@ class ExecStmt(Stmt):
         return 'exec(%s)' % self.execExpr.toPython(False)
 
 class DefStmt(Stmt):
-    def __init__(self,fname,fixedArgs,optionalArgs,kwArgs,body,globals=None,nonlocals=None):
+    def __init__(self,fname,
+                 fixedArgs,optionalArgs,restArg,kwArgs,body,
+                 globals=None,nonlocals=None):
         self.fname=S(fname)
         self.fixedArgs=fixedArgs
         self.optionalArgs=optionalArgs
+        self.restArg=restArg
         self.kwArgs=kwArgs
         self.body=body
         self.globals=globals or []
@@ -597,12 +607,21 @@ class DefStmt(Stmt):
         nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
         kwArgsPy=map(kwArgToPy,self.kwArgs)
 
-        return ('def %s(%s%s%s%s):' % (self.fname.toPython(),
-                                     ','.join(nonKwArgsPy),
-                                     ',' if self.kwArgs and nonKwArgsPy else '',
-                                     '*,' if self.kwArgs else '',
-                                     ','.join(kwArgsPy)
-                                     ),
+        return ('def %s(%s%s%s%s%s%s):'
+                % (self.fname.toPython(),
+                   ','.join(nonKwArgsPy),
+                   ',' if (self.restArg and nonKwArgsPy) else '',
+                   ('*%s' % self.restArg) if self.restArg else '',
+                   (',' if (self.kwArgs
+                            and (nonKwArgsPy
+                                 or self.restArg
+                                 )
+                            )
+                    else ''
+                    ),
+                   '*,' if self.kwArgs else '',
+                   ','.join(kwArgsPy)
+                   ),
                 ( (['global '+','.join(self.globals)] if self.globals else [])
                  +(['nonlocal '+','.join(self.nonlocals)] if self.nonlocals else [])
                   +[self.body.toPythonTree() if self.body else 'pass']

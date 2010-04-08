@@ -60,6 +60,7 @@ class Context:
 
         transformerExpr=[S('lambda')]+posArgs[1:]
         transformer=self.eval(transformerExpr)
+        print(transformerExpr)
         self.addMacroDef(posArgs[0],
                          lambda ps,ks: transformer(*ps,**(dict(ks)))
                          )
@@ -95,8 +96,9 @@ class Context:
                     )
         self.globals[name]=f
 
-    def eval(self,expr):
-        return adder.gomer.evalTopLevel(expr,self.scope,self.globals)
+    def eval(self,expr,*,verbose=False):
+        return adder.gomer.evalTopLevel(expr,self.scope,self.globals,
+                                        verbose=verbose)
 
     def evalStrN(self,exprStr):
         return map(lambda expr: self.eval(expr),parse(exprStr))

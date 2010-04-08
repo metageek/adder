@@ -134,7 +134,7 @@ class Scope:
             for name in ['if',
                          '+','-','*','/','//','%',
                          '<','>','<=','>=','==','!=',
-                         'in',
+                         'in','not',
                          'tuple','list','set','dict',
                          'mk-tuple','mk-list','mk-set','mk-dict',
                          'mk-symbol',
@@ -151,6 +151,7 @@ class Scope:
 
             for (name,value) in [('true',True),
                                  ('false',False),
+                                 ('None',None),
                                  ]:
                 self.addDef(S(name),Constant(self,value),const=True)
                 self.transglobal.add(S(name))
@@ -301,6 +302,14 @@ class Expr:
 
     def isLvalue(self):
         return False
+
+def varRefs(expr):
+    if isinstance(expr,list):
+        iters=list(map(varRefs,expr))
+        return itertools.chain(*iters)
+    if isinstance(expr,Expr):
+        return expr.varRefs()
+    return []
 
 class Constant(Expr):
     def __init__(self,scope,value):
@@ -500,11 +509,11 @@ class Call(Expr):
         return required
 
     def varRefs(self):
-        for var in self.f.varRefs():
+        for var in varRefs(self.f):
             yield var
 
         for arg in self.allArgExprs():
-            for var in arg.varRefs():
+            for var in varRefs(arg):
                 yield var
 
     def isPureIn(self,containingScope):
@@ -843,11 +852,11 @@ class UserFunction(Function):
         globalRefs=set()
         nonlocalRefs=set()
         for expr in self.bodyExprs:
-            for varRef in expr.varRefs():
+            for varRef in varRefs(expr):
                 required=varRef.scopeRequired()
                 if not required:
                     continue
-                if required==self.innerScope:
+                if required.isDescendant(self.innerScope):
                     continue
                 if required.parent:
                     nonlocalRefs.add(varRef.compyle(stmtCollector))
@@ -972,7 +981,7 @@ def build(scope,gomer):
 
     return res
 
-def evalTopLevel(expr,scope,globals):
+def evalTopLevel(expr,scope,globals,*,verbose=False):
     pyleStmts=[]
     pythonFlat=''
     exprPyleList=build(scope,expr).compyle(pyleStmts.append)
@@ -985,6 +994,10 @@ def evalTopLevel(expr,scope,globals):
         pyleAST=adder.pyle.buildStmt(pyleList)
         pythonTree=pyleAST.toPythonTree()
         pythonFlat+=adder.pyle.flatten(pythonTree)
+    if verbose:
+        print('exprPyleList: ',exprPyleList)
+        print('pyleStmts: ',pyleStmts)
+        print('pythonFlat: ',pythonFlat)
     if pythonFlat:
         exec(pythonFlat,globals)
     if exprPython is not None:

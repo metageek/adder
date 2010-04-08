@@ -6,3 +6,16 @@
 (defun tail (l)
   (slice l 1)
   )
+
+(defmacro cond (&rest cases)
+  (defun mk (cs)
+    (if (not cs)
+        None
+        (mk-list (quote if)
+                 (head (head cs))
+                 (tail (head cs))
+                 (mk (tail cs)))
+        )
+    )
+  (mk cases)
+  )
