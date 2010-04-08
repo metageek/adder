@@ -60,7 +60,6 @@ class Context:
 
         transformerExpr=[S('lambda')]+posArgs[1:]
         transformer=self.eval(transformerExpr)
-        print(transformerExpr)
         self.addMacroDef(posArgs[0],
                          lambda ps,ks: transformer(*ps,**(dict(ks)))
                          )

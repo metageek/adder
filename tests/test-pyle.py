@@ -502,14 +502,14 @@ else:
 """)
 
     def testDefNoArgs(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)))
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)))
         assert(stmt.toPythonTree()==('def f():',['return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     return 0
 """)
 
     def testDefNoArgsGlobals1(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['x'])
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['x'])
         assert(stmt.toPythonTree()==('def f():',['global x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x
@@ -517,7 +517,7 @@ else:
 """)
 
     def testDefNoArgsGlobals2(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['x','y'])
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['x','y'])
         assert(stmt.toPythonTree()==('def f():',['global x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x,y
@@ -525,7 +525,7 @@ else:
 """)
 
     def testDefNoArgsNonlocals1(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),[],['x'])
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),[],['x'])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x
@@ -533,7 +533,7 @@ else:
 """)
 
     def testDefNoArgsNonlocals2(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),[],['x','y'])
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),[],['x','y'])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x,y
@@ -541,7 +541,7 @@ else:
 """)
 
     def testDefNoArgsGlobals2Nonlocals2(self):
-        stmt=DefStmt('f',[],[],[],ReturnStmt(Constant(0)),['a','b'],['x','y'])
+        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['a','b'],['x','y'])
         assert(stmt.toPythonTree()==('def f():',['global a,b','nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global a,b
@@ -550,35 +550,37 @@ else:
 """)
 
     def testDefOnlyFixedArgs(self):
-        stmt=DefStmt('f',['n'],[],[],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt('f',['n'],[],None,[],ReturnStmt(VarExpr('n')))
         assert(stmt.toPythonTree()==('def f(n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n):
     return n
 """)
 
     def testDefOnlyOptionalArgs(self):
-        stmt=DefStmt('f',[],[('n',Constant(None))],[],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt('f',[],[('n',Constant(None))],None,[],
+                     ReturnStmt(VarExpr('n')))
         assert(stmt.toPythonTree()==('def f(n=None):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n=None):
     return n
 """)
 
     def testDefOnlyKwArgsNoDefaults(self):
-        stmt=DefStmt('f',[],[],['n'],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt('f',[],[],None,['n'],ReturnStmt(VarExpr('n')))
         assert(stmt.toPythonTree()==('def f(*,n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n):
     return n
 """)
 
     def testDefOnlyKwArgsWithDefaults(self):
-        stmt=DefStmt('f',[],[],[('n',Constant(None))],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt('f',[],[],None,[('n',Constant(None))],ReturnStmt(VarExpr('n')))
         assert(stmt.toPythonTree()==('def f(*,n=None):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n=None):
     return n
 """)
 
     def testDefAllArgTypes(self):
-        stmt=DefStmt('f',['a'],[('b',Constant(9))],['c',('d',Constant(7))],
+        stmt=DefStmt('f',
+                     ['a'],[('b',Constant(9))],None,['c',('d',Constant(7))],
                      ReturnStmt(VarExpr('a')))
         assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
         assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
@@ -609,10 +611,10 @@ else:
     def testClassNoParentsBlockBody(self):
         stmt=ClassStmt('C',[],
                        Block([Assignment(VarExpr('z'),Constant(7)),
-                              DefStmt('__init__',['n'],[],[],
+                              DefStmt('__init__',['n'],[],None,[],
                                       Assignment(DotExpr(VarExpr('self'),['q']),
                                                  VarExpr('n'))),
-                              DefStmt('sq',[],[],[],
+                              DefStmt('sq',[],[],None,[],
                                       ReturnStmt(BinaryOperator('*',
                                                                 DotExpr(VarExpr('self'),['q']),
                                                                 DotExpr(VarExpr('self'),['q'])
@@ -815,7 +817,8 @@ else:
 """)
 
     def testDefAllArgTypes(self):
-        stmt=DefStmt('f',['a'],[('b',Constant(9))],['c',('d',Constant(7))],
+        stmt=DefStmt('f',
+                     ['a'],[('b',Constant(9))],None,['c',('d',Constant(7))],
                      ReturnStmt(VarExpr('a')))
         stmt=buildStmt([S('def'),[S('f'),
                         [S('a'),

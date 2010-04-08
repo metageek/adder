@@ -7,13 +7,16 @@
   (slice l 1)
   )
 
+(defun cons (h t)
+  (+ (mk-list h) t))
+
 (defmacro cond (&rest cases)
   (defun mk (cs)
     (if (not cs)
         None
         (mk-list (quote if)
                  (head (head cs))
-                 (tail (head cs))
+                 (cons (quote begin) (tail (head cs)))
                  (mk (tail cs)))
         )
     )
