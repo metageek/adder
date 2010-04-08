@@ -434,6 +434,14 @@ class PreludeTestCase(EvalTestCase):
         f=self.runAdder([S('..'),S('foo'),S('bar')])
         assert f(o)==17
 
+    def testLetStar(self):
+        assert self.runAdder([S('let*'),
+                              [[S('x'),9],
+                               [S('y'),7],
+                               [S('z'),[S('*'),S('x'),S('y')]]
+                               ],
+                              [S('mk-list'),S('z'),S('z')]])==[63,63]
+
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),
       unittest.makeSuite(PreludeTestCase,"test"),
