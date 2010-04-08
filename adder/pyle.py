@@ -102,6 +102,8 @@ def buildExpr(pyle):
                                      buildExpr(pyle[1][0]))
 
         if pyle[0] in buildExpr.binaryOperators:
+            if len(pyle[1])!=2:
+                pdb.set_trace()
             assert len(pyle[1])==2
             return BinaryOperator(pyle[0],
                                   buildExpr(pyle[1][0]),
@@ -622,8 +624,14 @@ class DefStmt(Stmt):
                    '*,' if self.kwArgs else '',
                    ','.join(kwArgsPy)
                    ),
-                ( (['global '+','.join(self.globals)] if self.globals else [])
-                 +(['nonlocal '+','.join(self.nonlocals)] if self.nonlocals else [])
+                ( (['global '+','.join(map(lambda g: g.toPython(),
+                                           self.globals
+                                           )
+                                       )] if self.globals else [])
+                 +(['nonlocal '+','.join(map(lambda g: g.toPython(),
+                                           self.nonlocals
+                                           )
+                                         )] if self.nonlocals else [])
                   +[self.body.toPythonTree() if self.body else 'pass']
                   )
                 )

@@ -386,15 +386,6 @@ x_2=9
         assert self.exprPython=="adder.runtime.reverse(l)"
         assert self.pythonFlat==''
         
-    def testCallReverseBang(self):
-        self.addDefs('l')
-        self.compile([S('reverse!'),S('l')])
-        scratch=S('#<gensym-scratch #1>').toPython()
-        assert self.exprPython==scratch
-        assert self.pythonFlat==("""%s=l
-%s.reverse()
-""" % (scratch,scratch))
-        
     def testCallStdenv(self):
         self.compile([S('stdenv')])
         assert self.exprPython=="adder.runtime.stdenv()"
@@ -774,12 +765,6 @@ class RunGomerTestCase(CompilingTestCase):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runGomer([S('reverse'),S('l')])==[7,5,3,2]
         
-    def testCallReverseBang(self):
-        l=[2,3,5,7]
-        self.addDefs(('l',l))
-        assert self.runGomer([S('reverse!'),S('l')]) is l
-        assert l==[7,5,3,2]
-        
     def testCallStdenv(self):
         self.runGomer([S('stdenv')])
         assert isinstance(self.runResult,adder.gomer.Env)
@@ -943,6 +928,15 @@ class EvalTestCase(CompilingTestCase):
     def testEvalPy(self):
         assert self.eval([S('eval-py'),"9*7"])==63
         assert self.eval([S('eval-py'),"python.sys.stdin"]) is sys.stdin
+
+    def testIfSafety(self):
+        # At time of writing, this fails because the (defvar x)
+        #  gets executed outside the if expression.
+        assert self.eval([S('begin'),
+                          [S('defvar'),S('l'),[S('mk-list')]],
+                          [S('if'),S('l'),
+                           [S('defvar'),S('x'),[S('[]'),S('l'),0]],
+                           17]])==17
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),
