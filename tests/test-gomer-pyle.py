@@ -877,16 +877,41 @@ class EvalTestCase(CompilingTestCase):
         self.scope=adder.gomer.Scope(None)
         self.globals={'adder': adder,
                       'gensym': adder.common.gensym}
+        self.verbose=False
 
     def tearDown(self):
         self.scope=None
         self.globals=None
 
     def eval(self,expr):
-        return adder.gomer.evalTopLevel(expr,self.scope,self.globals)
+        return adder.gomer.evalTopLevel(expr,self.scope,self.globals,
+                                        verbose=self.verbose)
 
     def testSimple(self):
         assert self.eval([S('*'),9,7])==63
+
+    def testDefvar(self):
+        assert self.eval([S('defvar'),S('x'),17])==17
+        assert self.eval([S(':='),S('x'),9])==9
+        assert self.globals['x']==9
+
+    def testDefconst(self):
+        assert self.eval([S('defconst'),S('x'),17])==17
+        try:
+            self.eval([S(':='),S('x'),9])
+        except adder.gomer.AssigningToConstant as a2c:
+            assert a2c.args==('x',)
+            return
+        assert False
+
+    def testConstantTrue(self):
+        assert self.eval(S('true')) is True
+
+    def testConstantNone(self):
+        assert self.eval(S('None')) is None
+
+    def testConstantFalse(self):
+        assert self.eval(S('false')) is False
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),

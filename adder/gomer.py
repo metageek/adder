@@ -2,7 +2,7 @@
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
 #  Includes a basic interpreter, for use in macro expansion.
 
-import itertools,re,pdb,adder.pyle
+import itertools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym
 
 class NoCommonAncestor(Exception):
@@ -71,6 +71,13 @@ class Redefined(Exception):
 
     def __str__(self):
         return 'Variable redefined: %s defined as %s after being defined at %s' % self.args
+
+class AssigningToConstant(Exception):
+    def __init__(self,var):
+        Exception.__init__(self,var)
+
+    def __str__(self):
+        return 'Assigning to constant %s' % self.args
 
 # Information known about a variable
 class VarEntry:
@@ -152,6 +159,10 @@ class Scope:
             for (name,value) in [('true',True),
                                  ('false',False),
                                  ('None',None),
+                                 ('type-list',list),
+                                 ('type-tuple',tuple),
+                                 ('type-set',set),
+                                 ('type-dict',dict),
                                  ]:
                 self.addDef(S(name),Constant(self,value),const=True)
                 self.transglobal.add(S(name))
@@ -333,7 +344,7 @@ class Constant(Expr):
             return [S('adder.common.Symbol'),[str(self.value)]]
         if self.value is None:
             return self.value
-        for t in [str,int,float,bool,tuple]:
+        for t in [str,int,float,bool,tuple,type(Constant)]:
             if isinstance(self.value,t):
                 return self.value
         if isinstance(self.value,UserFunction):
@@ -434,7 +445,7 @@ class VarRef(Expr):
 
         if self.name in scope:
             varEntry=scope[self]
-            if varEntry.const:
+            if varEntry.const and not self.asDef:
                 return varEntry.constValue()
 
             if varEntry.dontDisambiguate:
@@ -613,7 +624,9 @@ class Assignment(Function):
         assert args
         assert len(args)==2
         assert not kwArgs
-        assert args[0].isLvalue()
+        if not args[0].isLvalue():
+            raise AssigningToConstant(args[0].name)
+
         valueExpr=args[1]
         valuePyle=valueExpr.compyle(stmtCollector)
         var=args[0].compyle(stmtCollector)
@@ -985,7 +998,7 @@ def evalTopLevel(expr,scope,globals,*,verbose=False):
     pyleStmts=[]
     pythonFlat=''
     exprPyleList=build(scope,expr).compyle(pyleStmts.append)
-    if exprPyleList:
+    if exprPyleList is not None:
         exprPyleAST=adder.pyle.buildExpr(exprPyleList)
         exprPython=exprPyleAST.toPython(False)
     else:
