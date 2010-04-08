@@ -7,6 +7,10 @@
   (slice l 1)
   )
 
+(defconst stdin (. python sys stdin))
+(defconst stdout (. python sys stdout))
+(defconst stderr (. python sys stderr))
+
 (defun cons (h t)
   (+ (mk-list h) t))
 

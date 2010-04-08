@@ -874,9 +874,16 @@ finally:
 
 class EvalTestCase(CompilingTestCase):
     def setUp(self):
+        class P:
+            def __init__(self):
+                self.sys=sys
+                for key in dir(__builtins__):
+                    setattr(self,key,getattr(__builtins__,key))
+
         self.scope=adder.gomer.Scope(None)
         self.globals={'adder': adder,
-                      'gensym': adder.common.gensym}
+                      'gensym': adder.common.gensym,
+                      'python': P()}
         self.verbose=False
 
     def tearDown(self):
@@ -912,6 +919,10 @@ class EvalTestCase(CompilingTestCase):
 
     def testConstantFalse(self):
         assert self.eval(S('false')) is False
+
+    def testEvalPy(self):
+        assert self.eval([S('eval-py'),"9*7"])==63
+        assert self.eval([S('eval-py'),"python.sys.stdin"]) is sys.stdin
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(GomerToPythonTestCase,"test"),

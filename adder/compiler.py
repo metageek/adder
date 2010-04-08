@@ -1,4 +1,4 @@
-import os,pdb
+import os,pdb,sys,re
 
 import adder.gomer,adder.runtime
 from adder.common import Symbol as S
@@ -41,15 +41,21 @@ class Macro(adder.gomer.Function):
 
         return expr
 
+class P:
+    def __init__(self):
+        self.sys=sys
+        r=re.compile('^__.*__$')
+        for key in __builtins__.keys():
+            if r.match(key):
+                continue
+            setattr(self,key,__builtins__[key])
+
 class Context:
-    def __init__(self,parent,*,loadPrelude=True):
-        self.parent=parent
-        self.scope=adder.gomer.Scope(parent.scope if parent else None)
-        if parent:
-            self.globals=parent.globals
-        else:
-            self.globals={'adder': adder,
-                          'gensym': adder.common.gensym}
+    def __init__(self,*,loadPrelude=True):
+        self.scope=adder.gomer.Scope(None)
+        self.globals={'adder': adder,
+                      'gensym': adder.common.gensym}
+        self.addDef('python', P())
         self.addMacroDef('defmacro',self.defmacroTransformer)
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)

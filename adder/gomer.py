@@ -95,7 +95,7 @@ class VarEntry:
     def constValue(self):
         if not self.neverModified:
             raise NotConstant(None)
-        if not self.initExpr:
+        if self.initExpr is None:
             raise NotInitialized(self.name)
         return self.initExpr.constValue()
 
@@ -159,10 +159,6 @@ class Scope:
             for (name,value) in [('true',True),
                                  ('false',False),
                                  ('None',None),
-                                 ('type-list',list),
-                                 ('type-tuple',tuple),
-                                 ('type-set',set),
-                                 ('type-dict',dict),
                                  ]:
                 self.addDef(S(name),Constant(self,value),const=True)
                 self.transglobal.add(S(name))
@@ -446,7 +442,14 @@ class VarRef(Expr):
         if self.name in scope:
             varEntry=scope[self]
             if varEntry.const and not self.asDef:
-                return varEntry.constValue()
+                try:
+                    return varEntry.constValue()
+                except NotConstant:
+                    pass
+                except NotInitialized:
+                    pass
+                except Undefined:
+                    pass
 
             if varEntry.dontDisambiguate:
                 return S(self.name)

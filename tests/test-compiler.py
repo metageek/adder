@@ -9,9 +9,7 @@ class CompilingTestCase(unittest.TestCase):
         return False
 
     def setUp(self):
-        self.context=adder.compiler.Context(None,
-                                            loadPrelude=self.loadPrelude()
-                                            )
+        self.context=adder.compiler.Context(loadPrelude=self.loadPrelude())
         adder.common.gensym.nextId=1
         adder.gomer.Scope.nextId=1
 
@@ -403,6 +401,15 @@ class PreludeTestCase(EvalTestCase):
                               [[S('<'),5,7],9],
                               [True,12]
                               ])==9
+
+    def testConstantStdin(self):
+        assert self.runAdder(S('stdin')) is sys.stdin
+
+    def testConstantStdout(self):
+        assert self.runAdder(S('stdout')) is sys.stdout
+
+    def testConstantStderr(self):
+        assert self.runAdder(S('stderr')) is sys.stderr
 
 suite=unittest.TestSuite(
     ( unittest.makeSuite(EvalTestCase,"test"),
