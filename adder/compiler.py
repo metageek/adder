@@ -130,6 +130,3 @@ class Context:
             expr=stripPositions(expr)
             last=self.eval(expr,asStmt=True)
         return last
-
-    def compyle(self,expr,stmtCollector):
-        return adder.gomer.build(self.scope,expr).compyle(stmtCollector)
