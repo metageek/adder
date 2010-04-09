@@ -11,6 +11,7 @@
   ((. l reverse))
   l)
 
+(defconst map (. python map))
 (defconst stdin (. python sys stdin))
 (defconst stdout (. python sys stdout))
 (defconst stderr (. python sys stderr))

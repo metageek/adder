@@ -485,6 +485,15 @@ class PreludeTestCase(EvalTestCase):
         self.runAdder([S('load'),codeFile])
         assert self.context.globals['x']==5040
 
+    def testMap(self):
+        i=self.runAdder([S('map'),
+                         [S('lambda'),[S('x')],
+                          [S('*'),S('x'),7]
+                          ],
+                         [S('mk-list'),1,3,9]
+                         ])
+        assert list(i)==[7,21,63]
+
 suite=unittest.TestSuite(
     ( 
         unittest.makeSuite(WithoutPreludeTestCase,"test"),
