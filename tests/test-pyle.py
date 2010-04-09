@@ -509,7 +509,9 @@ else:
 """)
 
     def testDefNoArgsGlobals1(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['x'])
+        stmt=DefStmt(S('f'),[],[],None,[],
+                     ReturnStmt(Constant(0)),
+                     [S('x')])
         assert(stmt.toPythonTree()==('def f():',['global x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x
@@ -517,7 +519,9 @@ else:
 """)
 
     def testDefNoArgsGlobals2(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['x','y'])
+        stmt=DefStmt(S('f'),[],[],None,[],
+                     ReturnStmt(Constant(0)),
+                     [S('x'),S('y')])
         assert(stmt.toPythonTree()==('def f():',['global x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global x,y
@@ -525,7 +529,7 @@ else:
 """)
 
     def testDefNoArgsNonlocals1(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),[],['x'])
+        stmt=DefStmt(S('f'),[],[],None,[],ReturnStmt(Constant(0)),[],[S('x')])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x
@@ -542,7 +546,10 @@ else:
 """)
 
     def testDefNoArgsGlobals2Nonlocals2(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),['a','b'],['x','y'])
+        stmt=DefStmt(S('f'),[],[],None,[],
+                     ReturnStmt(Constant(0)),
+                     [S('a'),S('b')],
+                     [S('x'),S('y')])
         assert(stmt.toPythonTree()==('def f():',['global a,b','nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     global a,b
