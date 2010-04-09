@@ -444,14 +444,13 @@ class PreludeTestCase(EvalTestCase):
         assert f(o)==17
 
     def testLetStar(self):
-        return
         assert self.runAdder([S('let*'),
                               [[S('x'),9],
                                [S('y'),7],
                                [S('z'),[S('*'),S('x'),S('y')]]
                                ],
-                              [S('mk-list'),S('z'),S('z')]],
-                             verbose=True)==[63,63]
+                              [S('mk-list'),S('z'),S('z')]
+                              ])==[63,63]
 
     def testListP(self):
         assert self.runAdder([S('list?'),[S('quote'),[1,2,3]]])
