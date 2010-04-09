@@ -68,7 +68,9 @@ class Context:
         assert len(posArgs)>=2
 
         transformerExpr=[S('lambda')]+posArgs[1:]
-        transformer=self.eval(transformerExpr)
+        transformer=self.eval(transformerExpr,
+                              verbose=False#(posArgs[0]=='let*')
+                              )
         self.addMacroDef(posArgs[0],
                          lambda ps,ks: transformer(*ps,**(dict(ks)))
                          )

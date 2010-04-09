@@ -502,7 +502,7 @@ else:
 """)
 
     def testDefNoArgs(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)))
+        stmt=DefStmt(S('f'),[],[],None,[],ReturnStmt(Constant(0)))
         assert(stmt.toPythonTree()==('def f():',['return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     return 0
@@ -558,74 +558,74 @@ else:
 """)
 
     def testDefOnlyFixedArgs(self):
-        stmt=DefStmt('f',['n'],[],None,[],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt(S('f'),[S('n')],[],None,[],ReturnStmt(VarExpr(S('n'))))
         assert(stmt.toPythonTree()==('def f(n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n):
     return n
 """)
 
     def testDefOnlyOptionalArgs(self):
-        stmt=DefStmt('f',[],[('n',Constant(None))],None,[],
-                     ReturnStmt(VarExpr('n')))
+        stmt=DefStmt(S('f'),[],[(S('n'),Constant(None))],None,[],
+                     ReturnStmt(VarExpr(S('n'))))
         assert(stmt.toPythonTree()==('def f(n=None):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(n=None):
     return n
 """)
 
     def testDefOnlyKwArgsNoDefaults(self):
-        stmt=DefStmt('f',[],[],None,['n'],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt(S('f'),[],[],None,[S('n')],ReturnStmt(VarExpr(S('n'))))
         assert(stmt.toPythonTree()==('def f(*,n):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n):
     return n
 """)
 
     def testDefOnlyKwArgsWithDefaults(self):
-        stmt=DefStmt('f',[],[],None,[('n',Constant(None))],ReturnStmt(VarExpr('n')))
+        stmt=DefStmt(S('f'),[],[],None,[(S('n'),Constant(None))],ReturnStmt(VarExpr(S('n'))))
         assert(stmt.toPythonTree()==('def f(*,n=None):',['return n']))
         assert(stmt.toPythonFlat()=="""def f(*,n=None):
     return n
 """)
 
     def testDefAllArgTypes(self):
-        stmt=DefStmt('f',
-                     ['a'],[('b',Constant(9))],None,['c',('d',Constant(7))],
-                     ReturnStmt(VarExpr('a')))
+        stmt=DefStmt(S('f'),
+                     [S('a')],[(S('b'),Constant(9))],None,[S('c'),(S('d'),Constant(7))],
+                     ReturnStmt(VarExpr(S('a'))))
         assert(stmt.toPythonTree()==('def f(a,b=9,*,c,d=7):',['return a']))
         assert(stmt.toPythonFlat()=="""def f(a,b=9,*,c,d=7):
     return a
 """)
 
     def testClassNoParentsNoBody(self):
-        stmt=ClassStmt('C',[],None)
+        stmt=ClassStmt(S('C'),[],None)
         assert(stmt.toPythonTree()==('class C():',['pass']))
         assert(stmt.toPythonFlat()=="""class C():
     pass
 """)
 
     def testClass1ParentNoBody(self):
-        stmt=ClassStmt('C',['A'],None)
+        stmt=ClassStmt(S('C'),[S('A')],None)
         assert(stmt.toPythonTree()==('class C(A):',['pass']))
         assert(stmt.toPythonFlat()=="""class C(A):
     pass
 """)
 
     def testClass2ParentsNoBody(self):
-        stmt=ClassStmt('C',['A','B'],None)
+        stmt=ClassStmt(S('C'),[S('A'),S('B')],None)
         assert(stmt.toPythonTree()==('class C(A,B):',['pass']))
         assert(stmt.toPythonFlat()=="""class C(A,B):
     pass
 """)
 
     def testClassNoParentsBlockBody(self):
-        stmt=ClassStmt('C',[],
-                       Block([Assignment(VarExpr('z'),Constant(7)),
-                              DefStmt('__init__',['n'],[],None,[],
-                                      Assignment(DotExpr(VarExpr('self'),['q']),
-                                                 VarExpr('n'))),
+        stmt=ClassStmt(S('C'),[],
+                       Block([Assignment(VarExpr(S('z')),Constant(7)),
+                              DefStmt('__init__',[S('n')],[],None,[],
+                                      Assignment(DotExpr(VarExpr('self'),[S('q')]),
+                                                 VarExpr(S('n')))),
                               DefStmt('sq',[],[],None,[],
                                       ReturnStmt(BinaryOperator('*',
-                                                                DotExpr(VarExpr('self'),['q']),
-                                                                DotExpr(VarExpr('self'),['q'])
+                                                                DotExpr(VarExpr('self'),[S('q')]),
+                                                                DotExpr(VarExpr('self'),[S('q')])
                                                                 )
                                                  )
                                       )
@@ -825,9 +825,9 @@ else:
 """)
 
     def testDefAllArgTypes(self):
-        stmt=DefStmt('f',
-                     ['a'],[('b',Constant(9))],None,['c',('d',Constant(7))],
-                     ReturnStmt(VarExpr('a')))
+        stmt=DefStmt(S('f'),
+                     [S('a')],[(S('b'),Constant(9))],None,[S('c'),(S('d'),Constant(7))],
+                     ReturnStmt(VarExpr(S('a'))))
         stmt=buildStmt([S('def'),[S('f'),
                         [S('a'),
                          S('&optional'),(S('b'),9),
@@ -853,7 +853,7 @@ else:
 """)
 
     def testClass2ParentsNoBody(self):
-        stmt=ClassStmt('C',['A','B'],None)
+        stmt=ClassStmt(S('C'),[S('A'),S('B')],None)
         stmt=buildStmt([S('class'),[S('C'),[S('A'),S('B')]]])
         assert(stmt.toPythonTree()==('class C(A,B):',['pass']))
         assert(stmt.toPythonFlat()=="""class C(A,B):

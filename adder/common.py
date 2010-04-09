@@ -2,6 +2,8 @@ import pdb,types,re
 
 pythonLegal=re.compile('^[_a-z0-9A-Z]+$')
 
+pythonReservedWords={'def','global','nonlocal','class'}
+
 class Symbol(str):
     def isGensym(self):
         return self.startswith('#<gensym')
@@ -9,8 +11,13 @@ class Symbol(str):
     def __repr__(self):
         return 'adder.common.Symbol('+repr(str(self))+')'
 
+    def isLegalPython(self):
+        if str(self) in pythonReservedWords:
+            return False
+        return pythonLegal.match(self)
+
     def toPython(self):
-        if pythonLegal.match(self):
+        if self.isLegalPython():
             return self
         def escape1(ch):
             if ch=='_':

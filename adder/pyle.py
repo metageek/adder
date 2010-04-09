@@ -595,16 +595,18 @@ class DefStmt(Stmt):
     def toPythonTree(self):
         def optArgToPy(optionalArg):
             (name,defExpr)=optionalArg
-            return '%s=%s' % (name,defExpr.toPython(False))
+            return '%s=%s' % (name.toPython(),
+                              defExpr.toPython(False))
 
         def kwArgToPy(kwArg):
             if isinstance(kwArg,str):
-                return kwArg
+                return S(kwArg).toPython()
             else:
                 (name,defExpr)=kwArg
-                return '%s=%s' % (name,defExpr.toPython(False))
+                return '%s=%s' % (name.toPython(),
+                                  defExpr.toPython(False))
 
-        fixedArgsPy=self.fixedArgs
+        fixedArgsPy=map(lambda a: a.toPython(),self.fixedArgs)
         optionalArgsPy=map(optArgToPy,self.optionalArgs)
         nonKwArgsPy=list(fixedArgsPy)+list(optionalArgsPy)
         kwArgsPy=map(kwArgToPy,self.kwArgs)
