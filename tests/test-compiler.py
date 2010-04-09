@@ -479,6 +479,13 @@ class PreludeTestCase(EvalTestCase):
                                          ]
                               ])==63
 
+    def testLoad(self):
+        thisFile=self.__class__.testLoad.__code__.co_filename
+        thisDir=os.path.split(thisFile)[0]
+        codeFile=os.path.join(thisDir,'test-compiler-load.+')
+        self.runAdder([S('load'),codeFile])
+        assert self.context.globals['x']==5040
+
 suite=unittest.TestSuite(
     ( 
         unittest.makeSuite(WithoutPreludeTestCase,"test"),

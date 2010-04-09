@@ -58,6 +58,7 @@ class Context:
         self.addDef('python', P())
         self.addFuncDef('evalPy',eval)
         self.addFuncDef('eval',self.eval)
+        self.addFuncDef('load',self.load)
         self.addMacroDef('defmacro',self.defmacroTransformer)
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)
