@@ -536,12 +536,30 @@ class PreludeTestCase(EvalTestCase):
         assert fact(7)==5040
         assert self.runAdder([S('fact'),7])==5040
 
-    def testLetBad(self):
+    def testError(self):
         msg="Inverted neutron stream in gambistrol."
         try:
             self.runAdder([S('error'),msg])
         except Exception as e:
             assert e.args==(msg,)
+
+    def testCase1(self):
+        assert self.runAdder([S('case'),7,
+                              [4, 6],
+                              [[1, 3, 8], 12],
+                              [7, 9]])==9
+
+    def testCase2(self):
+        assert self.runAdder([S('case'),3,
+                              [4, 6],
+                              [[1, 3, 8], 12],
+                              [7, 9]])==12
+
+    def testCase3(self):
+        assert self.runAdder([S('case'),17,
+                              [4, 6],
+                              [[1, 3, 8], 12],
+                              [7, 9]]) is None
 
 suite=unittest.TestSuite(
     ( 

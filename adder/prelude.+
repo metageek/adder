@@ -134,3 +134,32 @@
 (defun error (msg)
   (raise ((. python Exception) msg)))
 
+(defmacro case (key &rest cases)
+  (define value-var (gensym "value"))
+  (cons (quote scope)
+        (cons (mk-list (quote define)
+                       value-var
+                       key)
+              (mk-list
+               (cons (quote cond)
+                     (list
+                      (map (lambda (values-and-body)
+                             (define values (head values-and-body))
+                             (define body (tail values-and-body))
+                             (define pred
+                               (if (list? values)
+                                   (mk-list (quote in)
+                                            value-var
+                                            (mk-list (quote quote)
+                                                     values))
+                                   (mk-list (quote ==)
+                                            value-var
+                                            values)))
+                             (cons pred body))
+                           cases)
+                      )
+                     )
+               )
+              )
+        )
+  )
