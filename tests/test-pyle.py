@@ -533,7 +533,8 @@ else:
 """)
 
     def testDefNoArgsNonlocals2(self):
-        stmt=DefStmt('f',[],[],None,[],ReturnStmt(Constant(0)),[],['x','y'])
+        stmt=DefStmt(S('f'),[],[],None,[],
+                     ReturnStmt(Constant(0)),[],[S('x'),S('y')])
         assert(stmt.toPythonTree()==('def f():',['nonlocal x,y','return 0']))
         assert(stmt.toPythonFlat()=="""def f():
     nonlocal x,y
