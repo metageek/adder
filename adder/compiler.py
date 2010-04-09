@@ -128,7 +128,6 @@ class Context:
         last=None
         for expr in parseFile(path):
             expr=stripPositions(expr)
-            #print(expr)
             last=self.eval(expr,asStmt=True)
         return last
 

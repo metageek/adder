@@ -1050,7 +1050,9 @@ class UserFunction(Function):
         scratchVar=gensym('scratch')
 
         for expr in self.bodyExprs[:-1]:
-            expr.compyle(innerCollector,asStmt=True)
+            pyleExpr=expr.compyle(innerCollector,asStmt=True)
+            if pyleExpr:
+                innerCollector(pyleExpr)
 
         if self.bodyExprs:
             lastExpr=self.bodyExprs[-1]

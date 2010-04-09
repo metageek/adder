@@ -395,7 +395,6 @@ class PreludeTestCase(EvalTestCase):
         l=[2,3,5,7]
         self.addDefs(('l',l))
         assert self.runAdder([S('reverse!'),S('l')]) is l
-        print(l)
         assert l==[7,5,3,2]
         
     def testCallHead(self):
