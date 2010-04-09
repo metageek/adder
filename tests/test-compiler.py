@@ -536,6 +536,13 @@ class PreludeTestCase(EvalTestCase):
         assert fact(7)==5040
         assert self.runAdder([S('fact'),7])==5040
 
+    def testLetBad(self):
+        msg="Inverted neutron stream in gambistrol."
+        try:
+            self.runAdder([S('error'),msg])
+        except Exception as e:
+            assert e.args==(msg,)
+
 suite=unittest.TestSuite(
     ( 
         unittest.makeSuite(WithoutPreludeTestCase,"test"),

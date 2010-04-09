@@ -130,3 +130,7 @@
       (mk-list (quote defvar)
                name-and-maybe-args
                ([] body-or-value 0))))
+
+(defun error (msg)
+  (raise ((. python Exception) msg)))
+
