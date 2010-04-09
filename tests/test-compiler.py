@@ -33,6 +33,7 @@ class EvalTestCase(CompilingTestCase):
                 value=None
             self.context.addDef(name,value)
 
+class WithoutPreludeTestCase(EvalTestCase):
     def testConstInt(self):
         assert self.runAdder(1)==1
 
@@ -207,6 +208,7 @@ class EvalTestCase(CompilingTestCase):
         assert self.context['x']==9
 
     def testCallGensym(self):
+        adder.common.gensym.nextId=1
         self.runAdder([S('gensym'),[S('quote'),S('fred')]])
         adder.common.gensym.nextId=1
         assert self.runResult==adder.common.gensym(adder.common.Symbol('fred'))
@@ -393,6 +395,7 @@ class PreludeTestCase(EvalTestCase):
         l=[2,3,5,7]
         self.addDefs(('l',l))
         assert self.runAdder([S('reverse!'),S('l')]) is l
+        print(l)
         assert l==[7,5,3,2]
         
     def testCallHead(self):
@@ -453,7 +456,7 @@ class PreludeTestCase(EvalTestCase):
 
 suite=unittest.TestSuite(
     ( 
-        unittest.makeSuite(EvalTestCase,"test"),
+        unittest.makeSuite(WithoutPreludeTestCase,"test"),
         unittest.makeSuite(PreludeTestCase,"test"),
      )
     )

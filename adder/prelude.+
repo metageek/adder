@@ -8,7 +8,8 @@
   )
 
 (defun reverse! (l)
-  ((. l reverse))
+  ((. l reverse)) ;; maybe getting eliminated by asStmt logic?
+  (print l)
   l)
 
 (defconst stdin (. python sys stdin))
