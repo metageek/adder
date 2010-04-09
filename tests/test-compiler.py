@@ -473,6 +473,12 @@ class PreludeTestCase(EvalTestCase):
         assert self.runAdder([S('int?'),17])
         assert not self.runAdder([S('int?'),[S('mk-dict'),S(':x'),1]])
 
+    def testEval(self):
+        assert self.runAdder([S('eval'),[S('quote'),
+                                         [S('*'),9,7]
+                                         ]
+                              ])==63
+
 suite=unittest.TestSuite(
     ( 
         unittest.makeSuite(WithoutPreludeTestCase,"test"),

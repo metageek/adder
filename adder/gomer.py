@@ -812,8 +812,9 @@ class EvalPy(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
         assert not kwArgs
         assert len(args)==1
-        return [S('eval'),[args[0].compyle(stmtCollector,
-                                           asStmt=False)]]
+        return [S('evalPy'),
+                [args[0].compyle(stmtCollector,
+                                 asStmt=False)]]
 
 class ExecPy(Function):
     def mustBeStmt(self):

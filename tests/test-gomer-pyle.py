@@ -425,12 +425,6 @@ x_2=9
         assert self.exprPython=="adder.runtime.stdenv()"
         assert self.pythonFlat==''
         
-    def testCallEvalPy(self):
-        self.addDefs('x')
-        self.compile([S('eval-py'),S('x')])
-        assert self.exprPython=="eval(x)"
-        assert self.pythonFlat==''
-        
     def testCallExecPy(self):
         self.addDefs('x')
         self.compile([S('exec-py'),S('x')],asStmt=True)
@@ -800,10 +794,6 @@ class RunGomerTestCase(CompilingTestCase):
         assert self.runResult.parent is None
         assert self.runResult.scope.parent is None
         
-    def testCallEvalPy(self):
-        self.addDefs(('x',"23"))
-        assert self.runGomer([S('eval-py'),S('x')])==23
-        
     def testCallExecPy(self):
         self.addDefs(('x',"y=17"))
         assert self.runGomer([S('exec-py'),S('x')],asStmt=True) is None
@@ -957,13 +947,7 @@ class EvalTestCase(CompilingTestCase):
     def testConstantFalse(self):
         assert self.eval(S('false')) is False
 
-    def testEvalPy(self):
-        assert self.eval([S('eval-py'),"9*7"])==63
-        assert self.eval([S('eval-py'),"python.sys.stdin"]) is sys.stdin
-
     def testIfSafety(self):
-        # At time of writing, this fails because the (defvar x)
-        #  gets executed outside the if expression.
         assert self.eval([S('begin'),
                           [S('defvar'),S('l'),[S('mk-list')]],
                           [S('if'),S('l'),

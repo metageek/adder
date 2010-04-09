@@ -56,6 +56,8 @@ class Context:
         self.globals={}
         self.addDef('adder', adder)
         self.addDef('python', P())
+        self.addFuncDef('evalPy',eval)
+        self.addFuncDef('eval',self.eval)
         self.addMacroDef('defmacro',self.defmacroTransformer)
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)
