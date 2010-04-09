@@ -120,3 +120,13 @@
               (+ decl-scratches
                  decl-vars))
      (list body)))
+
+(defmacro define (name-and-maybe-args &rest body-or-value)
+  (if (list? name-and-maybe-args)
+      (+ (mk-list (quote defun)
+                  (head name-and-maybe-args)
+                  (tail name-and-maybe-args))
+         (list body-or-value))
+      (mk-list (quote defvar)
+               name-and-maybe-args
+               ([] body-or-value 0))))

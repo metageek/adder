@@ -615,7 +615,9 @@ class DefStmt(Stmt):
                 % (self.fname.toPython(),
                    ','.join(nonKwArgsPy),
                    ',' if (self.restArg and nonKwArgsPy) else '',
-                   ('*%s' % self.restArg) if self.restArg else '',
+                   (('*%s' % self.restArg.toPython())
+                    if self.restArg else ''
+                    ),
                    (',' if (self.kwArgs
                             and (nonKwArgsPy
                                  or self.restArg

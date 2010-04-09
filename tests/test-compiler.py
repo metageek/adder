@@ -462,7 +462,13 @@ class PreludeTestCase(EvalTestCase):
                            ])
             assert False
         except NameError as ne:
-            assert ne.args==("name 'x_23' is not defined",)
+            assert len(ne.args)==1
+            (before,name,after)=ne.args[0].split("'")
+            assert before=="name "
+            assert after==" is not defined"
+            (name,numstr)=name.split('_')
+            assert name=='x'
+            assert int(numstr)
 
     def testLetStar(self):
         assert self.runAdder([S('let*'),
@@ -514,6 +520,21 @@ class PreludeTestCase(EvalTestCase):
                          [S('mk-list'),1,3,9]
                          ])
         assert list(i)==[7,21,63]
+
+    def testDefineVar(self):
+        assert self.runAdder([S('define'),S('x'),7])==7
+        assert self.context.globals['x']==7
+
+    def testDefineFunc(self):
+        fact=self.runAdder([S('define'),[S('fact'),S('n')],
+                            [S('if'),[S('<'),S('n'),2],
+                             1,
+                             [S('*'),S('n'),
+                              [S('fact'),[S('-'),S('n'),1]]
+                              ]
+                             ]])
+        assert fact(7)==5040
+        assert self.runAdder([S('fact'),7])==5040
 
 suite=unittest.TestSuite(
     ( 
