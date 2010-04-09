@@ -443,6 +443,27 @@ class PreludeTestCase(EvalTestCase):
         f=self.runAdder([S('..'),S('foo'),S('bar')])
         assert f(o)==17
 
+    def testLet1(self):
+        assert self.runAdder([S('let'),
+                              [[S('x'),9],
+                               [S('y'),7]
+                               ],
+                              [S('*'),S('x'),S('y')]
+                              ])==63
+
+    def testLetBad(self):
+        try:
+            self.runAdder([S('let'),
+                           [[S('x'),9],
+                            [S('y'),7],
+                            [S('z'),[S('*'),S('x'),S('y')]]
+                            ],
+                           [S('mk-list'),S('z'),S('z')]
+                           ])
+            assert False
+        except NameError as ne:
+            assert ne.args==("name 'x_23' is not defined",)
+
     def testLetStar(self):
         assert self.runAdder([S('let*'),
                               [[S('x'),9],

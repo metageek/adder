@@ -12,6 +12,7 @@
   l)
 
 (defconst map (. python map))
+(defconst zip (. python zip))
 (defconst stdin (. python sys stdin))
 (defconst stdout (. python sys stdout))
 (defconst stderr (. python sys stderr))
@@ -98,3 +99,24 @@
         )
      )
   )
+
+(defmacro let (decls &rest body)
+  (defvar vars (list (map (lambda (def)
+                            (if (list? def)
+                                (head def)
+                                def))
+                          decls)))
+  (defvar exprs (list (map (lambda (def)
+                             (if (list? def)
+                                 ([] def 1)
+                                 None))
+                           decls)))
+  (defvar scratches (list (map gensym vars)))
+
+  (defvar decl-scratches (list (map list (zip scratches exprs))))
+  (defvar decl-vars (list (map list (zip vars scratches))))
+  
+  (+ (mk-list (quote let*)
+              (+ decl-scratches
+                 decl-vars))
+     (list body)))
