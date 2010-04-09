@@ -207,12 +207,6 @@ class WithoutPreludeTestCase(EvalTestCase):
         assert f(9)==72
         assert self.context['x']==9
 
-    def testCallGensym(self):
-        adder.common.gensym.nextId=1
-        self.runAdder([S('gensym'),[S('quote'),S('fred')]])
-        adder.common.gensym.nextId=1
-        assert self.runResult==adder.common.gensym(adder.common.Symbol('fred'))
-
     def testCallGetitem(self):
         self.addDefs(('l',[2,3,5,7]))
         assert self.runAdder([S('[]'),S('l'),3])==7
@@ -391,6 +385,12 @@ class PreludeTestCase(EvalTestCase):
     def loadPrelude(self):
         return True
 
+    def testCallGensym(self):
+        adder.common.gensym.nextId=1
+        self.runAdder([S('gensym'),[S('quote'),S('fred')]])
+        adder.common.gensym.nextId=1
+        assert self.runResult==adder.common.gensym(adder.common.Symbol('fred'))
+
     def testCallReverseBang(self):
         l=[2,3,5,7]
         self.addDefs(('l',l))
@@ -452,6 +452,26 @@ class PreludeTestCase(EvalTestCase):
                                ],
                               [S('mk-list'),S('z'),S('z')]],
                              verbose=True)==[63,63]
+
+    def testListP(self):
+        assert self.runAdder([S('list?'),[S('quote'),[1,2,3]]])
+        assert not self.runAdder([S('list?'),17])
+
+    def testTupleP(self):
+        assert self.runAdder([S('tuple?'),[S('mk-tuple'),1,2,3]])
+        assert not self.runAdder([S('tuple?'),17])
+
+    def testSetP(self):
+        assert self.runAdder([S('set?'),[S('mk-set'),1,2,3]])
+        assert not self.runAdder([S('set?'),17])
+
+    def testDictP(self):
+        assert self.runAdder([S('dict?'),[S('mk-dict'),S(':x'),1]])
+        assert not self.runAdder([S('dict?'),17])
+
+    def testIntP(self):
+        assert self.runAdder([S('int?'),17])
+        assert not self.runAdder([S('int?'),[S('mk-dict'),S(':x'),1]])
 
 suite=unittest.TestSuite(
     ( 

@@ -18,6 +18,9 @@
 (defconst type-tuple (. python tuple))
 (defconst type-set (. python set))
 (defconst type-dict (. python dict))
+(defconst type-symbol (. adder common Symbol))
+(defconst type-int (. python int))
+(defconst gensym (. adder common gensym))
 
 (defun cons (h t)
   (+ (mk-list h) t))
@@ -46,8 +49,12 @@
            )
   )
 
-(defun list? (x)
-  (isinstance x type-list))
+(defun list? (x) (isinstance x type-list))
+(defun tuple? (x) (isinstance x type-tuple))
+(defun set? (x) (isinstance x type-set))
+(defun dict? (x) (isinstance x type-dict))
+(defun symbol? (x) (isinstance x type-symbol))
+(defun int? (x) (isinstance x type-int))
 
 (defmacro let* (decls &rest body)
   (defun mk-defvars (ds)

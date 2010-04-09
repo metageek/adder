@@ -53,8 +53,8 @@ class P:
 class Context:
     def __init__(self,*,loadPrelude=True):
         self.scope=adder.gomer.Scope(None)
-        self.globals={'adder': adder,
-                      'gensym': adder.common.gensym}
+        self.globals={}
+        self.addDef('adder', adder)
         self.addDef('python', P())
         self.addMacroDef('defmacro',self.defmacroTransformer)
         if loadPrelude:

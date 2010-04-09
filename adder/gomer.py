@@ -148,7 +148,7 @@ class Scope:
                          'mk-tuple','mk-list','mk-set','mk-dict',
                          'mk-symbol',
                          '[]','slice','getattr','isinstance',
-                         'print','gensym','apply',
+                         'print','apply',
                          ]:
                 self.addDef(S(name),Constant(self,PyleExpr(self,name)))
                 self.transglobal.add(S(name))

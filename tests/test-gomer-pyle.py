@@ -325,11 +325,6 @@ x_2=9
         assert self.compile([S('print'),17,19])=='print(17, 19)'
         assert self.pythonFlat==''
 
-    def testCallGensym(self):
-        self.compile([S('gensym'),[S('quote'),S('fred')]])
-        assert self.exprPython=="gensym(adder.common.Symbol('fred'))"
-        assert self.pythonFlat==''
-
     def testCallGetitem(self):
         self.addDefs('l')
         self.compile([S('[]'),S('l'),17])
@@ -717,11 +712,6 @@ class RunGomerTestCase(CompilingTestCase):
         assert self.globals['x']==8
         assert f(n=9)==72
         assert self.globals['x']==9
-
-    def testCallGensym(self):
-        self.runGomer([S('gensym'),[S('quote'),S('fred')]])
-        adder.common.gensym.nextId=1
-        assert self.runResult==adder.common.gensym(adder.common.Symbol('fred'))
 
     def testCallGetitem(self):
         self.addDefs(('l',[2,3,5,7]))
