@@ -942,11 +942,7 @@ class Dot(Function):
                 ]
 
 class Import(Function):
-    def mustBeStmt(self):
-        return True
-
     def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        assert asStmt
         assert len(args)==1
         assert isinstance(args[0],VarRef)
         stmtCollector([S('import'),[args[0].name]])

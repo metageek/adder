@@ -1,16 +1,3 @@
-(defvar prelude-loaded true)
-(defun head (l)
-  ([] l 0)
-  )
-
-(defun tail (l)
-  (slice l 1)
-  )
-
-(defun reverse! (l)
-  ((. l reverse))
-  l)
-
 (defconst map (. python map))
 (defconst zip (. python zip))
 (defconst stdin (. python sys stdin))
@@ -23,6 +10,28 @@
 (defconst type-symbol (. adder common Symbol))
 (defconst type-int (. python int))
 (defconst gensym (. adder common gensym))
+
+(defmacro dp (expr)
+  (defvar scratch (gensym))
+  (mk-list (quote scope)
+           (mk-list (quote defvar) scratch expr)
+           (mk-list (quote print)
+                    (mk-list (quote quote) expr)
+                    scratch)
+           scratch))
+
+(defvar prelude-loaded true)
+(defun head (l)
+  ([] l 0)
+  )
+
+(defun tail (l)
+  (slice l 1)
+  )
+
+(defun reverse! (l)
+  ((. l reverse))
+  l)
 
 (defun cons (h t)
   (+ (mk-list h) t))
@@ -152,9 +161,11 @@
                                             value-var
                                             (mk-list (quote quote)
                                                      values))
-                                   (mk-list (quote ==)
-                                            value-var
-                                            values)))
+                                   (if (== values (quote otherwise))
+                                       true
+                                       (mk-list (quote ==)
+                                                value-var
+                                                values))))
                              (cons pred body))
                            cases)
                       )
@@ -163,3 +174,11 @@
               )
         )
   )
+
+(defmacro ecase (key &rest cases)
+  (cons (quote case)
+        (cons key
+              (+ (list cases)
+                 (mk-list (mk-list (quote otherwise)
+                                   (mk-list (quote error)
+                                            "Fell through ecase")))))))

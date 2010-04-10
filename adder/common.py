@@ -9,7 +9,7 @@ class Symbol(str):
         return self.startswith('#<gensym')
 
     def __repr__(self):
-        return 'adder.common.Symbol('+repr(str(self))+')'
+        return 'S('+repr(str(self))+')'
 
     def isLegalPython(self):
         if str(self) in pythonReservedWords:
