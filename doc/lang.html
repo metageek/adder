@@ -146,7 +146,8 @@ Currently we have (-gomer-try), which can't be an expression.</dd>
 <dt>let</dt>
 <dd>Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap
-  enough.
+  enough.  Instead I'm using rewriting to distinguish which scope a
+  given var comes from.
 </dd>
 <dt>let*</dt>
 <dt>define</dt>
