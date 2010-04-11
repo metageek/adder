@@ -50,10 +50,9 @@ class CompilingTestCase(unittest.TestCase):
                               )
             self.globals[name]=value
 
-    def compile(self,gomerList,*,asStmt=False):
-        gomerAST=adder.gomer.build(self.scope,gomerList)
-        self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append,
-                                           asStmt=asStmt)
+    def compile(self,gomerList,*,isStmt=False):
+        gomerAST=adder.gomer.build(self.scope,gomerList,isStmt)
+        self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
         if self.verbose:
             print(self.exprPyleList)
         if self.exprPyleList:
@@ -171,12 +170,12 @@ class GomerToPythonTestCase(CompilingTestCase):
 """ % scratch
 
     def testCallImport(self):
-        self.compile([S('import'),S('os')],asStmt=True)
+        self.compile([S('import'),S('os')],isStmt=True)
         assert self.pythonFlat=="""import os
 """
 
     def testCallDefvarAsExpr(self):
-        self.compile([S('defvar'),S('x'),7],asStmt=False)
+        self.compile([S('defvar'),S('x'),7],isStmt=False)
         assign1=S('#<gensym-assign-x #1>').toPython()
         assign3=S('#<gensym-assign-x #3>').toPython()
         assert self.exprPython=='%s(7)' % assign1
@@ -192,7 +191,7 @@ def %s(y):
         print("testCallDefvarExpr: works, but stupid.")
 
     def testCallDefvarAsStmt(self):
-        self.compile([S('defvar'),S('x'),7],asStmt=True)
+        self.compile([S('defvar'),S('x'),7],isStmt=True)
         assert self.exprPython is None
         assert self.pythonFlat=="""x=7
 """
@@ -200,7 +199,7 @@ def %s(y):
     def testCallDefconst(self):
         self.addDefs('f')
         self.compile([S('defconst'),S('x'),
-                      [S('f'),9,7]],asStmt=True)
+                      [S('f'),9,7]],isStmt=True)
         assert self.exprPython is None
         assert self.pythonFlat=="""x=f(9, 7)
 """
@@ -250,7 +249,7 @@ def %s(y):
                        [S('defvar'),S('x'),9]
                        ]
                       ],
-                     asStmt=True)
+                     isStmt=True)
         assert self.exprPython is None
         assert self.pythonFlat=="""x=7
 x_2=9
@@ -310,15 +309,15 @@ x_2=9
 
     def testCallRaise(self):
         self.addDefs('Exception')
-        assert self.compile([S('raise'),[S('Exception')]],asStmt=True)==None
+        assert self.compile([S('raise'),[S('Exception')]],isStmt=True)==None
         assert self.pythonFlat=='raise Exception()\n'
 
     def testCallReturn(self):
-        assert self.compile([S('return'),17],asStmt=True)==None
+        assert self.compile([S('return'),17],isStmt=True)==None
         assert self.pythonFlat=='return 17\n'
 
     def testCallYield(self):
-        assert self.compile([S('yield'),17],asStmt=True)==None
+        assert self.compile([S('yield'),17],isStmt=True)==None
         assert self.pythonFlat=='yield 17\n'
 
     def testCallPrint(self):
@@ -427,7 +426,7 @@ x_2=9
         
     def testCallExecPy(self):
         self.addDefs('x')
-        self.compile([S('exec-py'),S('x')],asStmt=True)
+        self.compile([S('exec-py'),S('x')],isStmt=True)
         print(self.exprPython)
         assert self.exprPython==None
         assert self.pythonFlat=='exec(x)\n'
@@ -463,7 +462,7 @@ x_2=9
                                   ]
                                  ],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
-                      ],asStmt=True)
+                      ],isStmt=True)
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assert self.exprPython==scratch1
@@ -487,7 +486,7 @@ except Bar as bar_3:
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       S(':finally'),[[S('pi')]],
-                      ],asStmt=True)
+                      ],isStmt=True)
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assert self.exprPython==scratch1
@@ -505,8 +504,8 @@ finally:
 """ % (scratch1,scratch2,scratch1,scratch2))
 
 class RunGomerTestCase(CompilingTestCase):
-    def runGomer(self,gomerList,*,asStmt=False):
-        exprPython=self.compile(gomerList,asStmt=asStmt)
+    def runGomer(self,gomerList,*,isStmt=False):
+        exprPython=self.compile(gomerList,isStmt=isStmt)
         if self.verbose:
             print('globals before',self.globals)
             print('self.pythonFlat',self.pythonFlat)
@@ -602,7 +601,7 @@ class RunGomerTestCase(CompilingTestCase):
                               [S('*'),9,S('x')]])==63
 
     def testCallImport(self):
-        assert self.runGomer([S('import'),S('os')],asStmt=True) is None
+        assert self.runGomer([S('import'),S('os')],isStmt=True) is None
         assert self.globals['os'] is os
 
     def testCallDefvar(self):
@@ -796,7 +795,7 @@ class RunGomerTestCase(CompilingTestCase):
         
     def testCallExecPy(self):
         self.addDefs(('x',"y=17"))
-        assert self.runGomer([S('exec-py'),S('x')],asStmt=True) is None
+        assert self.runGomer([S('exec-py'),S('x')],isStmt=True) is None
         assert self.globals['y']==17
         
     def testCallApplyNoKw(self):
@@ -838,7 +837,7 @@ class RunGomerTestCase(CompilingTestCase):
                        [S('g'),19],
                        S(':XF'),[S('ef'),[S(':='),S('xf'),S('ef')]],
                        S(':XG'),[S('eg'),[S(':='),S('xg'),S('eg')]],
-                       ],asStmt=True)
+                       ],isStmt=True)
         assert 'xf' in self.globals
         assert isinstance(self.globals['xf'],XF)
         assert self.globals['xf'].args==(7,)
@@ -851,7 +850,7 @@ class RunGomerTestCase(CompilingTestCase):
                       S(':Foo'),[S('foo'),[S('print'),S('foo')]],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       S(':finally'),[[S('pi')]],
-                      ],asStmt=True)
+                      ],isStmt=True)
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assert self.exprPython==scratch1
@@ -914,8 +913,8 @@ class EvalTestCase(CompilingTestCase):
         self.scope=None
         self.globals=None
 
-    def eval(self,expr):
-        return adder.gomer.evalTopLevel(expr,self.scope,self.globals,
+    def eval(self,expr,isStmt=False):
+        return adder.gomer.evalTopLevel(expr,self.scope,self.globals,isStmt,
                                         verbose=self.verbose)
 
     def testSimple(self):

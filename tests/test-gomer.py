@@ -327,7 +327,7 @@ class ExprTestCase(unittest.TestCase):
                                                           [a,b,c]),
                                                      True)))
 
-        call=Call(scope3,
+        call=Call(scope3,False,
                   VarRef(scope3,S('l')),
                   [VarRef(scope3,S('james1')),
                    VarRef(scope3,S('charles1')),
@@ -360,7 +360,7 @@ class ExprTestCase(unittest.TestCase):
                                                           [a,b,c,james2]),
                                                      True)))
 
-        call=Call(scope3,
+        call=Call(scope3,False,
                   VarRef(scope3,S('l')),
                   [VarRef(scope3,S('james1')),
                    VarRef(scope3,S('charles1')),
@@ -413,7 +413,7 @@ class ExprTestCase(unittest.TestCase):
                                             [[VarRef(scope4,S('a')),
                                               VarRef(scope4,S('b')),
                                               VarRef(scope4,S('c'))],
-                                             Call(scope4,
+                                             Call(scope4,False,
                                                   VarRef(scope4,S('l')),
                                                   [VarRef(scope4,S('c')),
                                                    VarRef(scope4,S('b')),
@@ -421,7 +421,7 @@ class ExprTestCase(unittest.TestCase):
                                             None,
                                             env3)))
 
-        call=Call(scope3,
+        call=Call(scope3,False,
                   VarRef(scope3,S('f')),
                   [VarRef(scope3,S('james1')),
                    VarRef(scope3,S('charles1')),
@@ -435,19 +435,19 @@ class ExprTestCase(unittest.TestCase):
 class BuildTestCase(unittest.TestCase):
     def testQuoteInt(self):
         scope=Scope(None)
-        x=build(scope,[S('quote'),17])
+        x=build(scope,[S('quote'),17],False)
         assert isinstance(x,Constant)
         assert x.value==17
 
     def testQuoteList(self):
         scope=Scope(None)
-        x=build(scope,[S('quote'),[11,13,17]])
+        x=build(scope,[S('quote'),[11,13,17]],False)
         assert isinstance(x,Constant)
         assert x.value==[11,13,17]
 
     def testScope(self):
         scope=Scope(None)
-        x=build(scope,[S('scope'),S('y'),S('z')])
+        x=build(scope,[S('scope'),S('y'),S('z')],False)
         assert isinstance(x,Call)
         assert isinstance(x.f,VarRef)
         assert x.f.name==S('begin')
@@ -526,13 +526,13 @@ class CompyleTestCase(unittest.TestCase):
 
     def testPredefinedTrue(self):
         scope=Scope(None)
-        x=build(scope,S('true'))
+        x=build(scope,S('true'),False)
         assert x.compyle(self.stmtCollector)==True
         assert self.stmts==[]
 
     def testPredefinedFalse(self):
         scope=Scope(None)
-        x=build(scope,S('false'))
+        x=build(scope,S('false'),False)
         assert x.compyle(self.stmtCollector)==False
         assert self.stmts==[]
 
@@ -553,33 +553,33 @@ class CompyleTestCase(unittest.TestCase):
 
     def testQuoteInt(self):
         scope=Scope(None)
-        x=build(scope,[S('quote'),17])
+        x=build(scope,[S('quote'),17],False)
         assert x.compyle(self.stmtCollector)==17
         assert self.stmts==[]
 
     def testQuoteSym(self):
         scope=Scope(None)
-        x=build(scope,[S('quote'),S('x')])
+        x=build(scope,[S('quote'),S('x')],False)
         assert x.compyle(self.stmtCollector)==['adder.common.Symbol',['x']]
         assert self.stmts==[]
 
     def testQuoteList(self):
         scope=Scope(None)
-        x=build(scope,[S('quote'),[11,13,17]])
+        x=build(scope,[S('quote'),[11,13,17]],False)
         assert x.compyle(self.stmtCollector)==[S('mk-list'),[11,13,17]]
         assert self.stmts==[]
 
     def testCallOnlyPos(self):
         scope=Scope(None)
         scope.addDef(S('f'),None)
-        x=build(scope,[S('f'),11,13,17])
+        x=build(scope,[S('f'),11,13,17],False)
         assert x.compyle(self.stmtCollector)==[S('f'),[11,13,17]]
         assert self.stmts==[]
 
     def testCallBoth(self):
         scope=Scope(None)
         scope.addDef(S('f'),None)
-        x=build(scope,[S('f'),11,13,17,S(':alpha'),23])
+        x=build(scope,[S('f'),11,13,17,S(':alpha'),23],False)
         assert x.compyle(self.stmtCollector)==[S('f'),
                                                [11,13,17],
                                                [[S('alpha'),23]]
@@ -588,17 +588,17 @@ class CompyleTestCase(unittest.TestCase):
 
     def testCallImport(self):
         scope=Scope(None)
-        x=build(scope,[S('import'),S('os')])
-        x.compyle(self.stmtCollector,asStmt=True)
+        x=build(scope,[S('import'),S('os')],True)
+        x.compyle(self.stmtCollector)
         assert self.stmts==[[S('import'),[S('os')]]]
 
-    def testIf(self):
+    def testIfExpr(self):
         scope=Scope(None)
         scope.addDef('n',None)
         x=build(scope,
                 [S('if'),[S('<'),S('n'),2],
                   1,
-                  7])
+                  7],False)
         p=x.compyle(self.stmtCollector)
         assert p==[S('if'),
                    [[S('<'),[S('n'),2]],1,7]]
@@ -609,7 +609,8 @@ class CompyleTestCase(unittest.TestCase):
         x=build(scope,
                 [S('while'),[S('<'),S('n'),2],
                   1,
-                  7])
+                  7],
+                True)
         p=x.compyle(self.stmtCollector)
         assert not p
         scratch=S('#<gensym-scratch #1>')
@@ -620,22 +621,22 @@ class CompyleTestCase(unittest.TestCase):
 
     def testReturn(self):
         scope=Scope(None)
-        x=build(scope,[S('return'),17])
-        p=x.compyle(self.stmtCollector,asStmt=True)
+        x=build(scope,[S('return'),17],True)
+        p=x.compyle(self.stmtCollector)
         assert not p
         assert self.stmts==[[S('return'),[17]]]
 
     def testYield(self):
         scope=Scope(None)
-        x=build(scope,[S('yield'),17])
-        p=x.compyle(self.stmtCollector,asStmt=True)
+        x=build(scope,[S('yield'),17],True)
+        p=x.compyle(self.stmtCollector)
         assert not p
         assert self.stmts==[[S('yield'),[17]]]
 
     def testDot0(self):
         scope=Scope(None)
         scope.addDef('o',None)
-        x=build(scope,[S('.'),S('o')])
+        x=build(scope,[S('.'),S('o')],False)
         p=x.compyle(self.stmtCollector)
         assert p==[S('.'),[S('o')]]
         assert not self.stmts
@@ -643,7 +644,7 @@ class CompyleTestCase(unittest.TestCase):
     def testDot1(self):
         scope=Scope(None)
         scope.addDef('o',None)
-        x=build(scope,[S('.'),S('o'),S('x')])
+        x=build(scope,[S('.'),S('o'),S('x')],False)
         p=x.compyle(self.stmtCollector)
         assert p==[S('.'),[S('o'),S('x')]]
         assert not self.stmts
@@ -651,7 +652,7 @@ class CompyleTestCase(unittest.TestCase):
     def testDot3(self):
         scope=Scope(None)
         scope.addDef('o',None)
-        x=build(scope,[S('.'),S('o'),S('x'),S('y'),S('z')])
+        x=build(scope,[S('.'),S('o'),S('x'),S('y'),S('z')],False)
         p=x.compyle(self.stmtCollector)
         assert p==[S('.'),[S('o'),S('x'),S('y'),S('z')]]
         assert not self.stmts
@@ -662,7 +663,8 @@ class CompyleTestCase(unittest.TestCase):
                 [S('defun'),S('fact'),[S('n')],
                  [S('if'),[S('<'),S('n'),2],
                   1,
-                  [S('*'),S('n'),[S('-'),S('n'),1]]]])
+                  [S('*'),S('n'),[S('-'),S('n'),1]]]],
+                False)
         p=x.compyle(self.stmtCollector)
         assert p==S('fact')
         expected=[
@@ -692,7 +694,7 @@ class CompyleTestCase(unittest.TestCase):
                 [S('lambda'),[S('n')],
                  [S('if'),[S('<'),S('n'),30],
                   10,
-                  5]])
+                  5]],False)
         p=x.compyle(self.stmtCollector)
         scratch=S('#<gensym-lambda #1>')
         scratchPy=scratch.toPython()

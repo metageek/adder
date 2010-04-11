@@ -150,12 +150,14 @@ class Scope:
                          '[]','slice','getattr','isinstance',
                          'print','apply',
                          ]:
-                self.addDef(S(name),Constant(self,PyleExpr(self,name)))
+                self.addDef(S(name),Constant(self,
+                                             PyleExpr(self,name)))
                 self.transglobal.add(S(name))
 
             for name in ['break','continue',
                          ]:
-                self.addDef(S(name),Constant(self,PyleStmt(self,name)))
+                self.addDef(S(name),Constant(self,
+                                             PyleStmt(self,name)))
                 self.transglobal.add(S(name))
 
             for (name,value) in [('true',True),
@@ -320,8 +322,10 @@ class Env:
                 raise Undefined(varRef)
 
 class Expr:
-    def __init__(self,scope):
+    def __init__(self,scope,isStmt):
         self.scope=scope
+        self.isStmt=isStmt
+        assert isStmt or (not self.mustBeStmt())
 
     def mustBeStmt(self):
         return False
@@ -350,7 +354,7 @@ class Expr:
         return False
 
     # Compile into Pyle.
-    def compyle(self,stmtCollector,*,asStmt=False):
+    def compyle(self,stmtCollector):
         pass
 
     def isLvalue(self):
@@ -366,7 +370,7 @@ def varRefs(expr):
 
 class Constant(Expr):
     def __init__(self,scope,value):
-        Expr.__init__(self,scope)
+        Expr.__init__(self,scope,False)
         self.value=value
 
     def evaluate(self,env):
@@ -381,7 +385,9 @@ class Constant(Expr):
     def isPureIn(self,containingScope):
         return True
 
-    def compyle(self,stmtCollector,*,asStmt=False):
+    def compyle(self,stmtCollector):
+        if self.isStmt:
+            return None
         if isinstance(self.value,S):
             return [S('adder.common.Symbol'),[str(self.value)]]
         if self.value is None:
@@ -390,19 +396,18 @@ class Constant(Expr):
             if isinstance(self.value,t):
                 return self.value
         if isinstance(self.value,UserFunction):
-            return self.value.compyle(stmtCollector,asStmt=asStmt)
+            return self.value.compyle(stmtCollector)
         assert isinstance(self.value,list)
         return [S('mk-list'),
                 list(map(lambda x: Constant(self.scope,
-                                            x).compyle(stmtCollector,
-                                                       asStmt=False),
+                                            x).compyle(stmtCollector),
                          self.value))
                 ]
 
 class VarRef(Expr):
     def __init__(self,scope,name,*,asDef=False):
         assert(name)
-        Expr.__init__(self,scope)
+        Expr.__init__(self,scope,False)
         self.name=name
         self.asDef=asDef
 
@@ -474,11 +479,11 @@ class VarRef(Expr):
     def __str__(self):
         return self.name
 
-    def compyle(self,stmtCollector,*,asStmt=False):
+    def compyle(self,stmtCollector):
         if self.isKeyword():
             raise KeywordsHaveNoValue(self)
 
-        if asStmt:
+        if self.isStmt:
             return
 
         if self.name.isGensym() or self.name.startswith('&'):
@@ -510,9 +515,9 @@ class VarRef(Expr):
         return S("%s_%d" % (self.name,scope.id))
 
 class Call(Expr):
-    def __init__(self,scope,f,args):
-        Expr.__init__(self,scope)
+    def __init__(self,scope,isStmt,f,args):
         self.f=f
+        Expr.__init__(self,scope,isStmt)
         self.allArgs=args
         self.posArgs=[]
         self.kwArgs=[]
@@ -604,21 +609,19 @@ class Call(Expr):
         except Undefined:
             pass
 
-    def compyle(self,stmtCollector,*,asStmt=False):
+    def compyle(self,stmtCollector):
         fv=self.getFV()
         if fv:
             if isinstance(fv,str):
                 print('f:',self.f,fv)
             return fv.compyleCall(self.f,self.posArgs,self.kwArgs,
-                                  stmtCollector,asStmt=asStmt)
+                                  stmtCollector,self.isStmt)
         else:
-            f=self.f.compyle(stmtCollector,asStmt=False)
-            posArgs=list(map(lambda x: x.compyle(stmtCollector,
-                                                 asStmt=False),
+            f=self.f.compyle(stmtCollector)
+            posArgs=list(map(lambda x: x.compyle(stmtCollector),
                              self.posArgs))
             kwArgs=list(map(lambda kx: [kx[0],
-                                        kx[1].compyle(stmtCollector,
-                                                      asStmt=False)
+                                        kx[1].compyle(stmtCollector)
                                         ],
                             self.kwArgs))
             if kwArgs:
@@ -636,13 +639,11 @@ class Function:
     def isPure(self):
         return False
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        f=self.f.compyle(stmtCollector,asStmt=False)
-        posArgs=list(map(lambda x: x.compyle(stmtCollector,
-                                             asStmt=False),
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        f=self.f.compyle(stmtCollector)
+        posArgs=list(map(lambda x: x.compyle(stmtCollector),
                          args))
-        kwArgs=list(map(lambda kx: [kx[0],kx[1].compyle(stmtCollector,
-                                                        asStmt=False)],
+        kwArgs=list(map(lambda kx: [kx[0],kx[1].compyle(stmtCollector)],
                         kwArgs))
         if kwArgs:
             return [f,posArgs,kwArgs]
@@ -654,41 +655,40 @@ class PyleExpr(Function):
         self.f=VarRef(scope,S(f))
 
 class PyleStmt(PyleExpr):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         stmtCollector(PyleExpr.compyleCall(self,f,
                                            args,kwArgs,
-                                           stmtCollector,
-                                           asStmt=True))
+                                           stmtCollector))
 
 class Defun(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         uf=UserFunction(f.scope,
                         args[1:],kwArgs,
                         None,
                         name=args[0])
-        return uf.compyle(stmtCollector,
-                          asStmt=asStmt)
+        expr=uf.compyle(stmtCollector)
+        if not isStmt:
+            return expr
 
 class Lambda(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        if asStmt:
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        if isStmt:
             return
         return UserFunction(f.scope,
                             args,kwArgs,
-                            None).compyle(stmtCollector,
-                                          asStmt=asStmt)
+                            None).compyle(stmtCollector)
 
 class Defvar(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert args
         assert len(args) in [1,2]
         assert not kwArgs
 
         if len(args)==2:
             valueExpr=args[1]
-            valuePyle=valueExpr.compyle(stmtCollector,asStmt=False)
-            var=args[0].compyle(stmtCollector,asStmt=False)
-            if asStmt:
+            valuePyle=valueExpr.compyle(stmtCollector)
+            var=args[0].compyle(stmtCollector)
+            if isStmt:
                 stmtCollector([S(':='),[var,valuePyle]])
             else:
                 stmtCollector([S(':='),[var,None]])
@@ -697,22 +697,24 @@ class Defvar(Function):
                 d=build(f.scope,
                         [S('defun'),
                          assigner,[assignerArg],
-                         [S(':='),args[0].name,assignerArg]
-                         ])
-                d.compyle(stmtCollector,asStmt=True)
+                         [S(':='),args[0].name,assignerArg],
+                         [S('return'),args[0].name]
+                         ],
+                        True)
+                d.compyle(stmtCollector)
                 return [assigner,[valuePyle]]
         else:
             stmtCollector([S(':='),[var,None]])
-            if not asStmt:
+            if not isStmt:
                 return var
 
 class Defconst(Defvar):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        assert asStmt
-        Defvar.compyleCall(self,f,args,kwArgs,stmtCollector,asStmt=asStmt)
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert isStmt
+        Defvar.compyleCall(self,f,args,kwArgs,stmtCollector,isStmt)
 
 class Assignment(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert args
         assert len(args)==2
         assert not kwArgs
@@ -720,9 +722,9 @@ class Assignment(Function):
             raise AssigningToConstant(args[0].name)
 
         valueExpr=args[1]
-        valuePyle=valueExpr.compyle(stmtCollector,asStmt=False)
-        var=args[0].compyle(stmtCollector,asStmt=False)
-        if asStmt:
+        valuePyle=valueExpr.compyle(stmtCollector)
+        var=args[0].compyle(stmtCollector)
+        if isStmt:
             stmtCollector([S(':='),[var,valuePyle]])
         else:
             assigner=gensym('assign-%s' % args[0].name)
@@ -733,14 +735,14 @@ class Assignment(Function):
                      [S(':='),args[0].name,assignerArg],
                      args[0].name
                      ])
-            d.compyle(stmtCollector,asStmt=False)
+            d.compyle(stmtCollector)
             return [assigner,[valuePyle]]
 
 class Raise(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
-        exnPyle=args[0].compyle(stmtCollector,asStmt=False)
-        if asStmt:
+        exnPyle=args[0].compyle(stmtCollector)
+        if isStmt:
             pyle=[S('raise'),[exnPyle]]
             stmtCollector(pyle)
         else:
@@ -750,8 +752,9 @@ class Raise(Function):
                      raiser,[S('e')],
                      [S('raise'),S('e')],
                      None
-                     ])
-            d.compyle(stmtCollector,asStmt=True)
+                     ],
+                    True)
+            d.compyle(stmtCollector)
             return [raiser,[exnPyle]]
 
     def __call__(self,e):
@@ -761,10 +764,10 @@ class Return(Function):
     def mustBeStmt(self):
         return True
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
-        assert asStmt
-        pyle=[S('return'),[args[0].compyle(stmtCollector,asStmt=False)]]
+        assert isStmt
+        pyle=[S('return'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
         return None
 
@@ -772,28 +775,28 @@ class Yield(Function):
     def mustBeStmt(self):
         return True
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
-        assert asStmt
+        assert isStmt
 
         scope=f.scope.nearestFuncAncestor()
         if scope:
             scope.funcYields=True
 
-        pyle=[S('yield'),[args[0].compyle(stmtCollector,asStmt=False)]]
+        pyle=[S('yield'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
         return None
 
 class Reverse(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         # (reverse) is pure, so just eval the arg
-        if asStmt:
-            return args[0].compyle(stmtCollector,asStmt=True)
+        if isStmt:
+            return args[0].compyle(stmtCollector)
 
         assert not kwArgs
         assert len(args)==1
         return [S('adder.runtime.reverse'),
-                [args[0].compyle(stmtCollector,asStmt=False)]]
+                [args[0].compyle(stmtCollector)]]
 
     def __call__(self,l):
         l2=list(l)
@@ -801,36 +804,32 @@ class Reverse(Function):
         return l2
 
 class Stdenv(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
-        if asStmt:
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        if isStmt:
             return None
         assert not kwArgs
         assert len(args)==0
         return [S('adder.runtime.stdenv'),[]]
 
 class EvalPy(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
         assert len(args)==1
-        return [S('evalPy'),
-                [args[0].compyle(stmtCollector,
-                                 asStmt=False)]]
+        return [S('evalPy'),[args[0].compyle(stmtCollector)]]
 
 class ExecPy(Function):
     def mustBeStmt(self):
         return True
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
         assert len(args)==1
-        assert asStmt
+        assert isStmt
 
-        stmtCollector([S('exec'),
-                       [args[0].compyle(stmtCollector,
-                                        asStmt=False)]])
+        stmtCollector([S('exec'),[args[0].compyle(stmtCollector)]])
 
 class Begin(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
         if not args:
             # (begin) with empty body is a no-op
@@ -840,7 +839,7 @@ class Begin(Function):
         def innerCollector(stmt):
             body.append(stmt)
 
-        if (asStmt
+        if (isStmt
             or (args and args[-1].mustBeStmt())
             ):
             stmts=args
@@ -850,7 +849,7 @@ class Begin(Function):
             last=args[-1] if args else None
 
         for a in stmts:
-            exprPyle=a.compyle(innerCollector,asStmt=True)
+            exprPyle=a.compyle(innerCollector)
             if exprPyle:
                 innerCollector(exprPyle)
 
@@ -858,7 +857,7 @@ class Begin(Function):
             scratchVar=gensym('scratch')
             innerCollector([S(':='),
                             [scratchVar,
-                             last.compyle(innerCollector,asStmt=False)]
+                             last.compyle(innerCollector)]
                             ])
         else:
             scratchVar=None
@@ -870,13 +869,13 @@ class Try(Function):
     def mustBeStmt(self):
         return True
 
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         if not args:
             # try: with empty body is a no-op, no matter what
             #  its except: and finally: clauses may be.
             return
 
-        assert asStmt
+        assert isStmt
 
         bodyPyle=[]
         innerCollector=bodyPyle.append
@@ -888,7 +887,7 @@ class Try(Function):
                         [scratchVar,
                          Begin().compyleCall(VarRef(f.scope,S('begin')),
                                              args,None,innerCollector,
-                                             asStmt=False)]
+                                             False)]
                         ])
 
         exnPyles=[]
@@ -898,16 +897,13 @@ class Try(Function):
             if klass=='finally':
                 var=None
                 assert len(clause.posArgs)==0
-                clausePyle=clause.f.compyle(exnStmts.append,
-                                            asStmt=False)
+                clausePyle=clause.f.compyle(exnStmts.append)
                 if clausePyle:
                     exnStmts.append(clausePyle)
             else:
-                var=clause.f.compyle(innerCollector,
-                                     asStmt=False)
+                var=clause.f.compyle(innerCollector)
                 assert len(clause.posArgs)==1
-                clausePyle=clause.posArgs[0].compyle(exnStmts.append,
-                                                     asStmt=True)
+                clausePyle=clause.posArgs[0].compyle(exnStmts.append)
                 if clausePyle:
                     exnStmts.append(clausePyle)
                 
@@ -917,24 +913,24 @@ class Try(Function):
         return scratchVar
 
 class While(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert args
         assert not kwArgs
 
         scratch=gensym('scratch')
         innerStmts=[]
-        condPyle=args[0].compyle(stmtCollector,asStmt=False)
+        condPyle=args[0].compyle(stmtCollector)
         for arg in args[1:]:
-            expr=arg.compyle(innerStmts.append,asStmt=True)
+            expr=arg.compyle(innerStmts.append)
             if expr:
                 innerStmts.append(expr)
 
         stmtCollector([S('while'),[condPyle]+innerStmts])
 
 class Dot(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
-        obj=args[0].compyle(stmtCollector,asStmt=False)
+        obj=args[0].compyle(stmtCollector)
         return [S('.'),
                 ([obj]
                  +list(map(lambda x: x.name,args[1:]))
@@ -942,7 +938,7 @@ class Dot(Function):
                 ]
 
 class Import(Function):
-    def compyleCall(self,f,args,kwArgs,stmtCollector,*,asStmt=False):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert len(args)==1
         assert isinstance(args[0],VarRef)
         stmtCollector([S('import'),[args[0].name]])
@@ -1003,7 +999,7 @@ class UserFunction(Function):
                 return False
         return True
 
-    def compyle(self,stmtCollector,*,asStmt=False):
+    def compyle(self,stmtCollector):
         globalRefs=set()
         nonlocalRefs=set()
         for expr in self.bodyExprs:
@@ -1016,16 +1012,13 @@ class UserFunction(Function):
                 accessMode=self.innerScope.accessMode(required)
                 assert accessMode
                 if accessMode==Scope.Nonlocal:
-                    nonlocalRefs.add(varRef.compyle(stmtCollector,
-                                                    asStmt=False))
+                    nonlocalRefs.add(varRef.compyle(stmtCollector))
                 else:
                     if accessMode==Scope.Global:
                         if varRef.name not in required.transglobal:
-                            globalRefs.add(varRef.compyle(stmtCollector,
-                                                          asStmt=False))
+                            globalRefs.add(varRef.compyle(stmtCollector))
 
-        argListPyle=list(map(lambda sym: sym.compyle(stmtCollector,
-                                                     asStmt=False),
+        argListPyle=list(map(lambda sym: sym.compyle(stmtCollector),
                              self.argList))
         if globalRefs:
             argListPyle.append(S('&global'))
@@ -1036,8 +1029,7 @@ class UserFunction(Function):
             argListPyle+=list(nonlocalRefs)
 
         defStmt=[S('def'),
-                 [self.name.compyle(stmtCollector,
-                                    asStmt=False),
+                 [self.name.compyle(stmtCollector),
                   argListPyle]
                  ]
 
@@ -1047,14 +1039,13 @@ class UserFunction(Function):
         scratchVar=gensym('scratch')
 
         for expr in self.bodyExprs[:-1]:
-            pyleExpr=expr.compyle(innerCollector,asStmt=True)
+            pyleExpr=expr.compyle(innerCollector)
             if pyleExpr:
                 innerCollector(pyleExpr)
 
         if self.bodyExprs:
             lastExpr=self.bodyExprs[-1]
-            pyleExpr=lastExpr.compyle(innerCollector,
-                                      asStmt=lastExpr.mustBeStmt())
+            pyleExpr=lastExpr.compyle(innerCollector)
             if pyleExpr:
                 if self.innerScope.funcYields:
                     innerCollector(pyleExpr)
@@ -1062,9 +1053,9 @@ class UserFunction(Function):
                     innerCollector([S('return'),[pyleExpr]])
 
         stmtCollector(defStmt)
-        return self.name.compyle(stmtCollector,asStmt=False)
+        return self.name.compyle(stmtCollector)
 
-def build(scope,gomer):
+def build(scope,gomer,isStmt):
     if isinstance(gomer,S):
         return VarRef(scope,gomer)
     if not isinstance(gomer,list):
@@ -1081,11 +1072,11 @@ def build(scope,gomer):
         except NotInitialized:
             pass
         if f and hasattr(f,'transform'):
-            return build(scope,f.transform(gomer))
+            return build(scope,f.transform(gomer),isStmt)
 
     if gomer[0]==S('scope'):
         innerScope=Scope(scope)
-        return build(innerScope,[S('begin')]+gomer[1:])
+        return build(innerScope,[S('begin')]+gomer[1:],isStmt)
 
     if gomer[0]==S('defun'):
         innerScope=Scope(scope,isFunc=True)
@@ -1093,15 +1084,17 @@ def build(scope,gomer):
         argList=gomer[2]
         body=gomer[3:]
         scope.addDef(name,None)
-        nameVar=build(scope,name)
+        nameVar=build(scope,name,False)
         nameVar.asDef=True
         for arg in argList:
             innerScope.addDef(arg,None,dontDisambiguate=True)
-        return Call(scope,
-                    build(scope,gomer[0]),
+        return Call(scope,isStmt,
+                    build(scope,gomer[0],False),
                     ([nameVar]
-                     +[list(map(lambda a: build(innerScope,a),argList))]
-                     +list(map(lambda g: build(innerScope,g),body))
+                     +[list(map(lambda a: build(innerScope,a,False),
+                                argList))]
+                     +list(map(lambda g: build(innerScope,g,isStmt),
+                               body))
                      )
                     )
     if gomer[0]==S('lambda'):
@@ -1111,9 +1104,12 @@ def build(scope,gomer):
         for arg in argList:
             innerScope.addDef(arg,None,dontDisambiguate=True)
         return Call(scope,
-                    build(scope,gomer[0]),
-                    ([list(map(lambda a: build(innerScope,a),argList))]
-                     +list(map(lambda g: build(innerScope,g),body))
+                    isStmt,
+                    build(scope,gomer[0],isStmt),
+                    ([list(map(lambda a: build(innerScope,a,isStmt),
+                               argList))]
+                     +list(map(lambda g: build(innerScope,g,isStmt),
+                               body))
                      )
                     )
     if gomer[0]==S('quote'):
@@ -1124,8 +1120,9 @@ def build(scope,gomer):
             return Constant(scope,gomer[1])
 
     res=Call(scope,
-             build(scope,gomer[0]),
-             list(map(lambda g: build(scope,g),
+             isStmt,
+             build(scope,gomer[0],False),
+             list(map(lambda g: build(scope,g,False),
                       gomer[1:])))
 
     if gomer[0]==S('-gomer-try'):
@@ -1148,11 +1145,10 @@ def build(scope,gomer):
 
     return res
 
-def evalTopLevel(expr,scope,globals,*,verbose=False,asStmt=False):
+def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):
     pyleStmts=[]
     pythonFlat=''
-    exprPyleList=build(scope,expr).compyle(pyleStmts.append,
-                                           asStmt=asStmt)
+    exprPyleList=build(scope,expr,isStmt).compyle(pyleStmts.append)
     if exprPyleList is not None:
         exprPyleAST=adder.pyle.buildExpr(exprPyleList)
         exprPython=exprPyleAST.toPython(False)
