@@ -108,8 +108,9 @@ class Context:
 
     def eval(self,expr,*,verbose=False,asStmt=False):
         return adder.gomer.evalTopLevel(expr,self.scope,self.globals,
-                                        verbose=verbose,
-                                        asStmt=asStmt)
+                                        asStmt,
+                                        verbose=verbose
+                                        )
 
     def evalStrN(self,exprStr):
         return map(lambda expr: self.eval(expr),parse(exprStr))
