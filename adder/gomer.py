@@ -42,7 +42,7 @@ class KeywordsHaveNoValue(Exception):
         return 'Cannot use a keyword as a value: %s' % self.args
 
 class TwoConsecutiveKeywords(Exception):
-    def __init__(self,varRef):
+    def __init__(self,varRef1,varRef2):
         Exception.__init__(self,varRef1,varRef2)
         self.varRef1=varRef1
         self.varRef2=varRef2
@@ -412,7 +412,7 @@ class VarRef(Expr):
         self.asDef=asDef
 
     def isKeyword(self):
-        return (self.name[0]==':') and (self.name!=':=')
+        return self.name.isKeyword()
 
     def evaluate(self,env):
         if self.isKeyword():
@@ -629,6 +629,15 @@ class Call(Expr):
             else:
                 return [f,posArgs]
 
+class ExnHandler(Expr):
+    def __init__(self,scope,exnVar,exnBody):
+        Expr.__init__(self,scope,False)
+        self.exnVar=exnVar
+        self.exnBody=exnBody
+
+    def compyle(self,stmtCollector):
+        assert False
+
 class Function:
     def __init__(self):
         self.special=False
@@ -658,7 +667,7 @@ class PyleStmt(PyleExpr):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         stmtCollector(PyleExpr.compyleCall(self,f,
                                            args,kwArgs,
-                                           stmtCollector))
+                                           stmtCollector,isStmt))
 
 class Defun(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
@@ -734,7 +743,8 @@ class Assignment(Function):
                      assigner,[assignerArg],
                      [S(':='),args[0].name,assignerArg],
                      args[0].name
-                     ])
+                     ],
+                    True)
             d.compyle(stmtCollector)
             return [assigner,[valuePyle]]
 
@@ -880,37 +890,27 @@ class Try(Function):
         bodyPyle=[]
         innerCollector=bodyPyle.append
 
-        scratchVar=gensym('scratch')
-        stmtCollector([S(':='),[scratchVar,None]])
-
-        innerCollector([S(':='),
-                        [scratchVar,
-                         Begin().compyleCall(VarRef(f.scope,S('begin')),
-                                             args,None,innerCollector,
-                                             False)]
-                        ])
+        Begin().compyleCall(VarRef(f.scope,S('begin')),
+                            args,None,innerCollector,
+                            True)
 
         exnPyles=[]
 
-        for (klass,clause) in kwArgs:
+        for (klass,exnHandler) in kwArgs:
+            assert isinstance(exnHandler,ExnHandler)
             exnStmts=[]
-            if klass=='finally':
-                var=None
-                assert len(clause.posArgs)==0
-                clausePyle=clause.f.compyle(exnStmts.append)
-                if clausePyle:
-                    exnStmts.append(clausePyle)
+            clausePyle=exnHandler.exnBody.compyle(exnStmts.append)
+            if clausePyle:
+                exnStmts.append(clausePyle)
+
+            if exnHandler.exnVar:
+                var=exnHandler.exnVar.compyle(innerCollector)
             else:
-                var=clause.f.compyle(innerCollector)
-                assert len(clause.posArgs)==1
-                clausePyle=clause.posArgs[0].compyle(exnStmts.append)
-                if clausePyle:
-                    exnStmts.append(clausePyle)
+                var=None
                 
             exnPyles.append([klass,var,[S('begin'),exnStmts]])
 
         stmtCollector([S('try'),bodyPyle,exnPyles])
-        return scratchVar
 
 class While(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
@@ -1055,6 +1055,26 @@ class UserFunction(Function):
         stmtCollector(defStmt)
         return self.name.compyle(stmtCollector)
 
+def gatherArgs(args):
+    posArgs=[]
+    kwArgs=[]
+    prevKeyword=False
+    for a in args:
+        isKeyword=(isinstance(a,S) and a.isKeyword())
+        if prevKeyword:
+            if isKeyword:
+                raise TwoConsecutiveKeywords(prevKeyword,a)
+            kwArgs.append([prevKeyword,a])
+            prevKeyword=None
+        else:
+            if isKeyword:
+                prevKeyword=a
+            else:
+                posArgs.append(a)
+    if prevKeyword:
+        raise KeywordWithNoArg(prevKeyword)
+    return (posArgs,kwArgs)
+
 def build(scope,gomer,isStmt):
     if isinstance(gomer,S):
         return VarRef(scope,gomer)
@@ -1119,19 +1139,59 @@ def build(scope,gomer,isStmt):
         else:
             return Constant(scope,gomer[1])
 
+    if gomer[0]==S('-gomer-try'):
+        lastWasKeyword=False
+        (posArgs,kwArgs)=gatherArgs(gomer[1:])
+        args=list(map(lambda a: build(scope,a,True),
+                      posArgs))
+        clauses=[]
+        for (klass,handler) in kwArgs:
+            innerScope=Scope(scope)
+            if klass==':finally':
+                (exnVar,exnBody)=(None,handler)
+            else:
+                (exnVar,*exnBody)=handler
+                innerScope.addDef(exnVar,None)
+                exnVar=VarRef(innerScope,exnVar)
+                exnVar.asDef=True
+            exnBody=list(exnBody)
+            if len(exnBody)>1:
+                exnBody=[S('begin')]+exnBody
+            else:
+                exnBody=exnBody[0]
+
+            clause=ExnHandler(scope,
+                              exnVar,build(innerScope,
+                                           exnBody,
+                                           True))
+            args.append(build(scope,klass,False))
+            args.append(clause)
+
+        return Call(scope,
+                    isStmt,
+                    build(scope,gomer[0],False),
+                    args)
+
+    if gomer[0]==S('begin'):
+        args=list(map(lambda g: build(scope,g,True),
+                  gomer[1:-1]))
+        if len(gomer)>1:
+            args.append(build(scope,gomer[-1],isStmt))
+    else:
+        if gomer[0]==S('while'):
+            args=([build(scope,gomer[1],False)]
+                  +list(map(lambda g: build(scope,g,True),
+                            gomer[2:-1])))
+            if len(gomer)>2:
+                args.append(build(scope,gomer[-1],isStmt))
+        else:
+            args=list(map(lambda g: build(scope,g,False),
+                          gomer[1:]))
+
     res=Call(scope,
              isStmt,
              build(scope,gomer[0],False),
-             list(map(lambda g: build(scope,g,False),
-                      gomer[1:])))
-
-    if gomer[0]==S('-gomer-try'):
-        for (klass,clause) in res.kwArgs:
-            innerScope=Scope(scope)
-            if klass!='finally':
-                innerScope.addDef(clause.f.name,None)
-            clause.setScope(innerScope)
-            clause.f.asDef=True
+             args)
 
     if gomer[0] in [S('defvar'),S('defconst')]:
         res.posArgs[0].asDef=True

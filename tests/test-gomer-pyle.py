@@ -113,7 +113,7 @@ class GomerToPythonTestCase(CompilingTestCase):
                              [S('<'),S('n'),7],
                              [S('print'),S('n')],
                              [S(':='),S('n'),[S('+'),S('n'),1]]
-                             ])==None
+                             ],isStmt=True)==None
         assert self.pythonFlat=="""while n<7:
     print(n)
     n=n+1
@@ -182,13 +182,9 @@ class GomerToPythonTestCase(CompilingTestCase):
         assert self.pythonFlat=="""x=None
 def %s(y):
     global x
-    def %s(y):
-        global x
-        x=y
-        return x
-    return %s(y)
-""" % (assign1,assign3,assign3)
-        print("testCallDefvarExpr: works, but stupid.")
+    x=y
+    return x
+""" % (assign1)
 
     def testCallDefvarAsStmt(self):
         self.compile([S('defvar'),S('x'),7],isStmt=True)
@@ -208,7 +204,8 @@ def %s(y):
         self.addDefs('f')
         self.compile([S('begin'),
                       [S('defconst'),S('x'),
-                      [S('f'),9,7]],
+                       [S('f'),9,7]
+                       ],
                       S('x')])
         scratch1=S('#<gensym-scratch #1>').toPython()
         assert self.exprPython==scratch1
@@ -226,21 +223,16 @@ def %s(y):
         scratch1=S('#<gensym-scratch #1>').toPython()
         scratch2=S('#<gensym-scratch #2>').toPython()
         assign3=S('#<gensym-assign-x #3>').toPython()
-        assign5=S('#<gensym-assign-x #5>').toPython()
         assert self.exprPython==scratch1
         assert self.pythonFlat=="""x=7
 x_2=None
 def %s(y):
     global x_2
-    def %s(y):
-        global x_2
-        x_2=y
-        return x_2
-    return %s(y)
+    x_2=y
+    return x_2
 %s=%s(9)
 %s=%s
-""" % (assign3,assign5,assign5,scratch2,assign3,scratch1,scratch2)
-        print("testCallDefvarInScopeExpr: works, but stupid.")
+""" % (assign3,scratch2,assign3,scratch1,scratch2)
 
     def testCallDefvarInScopeStmt(self):
         self.compile([S('begin'),
@@ -427,7 +419,6 @@ x_2=9
     def testCallExecPy(self):
         self.addDefs('x')
         self.compile([S('exec-py'),S('x')],isStmt=True)
-        print(self.exprPython)
         assert self.exprPython==None
         assert self.pythonFlat=='exec(x)\n'
         
@@ -463,20 +454,15 @@ x_2=9
                                  ],
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       ],isStmt=True)
-        scratch1=S('#<gensym-scratch #1>').toPython()
-        scratch2=S('#<gensym-scratch #2>').toPython()
-        assert self.exprPython==scratch1
-        assert self.pythonFlat==("""%s=None
-try:
+        assert self.pythonFlat=="""try:
     f(7)
-    %s=g(19)
-    %s=%s
+    g(19)
 except Foo as foo_2:
     print(foo_2)
     flip()
 except Bar as bar_3:
     h(bar_3)
-""" % (scratch1,scratch2,scratch1,scratch2))
+"""
 
     def testCallTryWithFinally(self):
         self.addDefs('f','g','foo','bar','h','pi')
@@ -487,21 +473,17 @@ except Bar as bar_3:
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       S(':finally'),[[S('pi')]],
                       ],isStmt=True)
-        scratch1=S('#<gensym-scratch #1>').toPython()
-        scratch2=S('#<gensym-scratch #2>').toPython()
-        assert self.exprPython==scratch1
-        assert self.pythonFlat==("""%s=None
-try:
+        assert self.exprPython is None
+        assert self.pythonFlat=="""try:
     f(7)
-    %s=g(19)
-    %s=%s
+    g(19)
 except Foo as foo_2:
     print(foo_2)
 except Bar as bar_3:
     h(bar_3)
 finally:
     pi()
-""" % (scratch1,scratch2,scratch1,scratch2))
+"""
 
 class RunGomerTestCase(CompilingTestCase):
     def runGomer(self,gomerList,*,isStmt=False):
@@ -851,21 +833,17 @@ class RunGomerTestCase(CompilingTestCase):
                       S(':Bar'),[S('bar'),[S('h'),S('bar')]],
                       S(':finally'),[[S('pi')]],
                       ],isStmt=True)
-        scratch1=S('#<gensym-scratch #1>').toPython()
-        scratch2=S('#<gensym-scratch #2>').toPython()
-        assert self.exprPython==scratch1
-        assert self.pythonFlat==("""%s=None
-try:
+        assert self.exprPython is None
+        assert self.pythonFlat=="""try:
     f(7)
-    %s=g(19)
-    %s=%s
+    g(19)
 except Foo as foo_2:
     print(foo_2)
 except Bar as bar_3:
     h(bar_3)
 finally:
     pi()
-""" % (scratch1,scratch2,scratch1,scratch2))
+"""
 
     def testDefun(self):
         assert self.runGomer([S('begin'),

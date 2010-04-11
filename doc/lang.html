@@ -41,6 +41,7 @@ is equivalent to (foo.bar.baz).
 <dt>import</dt>
 <dt>if</dt>
 <dt>while</dt>
+<dd>Currently can't be an expression.</dd>
 <dt>break</dt>
 <dt>continue</dt>
 <dt>begin</dt>
@@ -140,7 +141,8 @@ is equivalent to (foo.bar.baz).
  is equivalent to <code>(lambda (x) (. x bar baz))</code>.
 </dd>
 <dt>try</dt>
-<dd>TODO</dd>
+<dd>TODO.
+Currently we have (-gomer-try), which can't be an expression.</dd>
 <dt>let</dt>
 <dd>Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap

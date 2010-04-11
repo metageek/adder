@@ -8,6 +8,9 @@ class Symbol(str):
     def isGensym(self):
         return self.startswith('#<gensym')
 
+    def isKeyword(self):
+        return (self[0]==':') and (self!=':=')
+
     def __repr__(self):
         return 'S('+repr(str(self))+')'
 
