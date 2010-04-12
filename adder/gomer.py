@@ -135,13 +135,13 @@ class Scope:
                              ('eval-py',EvalPy()),
                              ('exec-py',ExecPy()),
                              ('import',Import()),
+                             ('if',If()),
                              ('while',While()),
                              ('.',Dot()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
                 self.transglobal.add(S(name))
-            for name in ['if',
-                         '+','-','*','/','//','%',
+            for name in ['+','-','*','/','//','%',
                          '<','>','<=','>=','==','!=',
                          'in','not',
                          'tuple','list','set','dict',
@@ -324,8 +324,11 @@ class Env:
 class Expr:
     def __init__(self,scope,isStmt):
         self.scope=scope
-        self.isStmt=isStmt
-        assert isStmt or (not self.mustBeStmt())
+        if isStmt is None:
+            self.isStmt=self.mustBeStmt()
+        else:
+            self.isStmt=isStmt
+            assert isStmt or (not self.mustBeStmt())
 
     def mustBeStmt(self):
         return False
@@ -927,6 +930,43 @@ class While(Function):
 
         stmtCollector([S('while'),[condPyle]+innerStmts])
 
+class If(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert args
+        assert len(args) in [2,3]
+        assert not kwArgs
+
+        condExpr=args[0]
+        thenExpr=args[1]
+        elseExpr=args[2] if len(args)==3 else None
+
+        thenStmts=[]
+        elseStmts=[]
+
+        condPyle=args[0].compyle(stmtCollector)
+
+        thenPyle=thenExpr.compyle(thenStmts.append)
+        if isStmt:
+            if thenPyle:
+                thenStmts.append(thenPyle)
+            if elseExpr:
+                elsePyle=elseExpr.compyle(elseStmts.append)
+                if elsePyle:
+                    elseStmts.append(elsePyle)
+            thenClause=(thenStmts[0] if len(thenStmts)==1
+                        else [S('begin')]+thenStmts)
+            elseClause=(None if not elseStmts
+                        else (elseStmts[0] if len(elseStmts)==1
+                              else [S('begin')]+elseStmts))
+            stmtCollector([S('if-stmt'),
+                           [condPyle,thenClause,elseClause]])
+        else:
+            assert not thenStmts
+            if elseExpr:
+                elsePyle=elseExpr.compyle(elseStmts.append)
+            assert not elseStmts
+            return [S('if-expr'),[condPyle,thenPyle,elsePyle]]
+
 class Dot(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
@@ -1108,13 +1148,16 @@ def build(scope,gomer,isStmt):
         nameVar.asDef=True
         for arg in argList:
             innerScope.addDef(arg,None,dontDisambiguate=True)
+        bodyArgs=list(map(lambda g: build(innerScope,g,True),
+                          body[:-1]))
+        if body:
+            bodyArgs.append(build(innerScope,body[-1],None))
         return Call(scope,isStmt,
                     build(scope,gomer[0],False),
                     ([nameVar]
                      +[list(map(lambda a: build(innerScope,a,False),
                                 argList))]
-                     +list(map(lambda g: build(innerScope,g,isStmt),
-                               body))
+                     +bodyArgs
                      )
                     )
     if gomer[0]==S('lambda'):
@@ -1123,13 +1166,16 @@ def build(scope,gomer,isStmt):
         body=gomer[2:]
         for arg in argList:
             innerScope.addDef(arg,None,dontDisambiguate=True)
+        bodyArgs=list(map(lambda g: build(innerScope,g,True),
+                          body[:-1]))
+        if body:
+            bodyArgs.append(build(innerScope,body[-1],None))
         return Call(scope,
                     isStmt,
                     build(scope,gomer[0],isStmt),
                     ([list(map(lambda a: build(innerScope,a,isStmt),
                                argList))]
-                     +list(map(lambda g: build(innerScope,g,isStmt),
-                               body))
+                     +bodyArgs
                      )
                     )
     if gomer[0]==S('quote'):
@@ -1185,8 +1231,15 @@ def build(scope,gomer,isStmt):
             if len(gomer)>2:
                 args.append(build(scope,gomer[-1],isStmt))
         else:
-            args=list(map(lambda g: build(scope,g,False),
-                          gomer[1:]))
+            if gomer[0]==S('if'):
+                assert len(gomer) in [3,4]
+                args=[build(scope,gomer[1],False),
+                      build(scope,gomer[2],isStmt)]
+                if len(gomer)==4:
+                    args.append(build(scope,gomer[3],isStmt))
+            else:
+                args=list(map(lambda g: build(scope,g,False),
+                              gomer[1:]))
 
     res=Call(scope,
              isStmt,

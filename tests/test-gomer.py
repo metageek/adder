@@ -600,8 +600,22 @@ class CompyleTestCase(unittest.TestCase):
                   1,
                   7],False)
         p=x.compyle(self.stmtCollector)
-        assert p==[S('if'),
+        assert p==[S('if-expr'),
                    [[S('<'),[S('n'),2]],1,7]]
+
+    def testIfStmt(self):
+        scope=Scope(None)
+        scope.addDef('n',None)
+        x=build(scope,
+                [S('if'),[S('<'),S('n'),2],
+                  [S('print'),1],
+                  [S('print'),7]],True)
+        p=x.compyle(self.stmtCollector)
+        assert not p
+        assert self.stmts==[[S('if-stmt'),
+                             [[S('<'),[S('n'),2]],
+                              [S('print'),[1]],
+                              [S('print'),[7]]]]]
 
     def testWhile(self):
         scope=Scope(None)
@@ -672,7 +686,7 @@ class CompyleTestCase(unittest.TestCase):
                     S('fact'),
                     [S('n')],
                     [S('return'),[
-                            [S('if'),[
+                            [S('if-expr'),[
                                     [S('<'),[S('n'),2]],
                                     1,
                                     [S('*'), [
@@ -704,7 +718,7 @@ class CompyleTestCase(unittest.TestCase):
                     scratch,
                     [S('n')],
                     [S('return'),[
-                            [S('if'),[
+                            [S('if-expr'),[
                                     [S('<'),[S('n'),30]],
                                     10,5
                                     ]

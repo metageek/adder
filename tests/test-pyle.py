@@ -283,7 +283,7 @@ class BuildExprTestCase(unittest.TestCase):
         assert expr.kwArgs['b'].py=='7'
 
     def testIfOperator(self):
-        expr=buildExpr([S('if'), [
+        expr=buildExpr([S('if-expr'), [
                     [S('=='),[S('x'),9]],
                     [S('*'),[S('x'),7]],
                     [S('*'),[9,S('x')]]
@@ -679,7 +679,7 @@ foo.bar=x*7
         assert(stmt.toPythonFlat()=='assert True\n')
 
     def testIfNoElse(self):
-        stmt=buildStmt([S('if'),[
+        stmt=buildStmt([S('if-stmt'),[
                         [S('<'),[S('n'),2]],
                         [S(':='),[S('x'),1]]
                         ]
@@ -690,7 +690,7 @@ foo.bar=x*7
 """)
 
     def testIfElse(self):
-        stmt=buildStmt([S('if'),[
+        stmt=buildStmt([S('if-stmt'),[
                         [S('<'),[S('n'),2]],
                         [S(':='),[S('x'),1]],
                         [S(':='),[

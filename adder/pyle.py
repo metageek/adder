@@ -56,7 +56,7 @@ def buildExpr(pyle):
                                      buildExpr(pyle[1][1]),
                                      buildExpr(pyle[1][2]))
 
-        if pyle[0]==S('if'):
+        if pyle[0]==S('if-expr'):
             assert len(pyle[1])==3
             return IfOperator(buildExpr(pyle[1][0]),
                               buildExpr(pyle[1][1]),
@@ -154,7 +154,7 @@ def buildStmt(pyle):
             return Nop()
         return Block(list(map(buildStmt,pyle[1])))
 
-    if pyle[0]==S('if'):
+    if pyle[0]==S('if-stmt'):
         assert len(pyle[1]) in [2,3]
         elseStmt=buildStmt(pyle[1][2]) if len(pyle[1])==3 else None
         return IfStmt(buildExpr(pyle[1][0]),
