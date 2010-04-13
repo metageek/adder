@@ -1,0 +1,44 @@
+<html>
+<head>
+<title>Adder: To-Do List</title>
+</head>
+
+<body>
+<h1>Adder: To-Do List</h1>
+
+<dl>
+<dt>The statement problem</dt>
+<dd>At present, if an expression has statement side effects, the order
+  of execution can be perturbed.  For example, in
+  <code>(f (g 1) (:= h 2))</code>, the := will be moved out to an
+  earlier statement; if <code>g</code> depends on <code>h</code>,
+  it'll have the wrong value.  The solution is to use something like
+  three-address form.  Maybe&mdash;the problem with that is eliminating
+  spurious transfers.  Also, don't forget to null out scratch
+  variables when done: don't want leaks.  Another solution is to put
+  statements into helper functions; then we need to worry about return
+  and yield&mdash;can't translate them directly, or we'll be returning
+  from the helper.
+</dd>
+<dt>Refactor <code>build</code></dt>
+<dd>Too many special cases; need to move that knowledge into the
+  function classes.  Ideally, this would make it easier for the
+  function classes to do rewriting&mdash;it's absurd that they have to
+  call each other instead of calling <code>build</code> with the lists
+  they want.
+</dd>
+<dt>Make <code>(if)</code> exprs properly guard their clauses.</dt>
+<dd>See <code>test-gomer-pyle.EvalTestCase.testIfSafety()</code>.
+Depends on solving the statement problem, above.
+</dd>
+<dt>Make <code>(exec-py)</code> work as an expr.</dt>
+<dd>Depends on solving the statement problem, above.
+</dd>
+<dt>Make <code>(-gomer-try)</code> work as an expr.</dt>
+<dd>Depends on solving the statement problem, above.
+</dd>
+<dt>Implement (try).</dt>
+</dl>
+
+</body>
+</html>
