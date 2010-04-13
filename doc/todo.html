@@ -16,7 +16,11 @@
   three-address form.  Maybe&mdash;the problem with that is eliminating
   spurious transfers.  Also, don't forget to null out scratch
   variables when done: don't want leaks.  Another solution is to put
-  statements into helper functions; then we need to worry about return
+  statements into helper functions.</dd>
+<dt>Return and yield in helper functions.</dt>
+<dd>There are a few places where we use a helper function to solve the
+  statement problem.  E.g., <code>(:=)</code> and
+  <code>(if)</code>.  We need to worry about return
   and yield&mdash;can't translate them directly, or we'll be returning
   from the helper.
 </dd>
@@ -26,10 +30,6 @@
   function classes to do rewriting&mdash;it's absurd that they have to
   call each other instead of calling <code>build</code> with the lists
   they want.
-</dd>
-<dt>Make <code>(if)</code> exprs properly guard their clauses.</dt>
-<dd>See <code>test-gomer-pyle.EvalTestCase.testIfSafety()</code>.
-Depends on solving the statement problem, above.
 </dd>
 <dt>Make <code>(exec-py)</code> work as an expr.</dt>
 <dd>Depends on solving the statement problem, above.

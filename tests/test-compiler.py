@@ -592,7 +592,7 @@ class PreludeTestCase(EvalTestCase):
 suite=unittest.TestSuite(
     ( 
         unittest.makeSuite(WithoutPreludeTestCase,"test"),
-        #unittest.makeSuite(PreludeTestCase,"test"),
+        unittest.makeSuite(PreludeTestCase,"test"),
      )
     )
 

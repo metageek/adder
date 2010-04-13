@@ -925,8 +925,6 @@ class EvalTestCase(CompilingTestCase):
         assert self.eval(S('false')) is False
 
     def testIfSafety(self):
-        print('testIfSafety(): known bug')
-        return
         assert self.eval([S('begin'),
                           [S('defvar'),S('l'),[S('mk-list')]],
                           [S('if'),S('l'),

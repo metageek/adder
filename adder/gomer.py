@@ -932,6 +932,13 @@ class While(Function):
 
 class If(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        def wrapStmts(stmts,noneOK):
+            if noneOK and not stmts:
+                return None
+            if len(stmts)==1:
+                return stmts[0]
+            return [S('begin'),stmts]
+
         assert args
         assert len(args) in [2,3]
         assert not kwArgs
@@ -946,6 +953,7 @@ class If(Function):
         condPyle=args[0].compyle(stmtCollector)
 
         thenPyle=thenExpr.compyle(thenStmts.append)
+        elsePyle=None
         if isStmt:
             if thenPyle:
                 thenStmts.append(thenPyle)
@@ -953,18 +961,24 @@ class If(Function):
                 elsePyle=elseExpr.compyle(elseStmts.append)
                 if elsePyle:
                     elseStmts.append(elsePyle)
-            thenClause=(thenStmts[0] if len(thenStmts)==1
-                        else [S('begin')]+thenStmts)
-            elseClause=(None if not elseStmts
-                        else (elseStmts[0] if len(elseStmts)==1
-                              else [S('begin')]+elseStmts))
+            thenClause=wrapStmts(thenStmts,False)
+            elseClause=wrapStmts(elseStmts,True)
             stmtCollector([S('if-stmt'),
                            [condPyle,thenClause,elseClause]])
         else:
-            assert not thenStmts
             if elseExpr:
                 elsePyle=elseExpr.compyle(elseStmts.append)
-            assert not elseStmts
+            if thenStmts or elseStmts:
+                helperName=gensym('if')
+                if thenPyle:
+                    thenStmts.append([S('return'),[thenPyle]])
+                if elsePyle:
+                    elseStmts.append([S('return'),[elsePyle]])
+                thenStmts=wrapStmts(thenStmts,False)
+                elseStmts=wrapStmts(elseStmts,True)
+                ifStmt=[S('if-stmt'),[condPyle,thenStmts,elseStmts]]
+                stmtCollector([S('def'),[helperName,[],ifStmt]])
+                return [helperName,[]]
             return [S('if-expr'),[condPyle,thenPyle,elsePyle]]
 
 class Dot(Function):

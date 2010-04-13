@@ -156,7 +156,8 @@ def buildStmt(pyle):
 
     if pyle[0]==S('if-stmt'):
         assert len(pyle[1]) in [2,3]
-        elseStmt=buildStmt(pyle[1][2]) if len(pyle[1])==3 else None
+        elseStmt=(buildStmt(pyle[1][2]) if (len(pyle[1])==3 and pyle[1][2])
+                  else None)
         return IfStmt(buildExpr(pyle[1][0]),
                       buildStmt(pyle[1][1]),
                       elseStmt)
