@@ -2,7 +2,7 @@
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
 #  Includes a basic interpreter, for use in macro expansion.
 
-import itertools,re,pdb,adder.pyle,sys
+import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym
 
 class NoCommonAncestor(Exception):
@@ -138,10 +138,11 @@ class Scope:
                              ('if',If()),
                              ('while',While()),
                              ('.',Dot()),
+                             ('+',Plus()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
                 self.transglobal.add(S(name))
-            for name in ['+','-','*','/','//','%',
+            for name in ['-','*','/','//','%',
                          '<','>','<=','>=','==','!=',
                          'in','not',
                          'tuple','list','set','dict',
@@ -990,6 +991,14 @@ class Dot(Function):
                  +list(map(lambda x: x.name,args[1:]))
                  )
                 ]
+
+class Plus(Function):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert not kwArgs
+        if not args:
+            return 0
+        operands=list(map(lambda a: a.compyle(stmtCollector),args))
+        return functools.reduce(lambda x,y: [S('+'),[x,y]],operands)
 
 class Import(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):

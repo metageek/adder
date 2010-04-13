@@ -55,7 +55,7 @@ class CompilingTestCase(unittest.TestCase):
         self.exprPyleList=gomerAST.compyle(self.pyleStmtLists.append)
         if self.verbose:
             print(self.exprPyleList)
-        if self.exprPyleList:
+        if self.exprPyleList is not None:
             self.exprPyleAST=adder.pyle.buildExpr(self.exprPyleList)
             self.exprPython=self.exprPyleAST.toPython(False)
         else:
@@ -271,8 +271,20 @@ x_2=9
         assert self.compile([S('>='),2,3])=='2>=3'
         assert self.pythonFlat==''
 
-    def testCallPlus(self):
+    def testCallPlus0(self):
+        assert self.compile([S('+')])=='0'
+        assert self.pythonFlat==''
+
+    def testCallPlus1(self):
+        assert self.compile([S('+'),2])=='2'
+        assert self.pythonFlat==''
+
+    def testCallPlus2(self):
         assert self.compile([S('+'),2,3])=='2+3'
+        assert self.pythonFlat==''
+
+    def testCallPlus3(self):
+        assert self.compile([S('+'),2,3,4])=='(2+3)+4'
         assert self.pythonFlat==''
 
     def testCallMinus(self):
