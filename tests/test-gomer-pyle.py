@@ -287,20 +287,72 @@ x_2=9
         assert self.compile([S('+'),2,3,4])=='(2+3)+4'
         assert self.pythonFlat==''
 
-    def testCallMinus(self):
+    def testCallMinus0(self):
+        assert self.compile([S('-')])=='0'
+        assert self.pythonFlat==''
+
+    def testCallMinus1(self):
+        assert self.compile([S('-'),2])=='-2'
+        assert self.pythonFlat==''
+
+    def testCallMinus2(self):
         assert self.compile([S('-'),2,3])=='2-3'
+        assert self.pythonFlat==''
+
+    def testCallMinus3(self):
+        assert self.compile([S('-'),2,3,4])=='(2-3)-4'
+        assert self.pythonFlat==''
+
+    def testCallTimes0(self):
+        assert self.compile([S('*')])=='1'
+        assert self.pythonFlat==''
+
+    def testCallTimes1(self):
+        assert self.compile([S('*'),2])=='2'
+        assert self.pythonFlat==''
+
+    def testCallTimes2(self):
+        assert self.compile([S('*'),2,3])=='2*3'
+        assert self.pythonFlat==''
+
+    def testCallTimes3(self):
+        assert self.compile([S('*'),2,3,4])=='(2*3)*4'
+        assert self.pythonFlat==''
+
+    def testCallDiv0(self):
+        assert self.compile([S('/')])=='1'
+        assert self.pythonFlat==''
+
+    def testCallDiv1(self):
+        assert self.compile([S('/'),2])=='1/2'
+        assert self.pythonFlat==''
+
+    def testCallDiv2(self):
+        assert self.compile([S('/'),2,3])=='2/3'
+        assert self.pythonFlat==''
+
+    def testCallDiv3(self):
+        assert self.compile([S('/'),2,3,4])=='(2/3)/4'
+        assert self.pythonFlat==''
+
+    def testCallIDiv0(self):
+        assert self.compile([S('//')])=='1'
+        assert self.pythonFlat==''
+
+    def testCallIDiv1(self):
+        assert self.compile([S('//'),2])=='1//2'
+        assert self.pythonFlat==''
+
+    def testCallIDiv2(self):
+        assert self.compile([S('//'),2,3])=='2//3'
+        assert self.pythonFlat==''
+
+    def testCallIDiv3(self):
+        assert self.compile([S('//'),2,3,4])=='(2//3)//4'
         assert self.pythonFlat==''
 
     def testCallTimes(self):
         assert self.compile([S('*'),2,3])=='2*3'
-        assert self.pythonFlat==''
-
-    def testCallFDiv(self):
-        assert self.compile([S('/'),2,3])=='2/3'
-        assert self.pythonFlat==''
-
-    def testCallIDiv(self):
-        assert self.compile([S('//'),2,3])=='2//3'
         assert self.pythonFlat==''
 
     def testCallMod(self):
@@ -630,20 +682,70 @@ class RunGomerTestCase(CompilingTestCase):
     def testCallGe(self):
         assert self.runGomer([S('>='),2,3])==False
 
-    def testCallPlus(self):
+    def testCallPlus0(self):
+        assert self.runGomer([S('+')])==0
+
+    def testCallPlus1(self):
+        assert self.runGomer([S('+'),2])==2
+
+    def testCallPlus2(self):
         assert self.runGomer([S('+'),2,3])==5
 
-    def testCallMinus(self):
+    def testCallPlus3(self):
+        assert self.runGomer([S('+'),2,3,4])==9
+
+    def testCallMinus0(self):
+        assert self.runGomer([S('-')])==0
+
+    def testCallMinus1(self):
+        assert self.runGomer([S('-'),2])==-2
+
+    def testCallMinus2(self):
         assert self.runGomer([S('-'),2,3])==-1
 
-    def testCallTimes(self):
+    def testCallMinus3(self):
+        assert self.runGomer([S('-'),2,3,4])==-5
+
+    def testCallTimes0(self):
+        assert self.runGomer([S('*')])==1
+
+    def testCallTimes1(self):
+        assert self.runGomer([S('*'),2])==2
+
+    def testCallTimes2(self):
         assert self.runGomer([S('*'),2,3])==6
 
-    def testCallFDiv(self):
+    def testCallTimes3(self):
+        assert self.runGomer([S('*'),2,3,4])==24
+
+    def testCallDiv0(self):
+        assert self.runGomer([S('/')])==1
+
+    def testCallDiv1(self):
+        assert self.runGomer([S('/'),2])==1/2
+
+    def testCallDiv2(self):
         assert self.runGomer([S('/'),2,3])==2/3
 
-    def testCallIDiv(self):
+    def testCallDiv3(self):
+        assert self.runGomer([S('/'),2,3,4])==1/6
+
+    def testCallIDiv0(self):
+        assert self.runGomer([S('//')])==1
+
+    def testCallIDiv1(self):
+        assert self.runGomer([S('//'),2])==0
+        assert self.runGomer([S('//'),1])==1
+        assert self.runGomer([S('//'),-1])==-1
+
+    def testCallIDiv2(self):
         assert self.runGomer([S('//'),2,3])==0
+        assert self.runGomer([S('//'),9,3])==3
+        assert self.runGomer([S('//'),10,3])==3
+
+    def testCallIDiv3(self):
+        assert self.runGomer([S('//'),2,3,4])==0
+        assert self.runGomer([S('//'),120,3,4])==10
 
     def testCallMod(self):
         assert self.runGomer([S('%'),2,3])==2

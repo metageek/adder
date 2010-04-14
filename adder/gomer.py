@@ -139,10 +139,14 @@ class Scope:
                              ('while',While()),
                              ('.',Dot()),
                              ('+',Plus()),
+                             ('-',Minus()),
+                             ('*',Times()),
+                             ('/',Div()),
+                             ('//',IDiv()),
                              ]:
                 self.addDef(S(name),Constant(self,f))
                 self.transglobal.add(S(name))
-            for name in ['-','*','/','//','%',
+            for name in ['%',
                          '<','>','<=','>=','==','!=',
                          'in','not',
                          'tuple','list','set','dict',
@@ -992,13 +996,49 @@ class Dot(Function):
                  )
                 ]
 
-class Plus(Function):
+class NAryAdditive(Function):
+    def __init__(self,op,zero):
+        self.op=op
+        self.zero=zero
+
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
         assert not kwArgs
         if not args:
-            return 0
+            return self.zero
         operands=list(map(lambda a: a.compyle(stmtCollector),args))
-        return functools.reduce(lambda x,y: [S('+'),[x,y]],operands)
+        return functools.reduce(lambda x,y: [S(self.op),[x,y]],operands)
+
+class NArySubtractive(NAryAdditive):
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert not kwArgs
+        if len(args)==1:
+            x=args[0].compyle(stmtCollector)
+            if self.zero is 0:
+                return [S(self.op),[x]]
+            else:
+                return [S(self.op),[self.zero,x]]
+        return NAryAdditive.compyleCall(self,f,args,kwArgs,
+                                        stmtCollector,isStmt)
+
+class Plus(NAryAdditive):
+    def __init__(self):
+        NAryAdditive.__init__(self,'+',0)
+
+class Times(NAryAdditive):
+    def __init__(self):
+        NAryAdditive.__init__(self,'*',1)
+
+class Minus(NArySubtractive):
+    def __init__(self):
+        NArySubtractive.__init__(self,'-',0)
+
+class Div(NArySubtractive):
+    def __init__(self):
+        NArySubtractive.__init__(self,'/',1)
+
+class IDiv(NArySubtractive):
+    def __init__(self):
+        NArySubtractive.__init__(self,'//',1)
 
 class Import(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
