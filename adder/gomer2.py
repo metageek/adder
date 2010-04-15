@@ -56,7 +56,7 @@ class Call(Stmt):
         assert isinstance(lhs,Var)
         assert isinstance(f,Var)
         for arg in posArgs:
-            assert isinstance(arg,Var)
+            assert isinstance(arg,Simple)
         for (key,value) in kwArgs:
             assert isinstance(key,Var)
             assert isinstance(value,Simple)
@@ -136,7 +136,7 @@ class Try(Stmt):
                                              str(exnVar),
                                              str(exnBody))
         if self.finallyBody:
-            res+=' %s' % str(self.finallyBody)
+            res+=' {finally: %s}' % str(self.finallyBody)
 
         res+='}'
         return res
@@ -151,9 +151,9 @@ class If(Stmt):
         self.elseBody=elseBody
 
     def __str__(self):
-        res='{if %s then %s' % (str(self.cond),str(self.then))
+        res='{if %s then %s' % (str(self.cond),str(self.thenBody))
         if self.elseBody:
-            res+=' %s' % self.elseBody
+            res+=' else %s' % self.elseBody
         res+='}'
         return res
 
@@ -182,10 +182,14 @@ class Def(Stmt):
         self.kwArgs=list(kwArgs)
 
     def __str__(self):
-        res='{def %s(%s) %s}' % (str(self.f),
-                                 ','.join(map(str,
-                                              self.posArgs+self.kwArgs)),
-                                 str(self.body))
+        return '{def %s(%s) %s}' % (str(self.f),
+                                    ','.join(map(str,
+                                                 (self.posArgs
+                                                  +(['*'] if self.kwArgs
+                                                    else [])
+                                                  +self.kwArgs
+                                                  ))),
+                                    str(self.body))
 
 class Break(Stmt):
     def __str__(self):
@@ -193,7 +197,7 @@ class Break(Stmt):
 
 class Continue(Stmt):
     def __str__(self):
-        return 'break'
+        return 'continue'
 
 class Global(Stmt):
     def __init__(self,vars):
@@ -224,4 +228,4 @@ class Block(Stmt):
         self.stmts=stmts
 
     def __str__(self):
-        return '{%s}' % ';'.join(map(str,self.stmts))
+        return '{%s}' % '; '.join(map(str,self.stmts))
