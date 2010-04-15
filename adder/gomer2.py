@@ -56,7 +56,7 @@ class Literal(Simple):
 
     def toPyle(self):
         if isinstance(self.value,S) or isinstance(self.value,list):
-            return [S('quote'),self.value]
+            return [S('quote'),[self.value]]
         return self.value
 
 class Stmt(IL):
@@ -180,11 +180,11 @@ class Try(Stmt):
     def toPyle(self):
         return [S('try'),
                 [self.body.toPyle()],
-                (list(map(lambda klassVarBody: [klassVarBody[0].toPyle(),
+                (list(map(lambda klassVarBody: [str(klassVarBody[0].varSym),
                                                 klassVarBody[1].toPyle(),
                                                 klassVarBody[2].toPyle()],
                           self.klassClauses))
-                 +([[S('finally'),None,self.finallyBody.toPyle()]]
+                 +([['finally',None,self.finallyBody.toPyle()]]
                    if self.finallyBody else [])
                  )]
 

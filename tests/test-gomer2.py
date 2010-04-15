@@ -4,6 +4,7 @@ import unittest,pdb,sys,os
 from adder.gomer2 import *
 from adder.common import Symbol as S
 import adder.common
+import adder.pyle
 
 class StrTestCase(unittest.TestCase):
     def testVar(self):
@@ -171,7 +172,7 @@ class ToPyleTestCase(unittest.TestCase):
         assert Literal(9).toPyle()==9
 
     def testLiteralSym(self):
-        assert Literal(S('fred')).toPyle()==[S('quote'),S('fred')]
+        assert Literal(S('fred')).toPyle()==[S('quote'),[S('fred')]]
 
     def testCall0(self):
         assert Call(Var(S('fred')),Var(S('barney')),
@@ -280,9 +281,9 @@ class ToPyleTestCase(unittest.TestCase):
                    Assign(Var(S('x')),Literal(3))).toPyle()==[
             S('try'),
             [[S('return'),[7]]],
-            [[S('TypeError'),S('te'),[S('return'),[12]]],
-             [S('ValueError'),S('ve'),[S('raise'),[]]],
-             [S('finally'),None,[S(':='),[S('x'),3]]]
+            [['TypeError',S('te'),[S('return'),[12]]],
+             ['ValueError',S('ve'),[S('raise'),[]]],
+             ['finally',None,[S(':='),[S('x'),3]]]
              ]
             ]
 
@@ -434,10 +435,224 @@ class ToPyleTestCase(unittest.TestCase):
                 ]
             ]
 
+class ToPythonTestCase(unittest.TestCase):
+    def setUp(self):
+        self.verbose=False
+
+    def tearDown(self):
+        self.verbose=False
+
+    def toPython(self,g2,isStmt=True):
+        build=adder.pyle.buildStmt if isStmt else adder.pyle.buildExpr
+        pyle=g2.toPyle()
+        if isStmt:
+            pyleAST=adder.pyle.buildStmt(pyle)
+            pythonTree=pyleAST.toPythonTree()
+            pythonFlat=adder.pyle.flatten(pythonTree)
+            if self.verbose:
+                print(pyle)
+                print(pythonTree)
+                print('{%s}' % pythonFlat)
+            return pythonFlat
+        else:
+            pyleAST=adder.pyle.buildExpr(pyle)
+            pythonExpr=pyleAST.toPython(False)
+            if self.verbose:
+                print('{%s}' % pythonExpr)
+            return pythonExpr
+
+    def testVar(self):
+        assert self.toPython(Var(S('fred')),False)=='fred'
+
+    def testLiteralInt(self):
+        assert self.toPython(Literal(9),False)=='9'
+
+    def testLiteralSym(self):
+        assert self.toPython(Literal(S('fred')))=="adder.common.Symbol('fred')\n"
+
+    def testCall0(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [],[]))=="fred=barney()\n"
+
+    def testCall1Pos(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('wilma'))],[]))=="fred=barney(wilma)\n"
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [Literal(9)],[]))=="fred=barney(9)\n"
+
+    def testCall1Kw(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [],[(Var(S('wilma')),Var(S('betty')))]
+                        ))=="fred=barney(wilma=betty)\n"
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [],[(Var(S('wilma')),Literal(9))]
+                        ))=="fred=barney(wilma=9)\n"
+
+    def testCall1Pos1Kw(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino'))],
+                        [(Var(S('wilma')),Var(S('betty')))]
+                        ))=="fred=barney(dino, wilma=betty)\n"
+
+    def testCall2Pos1Kw(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino')),Literal(9)],
+                        [(Var(S('wilma')),Var(S('betty')))]
+                        ))=="fred=barney(dino, 9, wilma=betty)\n"
+
+    def testCall2Pos2Kw(self):
+        assert self.toPython(Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino')),Literal(9)],
+                        [(Var(S('wilma')),Var(S('betty'))),
+                         (Var(S('pebbles')),Literal(3))]
+                        ))=="fred=barney(dino, 9, pebbles=3, wilma=betty)\n"
+
+    def testAssign(self):
+        assert self.toPython(Assign(Var(S('fred')),Var(S('barney'))))=="fred=barney\n"
+        assert self.toPython(Assign(Var(S('fred')),Literal(7)))=="fred=7\n"
+
+    def testReturn(self):
+        assert self.toPython(Return(Var(S('fred'))))=='return fred\n'
+        assert self.toPython(Return(Literal(7)))=='return 7\n'
+
+    def testYield(self):
+        assert self.toPython(Yield(Var(S('fred'))))=='yield fred\n'
+        assert self.toPython(Yield(Literal(7)))=='yield 7\n'
+
+    def testRaise(self):
+        assert self.toPython(Raise(Var(S('fred'))))=='raise fred\n'
+
+    def testReraise(self):
+        assert self.toPython(Reraise())=='raise\n'
+
+    def testTry(self):
+        assert self.toPython(Try(Return(Literal(7)),
+                   [(Var(S('TypeError')),Var(S('te')),
+                     Return(Literal(12))),
+                    (Var(S('ValueError')),Var(S('ve')),
+                     Reraise())],
+                   Assign(Var(S('x')),Literal(3))))=="""try:
+    return 7
+except TypeError as te:
+    return 12
+except ValueError as ve:
+    raise
+finally:
+    x=3
+"""
+
+    def testIf(self):
+        assert self.toPython(If(Var(S('x')),
+                      Return(Literal(9)),
+                      None))=="""if x:
+    return 9
+"""
+        assert self.toPython(If(Literal(True),
+                      Return(Literal(9)),
+                      None))=="""if True:
+    return 9
+"""
+
+    def testIfElse(self):
+        assert self.toPython(If(Var(S('x')),
+                      Return(Literal(9)),
+                      Return(Literal(3))))=="""if x:
+    return 9
+else:
+    return 3
+"""
+
+        assert self.toPython(If(Literal(True),
+                      Return(Literal(9)),
+                      Return(Literal(3))))=="""if True:
+    return 9
+else:
+    return 3
+"""
+
+    def testWhile(self):
+        assert self.toPython(While(Var(S('x')),
+                     Return(Literal(9))))=="""while x:
+    return 9
+"""
+
+        assert self.toPython(While(Literal(True),
+                     Return(Literal(9))))=="""while True:
+    return 9
+"""
+
+    def testDef0(self):
+        assert self.toPython(Def(Var(S('g')),[],[],
+                   [],[],
+                   Return(Literal(9))))=="""def g():
+    return 9
+"""
+
+    def testDef1Pos(self):
+        assert self.toPython(Def(Var(S('g')),[Var(S('x'))],[],
+                   [],[],
+                   Return(Literal(9))))=="""def g(x):
+    return 9
+"""
+
+    def testDef1Kw(self):
+        assert self.toPython(Def(Var(S('g')),[],[Var(S('x'))],
+                   [],[],
+                   Return(Literal(9))))=="""def g(*,x):
+    return 9
+"""
+
+    def testDef1Pos1Kw(self):
+        assert self.toPython(Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],
+                   [],[],
+                   Return(Literal(9))))=="""def g(x,*,y):
+    return 9
+"""
+
+    def testDef2Pos1Kw(self):
+        assert self.toPython(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
+                   [Var(S('z'))],
+                   [],[],
+                   Return(Literal(9))))=="""def g(x,y,*,z):
+    return 9
+"""
+
+    def testDef2Pos2Kw(self):
+        assert self.toPython(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
+                   [Var(S('a')),Var(S('b'))],
+                   [],[],
+                   Return(Literal(9))))=="""def g(x,y,*,a,b):
+    return 9
+"""
+
+    def testBreak(self):
+        assert self.toPython(Break())=='break\n'
+
+    def testContinue(self):
+        assert self.toPython(Continue())=='continue\n'
+
+    def testPass(self):
+        assert self.toPython(Pass())=='assert True\n'
+
+    def testBlock0(self):
+        assert self.toPython(Block([]))=="assert True\n"
+
+    def testBlock1(self):
+        assert self.toPython(Block([Assign(Var(S('x')),Literal(9))]))=="""x=9
+"""
+
+    def testBlock2(self):
+        assert self.toPython(Block([
+                    Assign(Var(S('x')),Literal(9)),
+                    Assign(Var(S('z')),Literal(7))]))=="""x=9
+z=7
+"""
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
       unittest.makeSuite(ToPyleTestCase,'test'),
+      unittest.makeSuite(ToPythonTestCase,'test'),
      )
     )
 

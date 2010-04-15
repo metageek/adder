@@ -691,6 +691,8 @@ class TryStmt(Stmt):
                 res.append('finally:')
                 sawFinally=True
             else:
+                if not var:
+                    pdb.set_trace()
                 assert var
                 res.append('except %s as %s:' % (klass,var.toPython()))
             res.append([clause.toPythonTree(),])
