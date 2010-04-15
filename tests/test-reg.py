@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.gomer2 import *
+from adder.reg import *
 from adder.common import Symbol as S
 import adder.common
 import adder.pyle

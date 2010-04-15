@@ -1,7 +1,6 @@
-# Reimplementation of Gomer, using a 3-address intermediate form.
-#  Well, it can't really be 3-address, can it? Sometimes you need to
-#  call a function with >2 args.  The main characteristic is that
-#  there are no function arguments which include function calls.  So:
+# And intermediate form for use in compiling Gomer to Pyle.  Inspired
+#  by 3-address form.  The main characteristic is that there are no
+#  function arguments which include function calls.  So:
 #
 #   list<x> := "" | ( x ("," x)* )
 #   simple := var | literal
@@ -17,12 +16,9 @@
 #   def := "def" var "(" list<var> [ ",*" ("," var)+] ")" stmt
 #   break := "break"
 #   continue := "continue"
-#   global := "global" list<var>
-#   nonlocal := "nonlocal" list<var>
 #   pass := "pass"
 #   stmt := fcall | assign | return | yield | try | raise
-#         | if | while | def | break | continue
-#         | global | nonlocal | pass
+#         | if | while | def | break | continue | pass
 #         | list<stmt>
 
 from adder.common import Symbol as S
