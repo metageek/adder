@@ -5,6 +5,12 @@
 import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym
 
+def q(x):
+    return [S('quote'),x]
+
+def qpy(x):
+    return [S('quote'),[x]]
+
 class NoCommonAncestor(Exception):
     def __str__(self):
         return 'The two scopes have no common ancestor.'
@@ -126,9 +132,13 @@ class Scope:
                              ('defconst',Defconst()),
                              (':=',Assignment()),
                              ('begin',Begin()),
+                             ('block',Block()),
                              ('return',Return()),
                              ('yield',Yield()),
+                             ('return-from',ReturnFrom()),
+                             ('yield-from',YieldFrom()),
                              ('raise',Raise()),
+                             ('reraise',Reraise()),
                              ('-gomer-try',Try()),
                              ('reverse',Reverse()),
                              ('stdenv',Stdenv()),
@@ -701,10 +711,10 @@ class Defvar(Function):
         assert len(args) in [1,2]
         assert not kwArgs
 
+        var=args[0].compyle(stmtCollector)
         if len(args)==2:
             valueExpr=args[1]
             valuePyle=valueExpr.compyle(stmtCollector)
-            var=args[0].compyle(stmtCollector)
             if isStmt:
                 stmtCollector([S(':='),[var,valuePyle]])
             else:
@@ -778,6 +788,17 @@ class Raise(Function):
     def __call__(self,e):
         raise e
 
+class Reraise(Function):
+    def mustBeStmt(self):
+        return True
+
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert not args
+        assert not kwArgs
+        assert isStmt
+
+        stmtCollector([S('raise'),[]])
+
 class Return(Function):
     def mustBeStmt(self):
         return True
@@ -798,12 +819,52 @@ class Yield(Function):
         assert isStmt
 
         scope=f.scope.nearestFuncAncestor()
-        if scope:
-            scope.funcYields=True
+        assert scope
+        scope.funcYields=True
 
         pyle=[S('yield'),[args[0].compyle(stmtCollector)]]
         stmtCollector(pyle)
         return None
+
+class ReturnOrYieldFrom(Function):
+    def __init__(self,yielding):
+        self.yielding=yielding
+        self.klass='adder.runtime.%sValue' % ('Yield' if yielding
+                                              else 'Return')
+
+    def mustBeStmt(self):
+        return True
+
+    def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
+        assert not kwArgs
+        assert isStmt
+        assert len(args)==2
+
+        blockExpr=args[0]
+        assert isinstance(blockExpr,VarRef)
+        block=blockExpr.name
+
+        if self.yielding:
+            scope=f.scope.nearestFuncAncestor(block)
+            assert scope
+            scope.funcYields=True
+
+        pyle=[S('raise'),[[S(self.klass),
+                           [qpy(block),
+                            args[1].compyle(stmtCollector)
+                            ]
+                           ]]
+              ]
+        stmtCollector(pyle)
+        return None
+
+class ReturnFrom(ReturnOrYieldFrom):
+    def __init__(self):
+        ReturnOrYieldFrom.__init__(self,False)
+
+class YieldFrom(ReturnOrYieldFrom):
+    def __init__(self):
+        ReturnOrYieldFrom.__init__(self,True)
 
 class Reverse(Function):
     def compyleCall(self,f,args,kwArgs,stmtCollector,isStmt):
@@ -882,6 +943,32 @@ class Begin(Function):
 
         stmtCollector([S('begin'),body])
         return scratchVar
+
+class Block(Function):
+    def transform(self,srcExpr):
+        assert len(srcExpr)==3
+        (name,body)=srcExpr[1:]
+        assert isinstance(name,S) and name.isKeyword()
+        name=S(name[1:])
+        scratch=gensym(name)
+        rv=gensym('rv')
+        return [S('begin'),
+                [S('defvar'),scratch],
+                [S('-gomer-try'),
+                 [S(':='),scratch,body],
+                 S(':adder.runtime.ReturnValue'),
+                 [rv,
+                  [S('if'),
+                   [S('=='),
+                    [S('.'),rv,S('block')],
+                    q(name)],
+                   [S(':='),scratch,[S('.'),rv,S('value')]],
+                   [S('reraise')]
+                   ]
+                  ]
+                 ],
+                scratch
+                ]
 
 class Try(Function):
     def mustBeStmt(self):

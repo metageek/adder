@@ -372,7 +372,13 @@ x_2=9
         assert self.compile([S('return'),17],isStmt=True)==None
         assert self.pythonFlat=='return 17\n'
 
+    def testCallReturnFrom(self):
+        assert self.compile([S('return-from'),S('fred'),17],
+                            isStmt=True)==None
+        assert self.pythonFlat=="raise adder.runtime.ReturnValue(adder.common.Symbol('fred'), 17)\n"
+
     def testCallYield(self):
+        self.scope.isFunc=True
         assert self.compile([S('yield'),17],isStmt=True)==None
         assert self.pythonFlat=='yield 17\n'
 
@@ -1044,6 +1050,22 @@ class EvalTestCase(CompilingTestCase):
                           [S('if'),S('l'),
                            [S('defvar'),S('x'),[S('[]'),S('l'),0]],
                            17]])==17
+
+    def testBlock1(self):
+        assert self.eval([S('block'),
+                          S(':fred'),
+                          [S('*'),9,7]])==63
+
+    def testBlock2(self):
+        self.addDefs('x')
+        self.globals['x']=4
+        assert self.eval([S('block'),
+                          S(':fred'),
+                          [S('begin'),
+                           [S('return-from'),S('fred'),
+                            [S('*'),9,7]],
+                           [S(':='),S('x'),12]]])==63
+        assert self.globals['x']==4
 
 suite=unittest.TestSuite(
     (

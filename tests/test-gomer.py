@@ -641,11 +641,58 @@ class CompyleTestCase(unittest.TestCase):
         assert self.stmts==[[S('return'),[17]]]
 
     def testYield(self):
-        scope=Scope(None)
+        scope=Scope(None,isFunc=True)
         x=build(scope,[S('yield'),17],True)
         p=x.compyle(self.stmtCollector)
         assert not p
         assert self.stmts==[[S('yield'),[17]]]
+        assert scope.funcYields
+
+    def testReturnFrom(self):
+        scope=Scope(None)
+        x=build(scope,[S('return-from'),
+                       S('fred'),
+                       17],True)
+        p=x.compyle(self.stmtCollector)
+        assert not p
+        assert self.stmts==[[S('raise'),
+                             [[S('adder.runtime.ReturnValue'),
+                               [[S('quote'),[S('fred')]],17]]]]]
+
+    def testBlock(self):
+        scope=Scope(None)
+        x=build(scope,[S('block'),
+                       S(':fred'),
+                       [S('*'),9,7]],False)
+        p=x.compyle(self.stmtCollector)
+        adder.common.gensym.nextId=1
+        scratch1=gensym('fred')
+        rv=gensym('rv')
+        scratch3=gensym('scratch')
+        assert p==scratch3
+        expected=[[S('begin'),
+                   [[S(':='),[scratch1,None]],
+                    [S('try'),
+                     [[S('begin'),
+                       [[S(':='),[scratch1,[S('*'),[9,7]]]]]
+                       ]],
+                     [['adder.runtime.ReturnValue',rv,
+                       [S('begin'),
+                       [[S('if-stmt'),
+                         [[S('=='),
+                           [[S('.'),[rv,S('block')]],
+                            [S('adder.common.Symbol'),['fred']]]],
+                          [S(':='),[scratch1,
+                                    [S('.'),
+                                     [S('#<gensym-rv #2>'),
+                                      S('value')]]]],
+                          [S('raise'),[]]]]]]
+                        ]]],
+                    [S(':='),
+                     [S('#<gensym-scratch #3>'),
+                      S('#<gensym-fred #1>')]]
+                   ]]]
+        assert self.stmts==expected
 
     def testDot0(self):
         scope=Scope(None)
@@ -731,7 +778,8 @@ class CompyleTestCase(unittest.TestCase):
         assert self.stmts==expected
 
 suite=unittest.TestSuite(
-    ( unittest.makeSuite(VarEntryTestCase,'test'),
+    ( 
+      unittest.makeSuite(VarEntryTestCase,'test'),
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(BuildTestCase,'test'),

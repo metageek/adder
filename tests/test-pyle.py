@@ -730,6 +730,18 @@ else:
         assert(stmt.toPythonFlat()=="""yield 0
 """)
 
+    def testRaise(self):
+        stmt=buildStmt([S('raise'),[0]])
+        assert(stmt.toPythonTree()=='raise 0')
+        assert(stmt.toPythonFlat()=="""raise 0
+""")
+
+    def testRaiseReraise(self):
+        stmt=buildStmt([S('raise'),[]])
+        assert(stmt.toPythonTree()=='raise')
+        assert(stmt.toPythonFlat()=="""raise
+""")
+
     def testDefNoArgs(self):
         stmt=buildStmt([S('def'),[S('f'),[],[S('return'),[0]]]])
         assert(stmt.toPythonTree()==('def f():',['return 0']))

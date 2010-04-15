@@ -187,8 +187,11 @@ def buildStmt(pyle):
 
     if pyle[0]==S('raise'):
         assert len(pyle)==2
-        assert len(pyle[1])==1
-        return RaiseStmt(buildExpr(pyle[1][0]),)
+        assert len(pyle[1])<=1
+        if not pyle[1]:
+            return RaiseStmt()
+        else:
+            return RaiseStmt(buildExpr(pyle[1][0]),)
 
     if pyle[0]==S('exec'):
         assert len(pyle)==2
@@ -567,11 +570,14 @@ class YieldStmt(Stmt):
         return 'yield %s' % self.yieldExpr.toPython(False)
 
 class RaiseStmt(Stmt):
-    def __init__(self,raiseExpr):
+    def __init__(self,raiseExpr=None):
         self.raiseExpr=raiseExpr
 
     def toPythonTree(self):
-        return 'raise %s' % self.raiseExpr.toPython(False)
+        if self.raiseExpr:
+            return 'raise %s' % self.raiseExpr.toPython(False)
+        else:
+            return 'raise'
 
 class ExecStmt(Stmt):
     def __init__(self,execExpr):
@@ -685,6 +691,6 @@ class TryStmt(Stmt):
                 sawFinally=True
             else:
                 assert var
-                res.append('except %s as %s:' % (klass,var))
+                res.append('except %s as %s:' % (klass,var.toPython()))
             res.append([clause.toPythonTree(),])
         return tuple(res)

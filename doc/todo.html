@@ -23,6 +23,10 @@
   <code>(if)</code>.  We need to worry about return
   and yield&mdash;can't translate them directly, or we'll be returning
   from the helper.
+Currently working on this; tackling it by replacing with (return-from)
+  and (yield-from).  Problem: these work fine for (defun); for
+  (lambda), there's no name.  Add a :block arg to (lambda).  Also to
+  (begin).
 </dd>
 <dt>Refactor <code>build</code></dt>
 <dd>Too many special cases; need to move that knowledge into the
@@ -38,6 +42,10 @@
 <dd>Depends on solving the statement problem, above.
 </dd>
 <dt>Implement (try).</dt>
+<dt>Error reporting</dt>
+<dd>Lots and lots of places where constraints are asserted.  Should
+  all be replaced with proper error reporting.
+</dd>
 </dl>
 
 </body>
