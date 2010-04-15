@@ -27,6 +27,9 @@
 
 from adder.common import Symbol as S
 
+def toPyle(il):
+    return il.toPyle()
+
 class IL:
     pass
 
@@ -41,12 +44,20 @@ class Var(Simple):
     def __str__(self):
         return str(self.varSym)
 
+    def toPyle(self):
+        return self.varSym
+
 class Literal(Simple):
     def __init__(self,value):
         self.value=value
 
     def __str__(self):
         return repr(self.value)
+
+    def toPyle(self):
+        if isinstance(self.value,S) or isinstance(self.value,list):
+            return [S('quote'),self.value]
+        return self.value
 
 class Stmt(IL):
     pass
@@ -78,6 +89,16 @@ class Call(Stmt):
                                        )
                               )
 
+    def toPyle(self):
+        return [S(':='),[self.lhs.toPyle(),
+                         [self.f.toPyle(),
+                          list(map(toPyle,self.posArgs)),
+                          list(map(lambda kx: [str(kx[0]),kx[1].toPyle()],
+                                   self.kwArgs))
+                          ]
+                         ]
+                ]
+
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
         assert isinstance(lhs,Var)
@@ -88,6 +109,9 @@ class Assign(Stmt):
     def __str__(self):
         return '%s=%s' % (str(self.lhs),str(self.rhs))
 
+    def toPyle(self):
+        return [S(':='),[self.lhs.toPyle(),self.rhs.toPyle()]]
+
 class Return(Stmt):
     def __init__(self,value):
         assert isinstance(value,Simple)
@@ -95,6 +119,9 @@ class Return(Stmt):
 
     def __str__(self):
         return 'return %s' % str(self.value)
+
+    def toPyle(self):
+        return [S('return'),[self.value.toPyle()]]
 
 class Yield(Stmt):
     def __init__(self,value):
@@ -104,6 +131,9 @@ class Yield(Stmt):
     def __str__(self):
         return 'yield %s' % str(self.value)
 
+    def toPyle(self):
+        return [S('yield'),[self.value.toPyle()]]
+
 class Raise(Stmt):
     def __init__(self,value):
         assert isinstance(value,Var)
@@ -112,9 +142,15 @@ class Raise(Stmt):
     def __str__(self):
         return 'raise %s' % str(self.value)
 
+    def toPyle(self):
+        return [S('raise'),[self.value.toPyle()]]
+
 class Reraise(Stmt):
     def __str__(self):
         return 'raise'
+
+    def toPyle(self):
+        return [S('raise'),[]]
 
 class Try(Stmt):
     def __init__(self,body,klassClauses,finallyBody):
@@ -141,6 +177,17 @@ class Try(Stmt):
         res+='}'
         return res
 
+    def toPyle(self):
+        return [S('try'),
+                [self.body.toPyle()],
+                (list(map(lambda klassVarBody: [klassVarBody[0].toPyle(),
+                                                klassVarBody[1].toPyle(),
+                                                klassVarBody[2].toPyle()],
+                          self.klassClauses))
+                 +([[S('finally'),None,self.finallyBody.toPyle()]]
+                   if self.finallyBody else [])
+                 )]
+
 class If(Stmt):
     def __init__(self,cond,thenBody,elseBody):
         assert isinstance(cond,Simple)
@@ -157,6 +204,16 @@ class If(Stmt):
         res+='}'
         return res
 
+    def toPyle(self):
+        if self.elseBody:
+            return [S('if-stmt'),[self.cond.toPyle(),
+                                  self.thenBody.toPyle(),
+                                  self.elseBody.toPyle()]]
+        else:
+            return [S('if-stmt'),[self.cond.toPyle(),
+                                  self.thenBody.toPyle()]]
+                 
+
 class While(Stmt):
     def __init__(self,cond,body):
         assert isinstance(cond,Simple)
@@ -167,59 +224,80 @@ class While(Stmt):
     def __str__(self):
         return '{while %s %s}' % (str(self.cond),str(self.body))
 
+    def toPyle(self):
+        return [S('while'),
+                [self.cond.toPyle(),self.body.toPyle()]
+                ]
+
 class Def(Stmt):
-    def __init__(self,f,posArgs,kwArgs,body):
+    def __init__(self,f,posArgs,kwArgs,globals,nonlocals,body):
         assert isinstance(f,Var)
-        for arg in posArgs:
-            assert isinstance(arg,Var)
-        for arg in kwArgs:
-            assert isinstance(arg,Var)
+        for varList in [posArgs,kwArgs,globals,nonlocals]:
+            for arg in varList:
+                assert isinstance(arg,Var)
         assert isinstance(body,Stmt)
 
         self.f=f
         self.body=body
         self.posArgs=list(posArgs)
         self.kwArgs=list(kwArgs)
+        self.globals=list(globals)
+        self.nonlocals=list(nonlocals)
 
     def __str__(self):
-        return '{def %s(%s) %s}' % (str(self.f),
-                                    ','.join(map(str,
-                                                 (self.posArgs
-                                                  +(['*'] if self.kwArgs
-                                                    else [])
-                                                  +self.kwArgs
-                                                  ))),
-                                    str(self.body))
+        if self.globals:
+            globalDecl=' {globals %s}' % (','.join(map(str,self.globals)))
+        else:
+            globalDecl=''
+
+        if self.nonlocals:
+            nonlocalDecl=' {nonlocals %s}' % (','.join(map(str,self.nonlocals)))
+        else:
+            nonlocalDecl=''
+
+        return '{def %s(%s)%s%s %s}' % (str(self.f),
+                                        ','.join(map(str,
+                                                     (self.posArgs
+                                                      +(['*'] if self.kwArgs
+                                                        else [])
+                                                      +self.kwArgs
+                                                      ))),
+                                        globalDecl,nonlocalDecl,
+                                        str(self.body))
+
+    def toPyle(self):
+        args=list(map(toPyle,self.posArgs))
+        for (marker,vars) in [('&key',self.kwArgs),
+                              ('&globals',self.globals),
+                              ('&nonlocals',self.nonlocals)]:
+            if vars:
+                args.append(S(marker))
+                args+=list(map(toPyle,vars))
+            
+        return [S('def'),
+                [self.f.toPyle(),args,self.body.toPyle()]
+                ]
 
 class Break(Stmt):
     def __str__(self):
         return 'break'
 
+    def toPyle(self):
+        return [S('break'),[]]
+
 class Continue(Stmt):
     def __str__(self):
         return 'continue'
 
-class Global(Stmt):
-    def __init__(self,vars):
-        for var in vars:
-            assert isinstance(var,Var)
-        self.vars=vars
-
-    def __str__(self):
-        return 'global %s' % ','.join(map(str,self.vars))
-
-class Nonlocal(Stmt):
-    def __init__(self,vars):
-        for var in vars:
-            assert isinstance(var,Var)
-        self.vars=vars
-
-    def __str__(self):
-        return 'nonlocal %s' % ','.join(map(str,self.vars))
+    def toPyle(self):
+        return [S('continue'),[]]
 
 class Pass(Stmt):
     def __str__(self):
         return 'pass'
+
+    def toPyle(self):
+        return [S('begin'),[]]
 
 class Block(Stmt):
     def __init__(self,stmts):
@@ -229,3 +307,6 @@ class Block(Stmt):
 
     def __str__(self):
         return '{%s}' % '; '.join(map(str,self.stmts))
+
+    def toPyle(self):
+        return [S('begin'),list(map(toPyle,self.stmts))]

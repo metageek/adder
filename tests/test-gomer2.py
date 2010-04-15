@@ -113,28 +113,34 @@ class StrTestCase(unittest.TestCase):
 
     def testDef0(self):
         assert str(Def(Var(S('g')),[],[],
+                       [],[],
                        Return(Literal(9))))=='{def g() return 9}'
 
     def testDef1Pos(self):
         assert str(Def(Var(S('g')),[Var(S('x'))],[],
+                       [],[],
                        Return(Literal(9))))=='{def g(x) return 9}'
 
     def testDef1Kw(self):
         assert str(Def(Var(S('g')),[],[Var(S('x'))],
+                       [],[],
                        Return(Literal(9))))=='{def g(*,x) return 9}'
 
     def testDef1Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],
+                       [],[],
                        Return(Literal(9))))=='{def g(x,*,y) return 9}'
 
     def testDef2Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('z'))],
+                       [],[],
                        Return(Literal(9))))=='{def g(x,y,*,z) return 9}'
 
     def testDef2Pos2Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('a')),Var(S('b'))],
+                       [],[],
                        Return(Literal(9))))=='{def g(x,y,*,a,b) return 9}'
 
     def testBreak(self):
@@ -145,14 +151,6 @@ class StrTestCase(unittest.TestCase):
 
     def testPass(self):
         assert str(Pass())=='pass'
-
-    def testGlobal(self):
-        assert str(Global([Var(S('fred')),Var(S('barney'))])
-                   )=='global fred,barney'
-
-    def testNonlocal(self):
-        assert str(Nonlocal([Var(S('fred')),Var(S('barney'))])
-                   )=='nonlocal fred,barney'
 
     def testBlock0(self):
         assert str(Block([]))=='{}'
@@ -165,9 +163,281 @@ class StrTestCase(unittest.TestCase):
                     Assign(Var(S('x')),Literal(9)),
                     Assign(Var(S('z')),Literal(7))]))=='{x=9; z=7}'
 
+class ToPyleTestCase(unittest.TestCase):
+    def testVar(self):
+        assert Var(S('fred')).toPyle()==S('fred')
+
+    def testLiteralInt(self):
+        assert Literal(9).toPyle()==9
+
+    def testLiteralSym(self):
+        assert Literal(S('fred')).toPyle()==[S('quote'),S('fred')]
+
+    def testCall0(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [],[]).toPyle()==[S(':='),
+                                          [S('fred'),
+                                           [S('barney'),[],[]]
+                                           ]
+                                          ]
+
+    def testCall1Pos(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('wilma'))],[]).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[S('wilma')],[]]
+             ]
+            ]
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [Literal(9)],[]).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[9],[]]
+             ]
+            ]
+
+    def testCall1Kw(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [],[(Var(S('wilma')),Var(S('betty')))]
+                        ).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[],[['wilma',S('betty')]]]
+             ]
+            ]
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [],[(Var(S('wilma')),Literal(9))]
+                        ).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[],[['wilma',9]]]
+             ]
+            ]
+
+    def testCall1Pos1Kw(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino'))],
+                        [(Var(S('wilma')),Var(S('betty')))]
+                        ).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[S('dino')],[['wilma',S('betty')]]]
+             ]
+            ]
+
+    def testCall2Pos1Kw(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino')),Literal(9)],
+                        [(Var(S('wilma')),Var(S('betty')))]
+                        ).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[S('dino'),9],[['wilma',S('betty')]]]
+             ]
+            ]
+
+    def testCall2Pos2Kw(self):
+        assert Call(Var(S('fred')),Var(S('barney')),
+                        [Var(S('dino')),Literal(9)],
+                        [(Var(S('wilma')),Var(S('betty'))),
+                         (Var(S('pebbles')),Literal(3))]
+                        ).toPyle()==[
+            S(':='),
+            [S('fred'),
+             [S('barney'),[S('dino'),9],[['wilma',S('betty')],['pebbles',3]]]
+             ]
+            ]
+
+    def testAssign(self):
+        assert Assign(Var(S('fred')),Var(S('barney'))).toPyle()==[
+            S(':='),[S('fred'),S('barney')]
+            ]
+        assert Assign(Var(S('fred')),Literal(7)).toPyle()==[
+            S(':='),[S('fred'),7]
+            ]
+
+    def testReturn(self):
+        assert Return(Var(S('fred'))).toPyle()==[S('return'),[S('fred')]]
+        assert Return(Literal(7)).toPyle()==[S('return'),[7]]
+
+    def testYield(self):
+        assert Yield(Var(S('fred'))).toPyle()==[S('yield'),[S('fred')]]
+        assert Yield(Literal(7)).toPyle()==[S('yield'),[7]]
+
+    def testRaise(self):
+        assert Raise(Var(S('fred'))).toPyle()==[S('raise'),[S('fred')]]
+
+    def testReraise(self):
+        assert Reraise().toPyle()==[S('raise'),[]]
+
+    def testTry(self):
+        assert Try(Return(Literal(7)),
+                   [(Var(S('TypeError')),Var(S('te')),
+                     Return(Literal(12))),
+                    (Var(S('ValueError')),Var(S('ve')),
+                     Reraise())],
+                   Assign(Var(S('x')),Literal(3))).toPyle()==[
+            S('try'),
+            [[S('return'),[7]]],
+            [[S('TypeError'),S('te'),[S('return'),[12]]],
+             [S('ValueError'),S('ve'),[S('raise'),[]]],
+             [S('finally'),None,[S(':='),[S('x'),3]]]
+             ]
+            ]
+
+    def testIf(self):
+        assert If(Var(S('x')),
+                      Return(Literal(9)),
+                      None).toPyle()==[S('if-stmt'),
+                                       [S('x'),
+                                        [S('return'),[9]]]
+                                       ]
+        assert If(Literal(True),
+                      Return(Literal(9)),
+                      None).toPyle()==[S('if-stmt'),
+                                       [True,
+                                        [S('return'),[9]]]
+                                       ]
+
+    def testIfElse(self):
+        assert If(Var(S('x')),
+                      Return(Literal(9)),
+                      Return(Literal(3))).toPyle()==[S('if-stmt'),
+                                                     [S('x'),
+                                                      [S('return'),[9]],
+                                                      [S('return'),[3]]]
+                                                     ]
+        assert If(Literal(True),
+                      Return(Literal(9)),
+                      Return(Literal(3))).toPyle()==[S('if-stmt'),
+                                                     [True,
+                                                      [S('return'),[9]],
+                                                      [S('return'),[3]]]
+                                                     ]
+
+    def testWhile(self):
+        assert While(Var(S('x')),
+                     Return(Literal(9))).toPyle()==[
+            S('while'),
+            [S('x'),
+             [S('return'),[9]]
+             ]
+            ]
+        assert While(Literal(True),
+                     Return(Literal(9))).toPyle()==[
+            S('while'),
+            [True,
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef0(self):
+        assert Def(Var(S('g')),[],[],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef1Pos(self):
+        assert Def(Var(S('g')),[Var(S('x'))],[],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [S('x')],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef1Kw(self):
+        assert Def(Var(S('g')),[],[Var(S('x'))],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [S('&key'),S('x')],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef1Pos1Kw(self):
+        assert Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [S('x'),S('&key'),S('y')],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef2Pos1Kw(self):
+        assert Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
+                   [Var(S('z'))],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [S('x'),S('y'),S('&key'),S('z')],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testDef2Pos2Kw(self):
+        assert Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
+                   [Var(S('a')),Var(S('b'))],
+                   [],[],
+                   Return(Literal(9))).toPyle()==[
+            S('def'),
+            [S('g'),
+             [S('x'),S('y'),S('&key'),S('a'),S('b')],
+             [S('return'),[9]]
+             ]
+            ]
+
+    def testBreak(self):
+        assert Break().toPyle()==[S('break'),[]]
+
+    def testContinue(self):
+        assert Continue().toPyle()==[S('continue'),[]]
+
+    def testPass(self):
+        assert Pass().toPyle()==[S('begin'),[]]
+
+    def testBlock0(self):
+        assert Block([]).toPyle()==[
+            S('begin'),
+            []
+            ]
+
+    def testBlock1(self):
+        assert Block([Assign(Var(S('x')),Literal(9))]).toPyle()==[
+            S('begin'),
+            [
+                [S(':='),[S('x'),9]]
+                ]
+            ]
+
+    def testBlock2(self):
+        assert Block([
+                    Assign(Var(S('x')),Literal(9)),
+                    Assign(Var(S('z')),Literal(7))]).toPyle()==[
+            S('begin'),
+            [
+                [S(':='),[S('x'),9]],
+                [S(':='),[S('z'),7]]
+                ]
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
+      unittest.makeSuite(ToPyleTestCase,'test'),
      )
     )
 
