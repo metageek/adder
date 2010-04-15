@@ -45,7 +45,7 @@ class KeywordsHaveNoValue(Exception):
         self.varRef=varRef
 
     def __str__(self):
-        return 'Cannot use a keyword as a value: %s' % self.args
+        return 'Cannot use a keyword as a value: %s' % str(self.varRef.name)
 
 class TwoConsecutiveKeywords(Exception):
     def __init__(self,varRef1,varRef2):
@@ -272,6 +272,7 @@ class Scope:
         raise Undefined(varRef)
 
     def addDef(self,var,initExpr,*,dontDisambiguate=False,const=False):
+        var=S(var)
         if var in self.varAccesses:
             raise DefinedAfterUse(var,initExpr,self.varAccesses[var])
         if var in self.localDefs:
@@ -1343,7 +1344,7 @@ def build(scope,gomer,isStmt):
         clauses=[]
         for (klass,handler) in kwArgs:
             innerScope=Scope(scope)
-            if klass==':finally':
+            if klass==S(':finally'):
                 (exnVar,exnBody)=(None,handler)
             else:
                 (exnVar,*exnBody)=handler

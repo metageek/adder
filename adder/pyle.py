@@ -287,11 +287,11 @@ class Constant(SimpleExpr):
 
 class VarExpr(SimpleExpr):
     def __init__(self,v):
-        SimpleExpr.__init__(self,v)
+        SimpleExpr.__init__(self,str(v))
 
     def toPython(self,inParens):
         return '.'.join(map(lambda part: S(part).toPython(),
-                            self.py.split('.')))
+                            str(self.py).split('.')))
 
     def isLvalue(self):
         return True
@@ -311,7 +311,7 @@ noPaddingRe=re.compile('^[^a-zA-Z]+$')
 class BinaryOperator(Expr):
     def __init__(self,operator,left,right):
         self.operator=operator
-        self.padding='' if noPaddingRe.match(operator) else ' '
+        self.padding='' if noPaddingRe.match(str(operator)) else ' '
         self.left=left
         self.right=right
 
@@ -354,7 +354,7 @@ class UnaryOperator(Expr):
     def __init__(self,operator,operand):
         self.operator=operator
         self.operand=operand
-        self.padding='' if noPaddingRe.match(operator) else ' '
+        self.padding='' if noPaddingRe.match(str(operator)) else ' '
 
     def toPython(self,inParens):
         return withParens('%s%s%s' % (self.operator,
@@ -403,7 +403,8 @@ class DotExpr(Expr):
         return True
 
     def toPython(self,inParens):
-        return '.'.join([self.base.toPython(True)]+self.path)
+        return '.'.join([self.base.toPython(True)]
+                        +list(map(str,self.path)))
 
 class ListConstructor(Expr):
     def __init__(self,elementExprs):
@@ -606,7 +607,7 @@ class DefStmt(Stmt):
                               defExpr.toPython(False))
 
         def kwArgToPy(kwArg):
-            if isinstance(kwArg,str):
+            if isinstance(kwArg,S) or isinstance(kwArg,str):
                 return S(kwArg).toPython()
             else:
                 (name,defExpr)=kwArg
@@ -655,7 +656,7 @@ class ClassStmt(Stmt):
 
     def toPythonTree(self):
         return ('class %s(%s):' % (self.name,
-                                   ','.join(self.parents)),
+                                   ','.join(map(str,self.parents))),
                 [self.body.toPythonTree() if self.body else 'pass']
                 )
 
@@ -665,7 +666,7 @@ class ImportStmt(Stmt):
         self.modules=modules
 
     def toPythonTree(self):
-        return 'import %s' % (', '.join(self.modules))
+        return 'import %s' % (', '.join(map(str,self.modules)))
 
 class ExprStmt(Stmt):
     def __init__(self,expr):

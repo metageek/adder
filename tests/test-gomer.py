@@ -560,7 +560,7 @@ class CompyleTestCase(unittest.TestCase):
     def testQuoteSym(self):
         scope=Scope(None)
         x=build(scope,[S('quote'),S('x')],False)
-        assert x.compyle(self.stmtCollector)==['adder.common.Symbol',['x']]
+        assert x.compyle(self.stmtCollector)==[S('adder.common.Symbol'),['x']]
         assert self.stmts==[]
 
     def testQuoteList(self):
@@ -582,7 +582,7 @@ class CompyleTestCase(unittest.TestCase):
         x=build(scope,[S('f'),11,13,17,S(':alpha'),23],False)
         assert x.compyle(self.stmtCollector)==[S('f'),
                                                [11,13,17],
-                                               [[S('alpha'),23]]
+                                               [['alpha',23]]
                                                ]
         assert self.stmts==[]
 

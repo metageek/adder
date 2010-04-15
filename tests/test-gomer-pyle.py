@@ -29,12 +29,9 @@ class CompilingTestCase(unittest.TestCase):
         self.globals=None
 
     def addFuncDef(self,name,f):
-        self.addDefs(name,
-                     adder.gomer.Constant(self.scope,
-                                          adder.gomer.PyleExpr(self.scope,
-                                                               name)
-                                          )
-                     )
+        self.addDefs((name,
+                      adder.gomer.PyleExpr(self.scope,name)
+                      ))
         self.globals[name]=f
 
     def addDefs(self,*names):
@@ -1031,7 +1028,7 @@ class EvalTestCase(CompilingTestCase):
         try:
             self.eval([S(':='),S('x'),9])
         except adder.gomer.AssigningToConstant as a2c:
-            assert a2c.args==('x',)
+            assert a2c.args==(S('x'),)
             return
         assert False
 

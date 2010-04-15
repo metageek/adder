@@ -30,9 +30,9 @@ class ExprTestCase(unittest.TestCase):
     def testVarEscapedParts(self):
         expr=VarExpr('barney-rubble.bedrock')
         assert expr.toPython(False)==(S('barney-rubble').toPython()
-                                      +S('.bedrock'))
+                                      +'.bedrock')
         assert expr.toPython(True)==(S('barney-rubble').toPython()
-                                     +S('.bedrock'))
+                                     +'.bedrock')
 
     def testStr(self):
         expr=Constant('fred')
@@ -291,21 +291,21 @@ class BuildExprTestCase(unittest.TestCase):
         assert isinstance(expr,IfOperator)
 
         assert isinstance(expr.condExpr,BinaryOperator)
-        assert expr.condExpr.operator=='=='
+        assert expr.condExpr.operator==S('==')
         assert isinstance(expr.condExpr.left,VarExpr)
         assert expr.condExpr.left.py=='x'
         assert isinstance(expr.condExpr.right,Constant)
         assert expr.condExpr.right.py=='9'
 
         assert isinstance(expr.thenExpr,BinaryOperator)
-        assert expr.thenExpr.operator=='*'
+        assert expr.thenExpr.operator==S('*')
         assert isinstance(expr.thenExpr.left,VarExpr)
         assert expr.thenExpr.left.py=='x'
         assert isinstance(expr.thenExpr.right,Constant)
         assert expr.thenExpr.right.py=='7'
 
         assert isinstance(expr.elseExpr,BinaryOperator)
-        assert expr.elseExpr.operator=='*'
+        assert expr.elseExpr.operator==S('*')
         assert isinstance(expr.elseExpr.left,Constant)
         assert expr.elseExpr.left.py=='9'
         assert isinstance(expr.elseExpr.right,VarExpr)
@@ -411,14 +411,14 @@ class BuildExprTestCase(unittest.TestCase):
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
-        assert expr.path==['x']
+        assert expr.path==[S('x')]
 
     def testDot2(self):
         expr=buildExpr([S('.'),[S('a'),S('x'),S('y')]])
         assert isinstance(expr,DotExpr)
         assert isinstance(expr.base,VarExpr)
         assert expr.base.py=='a'
-        assert expr.path==['x','y']
+        assert expr.path==[S('x'),S('y')]
 
     def testIndexSimple(self):
         expr=buildExpr([S('[]'),[S('a'),1]])
@@ -434,7 +434,7 @@ class BuildExprTestCase(unittest.TestCase):
                         1]])
         assert isinstance(expr,IndexOperator)
         assert isinstance(expr.left,BinaryOperator)
-        assert expr.left.operator=='+'
+        assert expr.left.operator==S('+')
         assert isinstance(expr.left.left,VarExpr)
         assert expr.left.left.py=='a'
         assert isinstance(expr.left.right,VarExpr)
