@@ -1409,6 +1409,64 @@ def build(scope,gomer,isStmt):
 
     return res
 
+class Reducer:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        pass
+
+    def argIsStmt(self,gomer,isStmt,i):
+        pass
+
+class ReduceDefault:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        return gomer
+
+    def argIsStmt(self,gomer,isStmt,i):
+        return False
+
+class ReduceIf:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer) in [3,4]
+        if isStmt:
+            stmtCollector(gomer)
+            return
+        scratch=gensym('if')
+        elseExpr=gomer[3] if len(gomer)==4 else None
+        stmtCollector([S('if'),gomer[1],
+                       [S(':='),scratch,gomer[2]],
+                       [S(':='),scratch,gomer[3]]])
+        return scratch
+
+    def argIsStmt(self,gomer,isStmt,i):
+        if i>2:
+            return isStmt
+        return False
+
+reductionRules={S('if') : ReduceIf()}
+reduceDefault=ReduceDefault()
+
+def getReducer(f):
+    if f in reductionRules:
+        return reductionRules[f]
+    else:
+        return reduceDefault()
+
+def reduce(gomer,isStmt,stmtCollector):
+    if not isinstance(gomer,list):
+        return gomer
+    assert gomer
+    reducer=getReducer(gomer[0])
+    def reduceArg(i):
+        return reduce(gomer[i],
+                      reducer.argIsStmt(gomer,isStmt,i),
+                      stmtCollector)
+
+    gomer=list(map(reduceArg,range(len(gomer))))
+    if (not isStmt) and isinstance(gomer,list):
+        scratch=gensym('scratch')
+        stmtCollector([S(':='),scratch,gomer])
+        gomer=scratch
+    return gomer
+
 def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):
     pyleStmts=[]
     pythonFlat=''
