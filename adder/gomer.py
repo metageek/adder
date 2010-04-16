@@ -1448,24 +1448,27 @@ def getReducer(f):
     if f in reductionRules:
         return reductionRules[f]
     else:
-        return reduceDefault()
+        return reduceDefault
 
 def reduce(gomer,isStmt,stmtCollector):
-    if not isinstance(gomer,list):
-        return gomer
-    assert gomer
-    reducer=getReducer(gomer[0])
-    def reduceArg(i):
-        return reduce(gomer[i],
-                      reducer.argIsStmt(gomer,isStmt,i),
-                      stmtCollector)
+    if isinstance(gomer,list):
+        assert gomer
+        reducer=getReducer(gomer[0])
+        def reduceArg(i):
+            return reduce(gomer[i],
+                          reducer.argIsStmt(gomer,isStmt,i),
+                          stmtCollector)
 
-    gomer=list(map(reduceArg,range(len(gomer))))
-    if (not isStmt) and isinstance(gomer,list):
-        scratch=gensym('scratch')
-        stmtCollector([S(':='),scratch,gomer])
-        gomer=scratch
-    return gomer
+        gomer=list(map(reduceArg,range(len(gomer))))
+    if isStmt:
+        if isinstance(gomer,list):
+            stmtCollector(gomer)
+    else:
+        if isinstance(gomer,list):
+            scratch=gensym('scratch')
+            stmtCollector([S(':='),scratch,gomer])
+            gomer=scratch
+        return gomer
 
 def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):
     pyleStmts=[]

@@ -2,7 +2,7 @@
 
 import unittest,pdb,sys,os
 from adder.gomer import *
-from adder.common import Symbol as S
+from adder.common import Symbol as S,gensym
 import adder.common
 
 class VarEntryTestCase(unittest.TestCase):
@@ -463,6 +463,66 @@ class BuildTestCase(unittest.TestCase):
         assert yScope is not scope
         assert yScope.parent is scope
 
+class ReduceTestCase(unittest.TestCase):
+    def setUp(self):
+        gensym.nextId=1
+        self.stmts=[]
+
+    def tearDown(self):
+        self.stmts=None
+
+    def r(self,gomer,isStmt):
+        return reduce(gomer,isStmt,self.stmts.append)
+
+    def testIntExpr(self):
+        assert self.r(7,False)==7
+        assert not self.stmts
+
+    def testIntStmt(self):
+        assert self.r(7,True) is None
+        assert not self.stmts
+
+    def testSymbolExpr(self):
+        assert self.r(S('fred'),False)==S('fred')
+        assert not self.stmts
+
+    def testSymbolStmt(self):
+        assert self.r(S('fred'),True) is None
+        assert not self.stmts
+
+    def testSimpleFuncExpr(self):
+        scratch=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('fred'),7,8],False)==scratch
+        assert self.stmts==[[S(':='),scratch,[S('fred'),7,8]]]
+
+    def testNestedFuncExpr(self):
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
+                      False)==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
+            [S(':='),scratch2,[S('fred'),7,scratch1]]
+            ]
+
+    def testSimpleFuncStmt(self):
+        scratch=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('fred'),7,8],True) is None
+        assert self.stmts==[[S('fred'),7,8]]
+
+    def testNestedFuncStmt(self):
+        scratch1=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
+                      True) is None
+        assert self.stmts==[
+            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
+            [S('fred'),7,scratch1]
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
@@ -783,6 +843,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(BuildTestCase,'test'),
+      unittest.makeSuite(ReduceTestCase,'test'),
       unittest.makeSuite(CompyleTestCase,'test'),
      )
     )
