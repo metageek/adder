@@ -1451,7 +1451,34 @@ class ReduceIf:
                            maybeBegin(thenBody)])
         return scratch
 
-reductionRules={S('if') : ReduceIf()}
+class ReduceWhile:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer)>=2
+        if isStmt:
+            scratch=None
+        else:
+            scratch=gensym('while')
+            stmtCollector([S(':='),scratch,None])
+        condBody=[]
+        condExpr=reduce(gomer[1],False,condBody.append)
+        for cb in condBody:
+            stmtCollector(cb)
+        body=[]
+        bodyExpr=None
+        for (i,b) in enumerate(gomer[2:]):
+            bodyExpr=reduce(b,
+                            (i+2)<(len(gomer)-1),
+                            body.append)
+        if body and not isStmt:
+            body.append([S(':='),scratch,bodyExpr])
+        for cb in condBody:
+            body.append(cb)
+        stmtCollector([S('while'),condExpr,maybeBegin(body)])
+        return scratch
+
+reductionRules={S('if') : ReduceIf(),
+                S('while') : ReduceWhile(),
+                }
 reduceDefault=ReduceDefault()
 
 def getReducer(f):
@@ -1470,9 +1497,13 @@ def reduce(gomer,isStmt,stmtCollector):
             stmtCollector(gomer)
     else:
         if isinstance(gomer,list):
-            scratch=gensym('scratch')
-            stmtCollector([S(':='),scratch,gomer])
-            gomer=scratch
+            if gomer[0]==S(':='):
+                stmtCollector(gomer)
+                gomer=gomer[1]
+            else:
+                scratch=gensym('scratch')
+                stmtCollector([S(':='),scratch,gomer])
+                gomer=scratch
         return gomer
 
 def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):

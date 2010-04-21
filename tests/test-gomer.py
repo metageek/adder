@@ -579,23 +579,50 @@ class ReduceTestCase(unittest.TestCase):
             ]
 
     def testWhileExpr(self):
-        return
-        ifScratch=gensym('if')
+        whileScratch=gensym('while')
+        condScratch=gensym('scratch')
+        scratch3=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('while'),
+                       [S('<'),S('n'),10],
+                       [S(':='),S('n'),[S('+'),S('n'),1]]
+                  ],
+                 False)
+        assert x==whileScratch
+        assert self.stmts==[
+            [S(':='),whileScratch,None],
+            [S(':='),condScratch,[S('<'),S('n'),10]],
+            [S('while'),
+             condScratch,
+             [S('begin'),
+              [S(':='),scratch3,[S('+'),S('n'),1]],
+              [S(':='),S('n'),scratch3],
+              [S(':='),whileScratch,S('n')],
+              [S(':='),condScratch,[S('<'),S('n'),10]]
+              ]
+             ]
+            ]
+
+    def testWhileStmt(self):
+        condScratch=gensym('scratch')
         scratch2=gensym('scratch')
         gensym.nextId=1
-        x=self.r([S('if'),
-                       [S('<'),S('n'),10],
-                       [S('barney'),9,S('bam-bam')],
-                       [S('fred'),7,S('pebbles')],
-                       ],
-                      False)
-        print(x)
-        print (self.stmts)
-        assert x==scratch2
-        assert self.stmts==[S('if'),
-            [S(':='),ifScratch,[S('<'),S('n'),10]],
-            [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
-            [S(':='),scratch2,[S('fred'),7,S('pebbles')]]
+        x=self.r([S('while'),
+                  [S('<'),S('n'),10],
+                  [S(':='),S('n'),[S('+'),S('n'),1]]
+                  ],
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S(':='),condScratch,[S('<'),S('n'),10]],
+            [S('while'),
+             condScratch,
+             [S('begin'),
+              [S(':='),scratch2,[S('+'),S('n'),1]],
+              [S(':='),S('n'),scratch2],
+              [S(':='),condScratch,[S('<'),S('n'),10]]
+              ]
+             ]
             ]
 
 class CompyleTestCase(unittest.TestCase):
