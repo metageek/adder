@@ -1419,9 +1419,6 @@ class Reducer:
     def reduce(self,gomer,isStmt,stmtCollector):
         pass
 
-    def argIsStmt(self,gomer,isStmt,i):
-        pass
-
 class ReduceDefault:
     def reduce(self,gomer,isStmt,stmtCollector):
         def reduceArg(i):
@@ -1429,9 +1426,6 @@ class ReduceDefault:
                           False,
                           stmtCollector)
         return list(map(reduceArg,range(len(gomer))))
-
-    def argIsStmt(self,gomer,isStmt,i):
-        return False
 
 class ReduceIf:
     def reduce(self,gomer,isStmt,stmtCollector):
@@ -1456,11 +1450,6 @@ class ReduceIf:
             stmtCollector([S('if'),condExpr,
                            maybeBegin(thenBody)])
         return scratch
-
-    def argIsStmt(self,gomer,isStmt,i):
-        if i>2:
-            return isStmt
-        return False
 
 reductionRules={S('if') : ReduceIf()}
 reduceDefault=ReduceDefault()
