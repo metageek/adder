@@ -625,6 +625,138 @@ class ReduceTestCase(unittest.TestCase):
              ]
             ]
 
+    def testDefunStmt(self):
+        x=self.r([S('defun'),S('fact'),[S('n')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 True)
+        assert x is None
+
+        gensym.nextId=1
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        expected=[
+            [S('def'),S('fact'),[S('n')],
+             [S('begin'),
+              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
+    def testDefunExpr(self):
+        x=self.r([S('defun'),S('fact'),[S('n')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 False)
+        assert x==S('fact')
+
+        gensym.nextId=1
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        expected=[
+            [S('def'),S('fact'),[S('n')],
+             [S('begin'),
+              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
+    def testLambdaExpr(self):
+        x=self.r([S('lambda'),[S('n')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 False)
+
+        gensym.nextId=1
+        lambdaScratch=gensym('lambda')
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        assert x==lambdaScratch
+
+        expected=[
+            [S('def'),lambdaScratch,[S('n')],
+             [S('begin'),
+              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
+    def testLambdaStmt(self):
+        x=self.r([S('lambda'),[S('n')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 True)
+
+        assert x is None
+        assert not self.stmts
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]

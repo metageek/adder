@@ -1476,8 +1476,38 @@ class ReduceWhile:
         stmtCollector([S('while'),condExpr,maybeBegin(body)])
         return scratch
 
+class ReduceDefun:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        #pdb.set_trace()
+        name=gomer[1]
+        argList=gomer[2]
+        body=[]
+        bodyGs=gomer[3:]
+        if bodyGs:
+            for g in bodyGs[:-1]:
+                reduce(g,True,body.append)
+            resExpr=reduce(bodyGs[-1],False,body.append)
+            reduce([S('return'),resExpr],True,body.append)
+        if body:
+            body=maybeBegin(body)
+        else:
+            body=[S('pass')]
+        stmtCollector([S('def'),name,gomer[2],body])
+        if not isStmt:
+            return name
+
+class ReduceLambda:
+    def reduce(self,gomer,isStmt,stmtCollector):
+        if isStmt:
+            return None
+        name=gensym('lambda')
+        reduce([S('defun'),name]+gomer[1:],True,stmtCollector)
+        return name
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
+                S('defun') : ReduceDefun(),
+                S('lambda') : ReduceLambda(),
                 }
 reduceDefault=ReduceDefault()
 
