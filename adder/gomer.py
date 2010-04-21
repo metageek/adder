@@ -1409,6 +1409,12 @@ def build(scope,gomer,isStmt):
 
     return res
 
+def maybeBegin(body):
+    if len(body)==1:
+        return body[0]
+    else:
+        return [S('begin')]+body
+
 class Reducer:
     def reduce(self,gomer,isStmt,stmtCollector):
         pass
@@ -1418,7 +1424,11 @@ class Reducer:
 
 class ReduceDefault:
     def reduce(self,gomer,isStmt,stmtCollector):
-        return gomer
+        def reduceArg(i):
+            return reduce(gomer[i],
+                          False,
+                          stmtCollector)
+        return list(map(reduceArg,range(len(gomer))))
 
     def argIsStmt(self,gomer,isStmt,i):
         return False
@@ -1426,14 +1436,25 @@ class ReduceDefault:
 class ReduceIf:
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
+        condExpr=reduce(gomer[1],False,stmtCollector)
+        thenBody=[]
+        thenExpr=reduce(gomer[2],isStmt,thenBody.append)
         if isStmt:
-            stmtCollector(gomer)
-            return
-        scratch=gensym('if')
-        elseExpr=gomer[3] if len(gomer)==4 else None
-        stmtCollector([S('if'),gomer[1],
-                       [S(':='),scratch,gomer[2]],
-                       [S(':='),scratch,gomer[3]]])
+            scratch=None
+        else:
+            scratch=gensym('if')
+            thenBody.append([S(':='),scratch,thenExpr])
+        if len(gomer)==4:
+            elseBody=[]
+            elseExpr=reduce(gomer[3],isStmt,elseBody.append)
+            if not isStmt:
+                elseBody.append([S(':='),scratch,elseExpr])
+            stmtCollector([S('if'),condExpr,
+                           maybeBegin(thenBody),
+                           maybeBegin(elseBody)])
+        else:
+            stmtCollector([S('if'),condExpr,
+                           maybeBegin(thenBody)])
         return scratch
 
     def argIsStmt(self,gomer,isStmt,i):
@@ -1454,12 +1475,7 @@ def reduce(gomer,isStmt,stmtCollector):
     if isinstance(gomer,list):
         assert gomer
         reducer=getReducer(gomer[0])
-        def reduceArg(i):
-            return reduce(gomer[i],
-                          reducer.argIsStmt(gomer,isStmt,i),
-                          stmtCollector)
-
-        gomer=list(map(reduceArg,range(len(gomer))))
+        gomer=reducer.reduce(gomer,isStmt,stmtCollector)
     if isStmt:
         if isinstance(gomer,list):
             stmtCollector(gomer)

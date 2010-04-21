@@ -523,6 +523,55 @@ class ReduceTestCase(unittest.TestCase):
             [S('fred'),7,scratch1]
             ]
 
+    def testNestedFuncStmt(self):
+        scratch1=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
+                      True) is None
+        assert self.stmts==[
+            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
+            [S('fred'),7,scratch1]
+            ]
+
+    def testIfWithElseExpr(self):
+        return
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('if'),
+                       [S('<'),S('n'),10],
+                       [S('barney'),9,S('bam-bam')],
+                       [S('fred'),7,S('pebbles')],
+                       ],
+                      False)
+        print(x)
+        print (self.stmts)
+        assert x==scratch2
+        assert self.stmts==[S('if'),
+            [S(':='),ifScratch,[S('<'),S('n'),10]],
+            [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
+            [S(':='),scratch2,[S('fred'),7,S('pebbles')]]
+            ]
+
+    def testIfWithElseStmt(self):
+        ifScratch=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('if'),
+                  [S('<'),S('n'),10],
+                  [S('barney'),9,S('bam-bam')],
+                  [S('fred'),7,S('pebbles')],
+                  ],
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S(':='),ifScratch,[S('<'),S('n'),10]],
+            [S('if'),
+             ifScratch,
+             [S('barney'),9,S('bam-bam')],
+             [S('fred'),7,S('pebbles')]
+             ]
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
