@@ -534,9 +534,10 @@ class ReduceTestCase(unittest.TestCase):
             ]
 
     def testIfWithElseExpr(self):
-        return
-        ifScratch=gensym('if')
+        scratch1=gensym('scratch')
         scratch2=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch4=gensym('scratch')
         gensym.nextId=1
         x=self.r([S('if'),
                        [S('<'),S('n'),10],
@@ -544,13 +545,18 @@ class ReduceTestCase(unittest.TestCase):
                        [S('fred'),7,S('pebbles')],
                        ],
                       False)
-        print(x)
-        print (self.stmts)
-        assert x==scratch2
-        assert self.stmts==[S('if'),
-            [S(':='),ifScratch,[S('<'),S('n'),10]],
-            [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
-            [S(':='),scratch2,[S('fred'),7,S('pebbles')]]
+        assert x==ifScratch
+        assert self.stmts==[
+            [S(':='),scratch1,[S('<'),S('n'),10]],
+            [S('if'),
+             scratch1,
+             [S('begin'),
+              [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
+              [S(':='),ifScratch,scratch2]],
+             [S('begin'),
+              [S(':='),scratch4,[S('fred'),7,S('pebbles')]],
+              [S(':='),ifScratch,scratch4]],
+             ],
             ]
 
     def testIfWithElseStmt(self):
@@ -570,6 +576,26 @@ class ReduceTestCase(unittest.TestCase):
              [S('barney'),9,S('bam-bam')],
              [S('fred'),7,S('pebbles')]
              ]
+            ]
+
+    def testWhileExpr(self):
+        return
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('if'),
+                       [S('<'),S('n'),10],
+                       [S('barney'),9,S('bam-bam')],
+                       [S('fred'),7,S('pebbles')],
+                       ],
+                      False)
+        print(x)
+        print (self.stmts)
+        assert x==scratch2
+        assert self.stmts==[S('if'),
+            [S(':='),ifScratch,[S('<'),S('n'),10]],
+            [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
+            [S(':='),scratch2,[S('fred'),7,S('pebbles')]]
             ]
 
 class CompyleTestCase(unittest.TestCase):
