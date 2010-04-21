@@ -1478,7 +1478,6 @@ class ReduceWhile:
 
 class ReduceDefun:
     def reduce(self,gomer,isStmt,stmtCollector):
-        #pdb.set_trace()
         name=gomer[1]
         argList=gomer[2]
         body=[]
