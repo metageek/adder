@@ -762,7 +762,6 @@ class ReduceTestCase(unittest.TestCase):
                  True)
 
         assert x is None
-        gensym.nextId=1
 
         assert self.stmts==[
              [S(':='),S('x'),9],
@@ -779,7 +778,6 @@ class ReduceTestCase(unittest.TestCase):
                  False)
 
         assert x==S('z')
-        gensym.nextId=1
 
         assert self.stmts==[
              [S(':='),S('x'),9],
@@ -792,7 +790,6 @@ class ReduceTestCase(unittest.TestCase):
                  True)
 
         assert x is None
-        gensym.nextId=1
 
         assert self.stmts==[
              [S(':='),S('z'),[S('*'),9,7]],
@@ -803,10 +800,31 @@ class ReduceTestCase(unittest.TestCase):
                  False)
 
         assert x==S('z')
-        gensym.nextId=1
 
         assert self.stmts==[
              [S(':='),S('z'),[S('*'),9,7]],
+            ]
+
+    def testImportStmt(self):
+        x=self.r([S('import'),S('re'),S('adder.runtime')],
+                 True)
+
+        assert x is None
+
+        assert self.stmts==[
+            [S('import'),S('re')],
+            [S('import'),S('adder.runtime')],
+            ]
+
+    def testImportExpr(self):
+        x=self.r([S('import'),S('re'),S('adder.runtime')],
+                 False)
+
+        assert x==S('adder.runtime')
+
+        assert self.stmts==[
+            [S('import'),S('re')],
+            [S('import'),S('adder.runtime')],
             ]
 
 class CompyleTestCase(unittest.TestCase):

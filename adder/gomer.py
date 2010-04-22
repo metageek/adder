@@ -1539,12 +1539,23 @@ class ReduceBegin(Reducer):
         if not isStmt:
             return lastExpr
 
+class ReduceImport(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        last=None
+        for module in gomer[1:]:
+            assert isinstance(module,S)
+            stmtCollector([S('import'),module])
+            last=module
+        if not isStmt:
+            return last
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
                 S('lambda') : ReduceLambda(),
                 S(':=') : ReduceAssign(),
                 S('begin') : ReduceBegin(),
+                S('import') : ReduceImport(),
                 }
 reduceDefault=ReduceDefault()
 

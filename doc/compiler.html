@@ -152,9 +152,12 @@
 </li>
 <li>begin := (begin $var*)
 </li>
-<li>stmt := return | yield | try | raise
-      | if | while | def | break | continue | pass | begin
-      | fcall | assign
+<li>import := (import $var)
+</li>
+
+<li>stmt := $return | $yield | $try | $raise
+      | $if | $while | $def | $break | $continue | $pass | $begin
+      | $fcall | $assign | $import
 </li>
 </ul>
 
@@ -170,9 +173,8 @@
 
 <dl>
 <dt>begin</dt>
-
 <dt>import</dt>
-<dd>TODO</dd>
+
 <dt>defvar</dt>
 <dd>TODO</dd>
 
