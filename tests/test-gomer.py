@@ -581,7 +581,6 @@ class ReduceTestCase(unittest.TestCase):
     def testWhileExpr(self):
         whileScratch=gensym('while')
         condScratch=gensym('scratch')
-        scratch3=gensym('scratch')
         gensym.nextId=1
         x=self.r([S('while'),
                        [S('<'),S('n'),10],
@@ -595,8 +594,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              condScratch,
              [S('begin'),
-              [S(':='),scratch3,[S('+'),S('n'),1]],
-              [S(':='),S('n'),scratch3],
+              [S(':='),S('n'),[S('+'),S('n'),1]],
               [S(':='),whileScratch,S('n')],
               [S(':='),condScratch,[S('<'),S('n'),10]]
               ]
@@ -605,7 +603,6 @@ class ReduceTestCase(unittest.TestCase):
 
     def testWhileStmt(self):
         condScratch=gensym('scratch')
-        scratch2=gensym('scratch')
         gensym.nextId=1
         x=self.r([S('while'),
                   [S('<'),S('n'),10],
@@ -618,8 +615,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              condScratch,
              [S('begin'),
-              [S(':='),scratch2,[S('+'),S('n'),1]],
-              [S(':='),S('n'),scratch2],
+              [S(':='),S('n'),[S('+'),S('n'),1]],
               [S(':='),condScratch,[S('<'),S('n'),10]]
               ]
              ]
@@ -756,6 +752,34 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert not self.stmts
+
+    def testBegin(self):
+        x=self.r([S('begin'),
+                  [S(':='),S('x'),9],
+                  [S(':='),S('y'),7],
+                  [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+                  ],
+                 True)
+
+        assert x is None
+        gensym.nextId=1
+
+        assert self.stmts==[
+             [S(':='),S('x'),9],
+             [S(':='),S('y'),7],
+             [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+            ]
+
+    def testAssignStmt(self):
+        x=self.r([S(':='),S('z'),[S('*'),9,7]],
+                 True)
+
+        assert x is None
+        gensym.nextId=1
+
+        assert self.stmts==[
+             [S(':='),S('z'),[S('*'),9,7]],
+            ]
 
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):

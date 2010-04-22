@@ -1503,10 +1503,48 @@ class ReduceLambda(Reducer):
         reduce([S('defun'),name]+gomer[1:],True,stmtCollector)
         return name
 
+class ReduceAssign(Reducer):
+    def isSimple(self,rhs):
+        if not isinstance(rhs,list):
+            return True
+        assert rhs
+        if rhs[0] in reductionRules:
+            return False
+        for arg in rhs[1:]:
+            if isinstance(arg,list):
+                return False
+        return True
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        lhs=gomer[1]
+        rhs=gomer[2]
+        assert isinstance(lhs,S) # Have to deal with members later
+        if self.isSimple(rhs):
+            stmtCollector(gomer)
+        else:
+            rhsExpr=reduce(rhs,False,stmtCollector)
+            stmtCollector([S(':='),lhs,rhsExpr])
+        if not isStmt:
+            return lhs
+
+class ReduceBegin(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        parts=gomer[1:]
+        if not parts:
+            return None
+
+        for p in parts[:-1]:
+            reduce(p,True,stmtCollector)
+        lastExpr=reduce(parts[-1],isStmt,stmtCollector)
+        if not isStmt:
+            return lastExpr
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
                 S('lambda') : ReduceLambda(),
+                S(':=') : ReduceAssign(),
+                S('begin') : ReduceBegin(),
                 }
 reduceDefault=ReduceDefault()
 
@@ -1525,14 +1563,10 @@ def reduce(gomer,isStmt,stmtCollector):
         if isinstance(gomer,list):
             stmtCollector(gomer)
     else:
-        if isinstance(gomer,list):
-            if gomer[0]==S(':='):
-                stmtCollector(gomer)
-                gomer=gomer[1]
-            else:
-                scratch=gensym('scratch')
-                stmtCollector([S(':='),scratch,gomer])
-                gomer=scratch
+        if isinstance(gomer,list) and gomer[0]!=S(':='):
+            scratch=gensym('scratch')
+            stmtCollector([S(':='),scratch,gomer])
+            gomer=scratch
         return gomer
 
 def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):
