@@ -753,7 +753,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
         assert not self.stmts
 
-    def testBegin(self):
+    def testBeginStmt(self):
         x=self.r([S('begin'),
                   [S(':='),S('x'),9],
                   [S(':='),S('y'),7],
@@ -770,11 +770,39 @@ class ReduceTestCase(unittest.TestCase):
              [S(':='),S('z'),[S('*'),S('x'),S('y')]],
             ]
 
+    def testBeginExpr(self):
+        x=self.r([S('begin'),
+                  [S(':='),S('x'),9],
+                  [S(':='),S('y'),7],
+                  [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+                  ],
+                 False)
+
+        assert x==S('z')
+        gensym.nextId=1
+
+        assert self.stmts==[
+             [S(':='),S('x'),9],
+             [S(':='),S('y'),7],
+             [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+            ]
+
     def testAssignStmt(self):
         x=self.r([S(':='),S('z'),[S('*'),9,7]],
                  True)
 
         assert x is None
+        gensym.nextId=1
+
+        assert self.stmts==[
+             [S(':='),S('z'),[S('*'),9,7]],
+            ]
+
+    def testAssignExpr(self):
+        x=self.r([S(':='),S('z'),[S('*'),9,7]],
+                 False)
+
+        assert x==S('z')
         gensym.nextId=1
 
         assert self.stmts==[
