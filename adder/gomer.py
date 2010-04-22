@@ -1558,6 +1558,18 @@ class ReduceAtom(Reducer):
         assert len(gomer)==1
         stmtCollector([self.name])
 
+class ReduceQuote(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        if isStmt:
+            return
+        assert len(gomer)==2
+        if gomer[1] is None:
+            return gomer[1]
+        for t in [bool,int,float,str]:
+            if isinstance(gomer[1],t):
+                return gomer[1]
+        return gomer
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1567,6 +1579,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('import') : ReduceImport(),
                 S('break') : ReduceAtom('break'),
                 S('continue') : ReduceAtom('continue'),
+                S('quote') : ReduceQuote(),
                 }
 reduceDefault=ReduceDefault()
 

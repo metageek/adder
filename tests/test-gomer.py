@@ -472,7 +472,9 @@ class ReduceTestCase(unittest.TestCase):
         self.stmts=None
 
     def r(self,gomer,isStmt):
-        return reduce(gomer,isStmt,self.stmts.append)
+        res=reduce(gomer,isStmt,self.stmts.append)
+        gensym.nextId=1
+        return res
 
     def testIntExpr(self):
         assert self.r(7,False)==7
@@ -886,6 +888,52 @@ class ReduceTestCase(unittest.TestCase):
             [S('import'),S('re')],
             [S('import'),S('adder.runtime')],
             ]
+
+    def testQuoteIntExpr(self):
+        x=self.r([S('quote'),9],
+                 False)
+
+        assert x==9
+        assert not self.stmts
+
+    def testQuoteNoneExpr(self):
+        x=self.r([S('quote'),None],
+                 False)
+
+        assert x is None
+        assert not self.stmts
+
+    def testQuoteListExpr(self):
+        x=self.r([S('quote'),[1,2,3]],
+                 False)
+
+        scratch=gensym('scratch')
+
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('quote'),[1,2,3]]]
+            ]
+
+    def testQuoteIntStmt(self):
+        x=self.r([S('quote'),9],
+                 True)
+
+        assert x is None
+        assert not self.stmts
+
+    def testQuoteNoneStmt(self):
+        x=self.r([S('quote'),None],
+                 True)
+
+        assert x is None
+        assert not self.stmts
+
+    def testQuoteListStmt(self):
+        x=self.r([S('quote'),[1,2,3]],
+                 True)
+
+        assert x is None
+        assert not self.stmts
 
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):

@@ -122,8 +122,12 @@
 <p>The syntax is as follows:</p>
 
 <ul>
-<li>simple := $var | $literal
-</li>
+<li>symbol := [instance of adder.common.Symbol]</li>
+<li>literal := [instance of int, str, float, or bool]</li>
+<li>list := [instance of list]</li>
+<li>var := $symbol</li>
+<li>any := $var | $literal | $list</li>
+<li>simple := $var | $literal</li>
 <li>fcall := (:= $var ($var $simple*))
 </li>
 <li>assign := (:= $var $simple)
@@ -137,6 +141,8 @@
 <li>raise := (raise $var)
 </li>
 <li>reraise := (reraise)
+</li>
+<li>quote := (quote $any)
 </li>
 <li>if := (if $simple $stmt $stmt?)
 </li>
