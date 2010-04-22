@@ -1,25 +1,7 @@
 # And intermediate form for use in compiling Gomer to Pyle.  Inspired
 #  by 3-address form.  The main characteristic is that there are no
-#  function arguments which include function calls.  So:
-#
-#   list<x> := "" | ( x ("," x)* )
-#   simple := var | literal
-#   fcall := var "=" var "(" list<simple> ( "," var "=" simple )* ")"
-#   assign := var "=" simple
-#   return := "return" simple
-#   yield := "yield" simple
-#   try := "try" stmt ("except" var var stmt)* ("finally" stmt)?
-#   raise := "raise" var
-#   reraise := "reraise"
-#   if := "if" simple "then" stmt ["else" stmt]
-#   while := "while" simple stmt
-#   def := "def" var "(" list<var> [ ",*" ("," var)+] ")" stmt
-#   break := "break"
-#   continue := "continue"
-#   pass := "pass"
-#   stmt := fcall | assign | return | yield | try | raise
-#         | if | while | def | break | continue | pass
-#         | list<stmt>
+#  function arguments which include function calls.  See
+#  doc/compiler.html for the syntax.
 
 from adder.common import Symbol as S
 

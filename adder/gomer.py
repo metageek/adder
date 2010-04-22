@@ -1419,7 +1419,7 @@ class Reducer:
     def reduce(self,gomer,isStmt,stmtCollector):
         pass
 
-class ReduceDefault:
+class ReduceDefault(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         def reduceArg(i):
             return reduce(gomer[i],
@@ -1427,7 +1427,7 @@ class ReduceDefault:
                           stmtCollector)
         return list(map(reduceArg,range(len(gomer))))
 
-class ReduceIf:
+class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
         condExpr=reduce(gomer[1],False,stmtCollector)
@@ -1451,7 +1451,7 @@ class ReduceIf:
                            maybeBegin(thenBody)])
         return scratch
 
-class ReduceWhile:
+class ReduceWhile(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer)>=2
         if isStmt:
@@ -1476,7 +1476,7 @@ class ReduceWhile:
         stmtCollector([S('while'),condExpr,maybeBegin(body)])
         return scratch
 
-class ReduceDefun:
+class ReduceDefun(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         name=gomer[1]
         argList=gomer[2]
@@ -1495,7 +1495,7 @@ class ReduceDefun:
         if not isStmt:
             return name
 
-class ReduceLambda:
+class ReduceLambda(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         if isStmt:
             return None
