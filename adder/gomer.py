@@ -1467,7 +1467,7 @@ class ReduceWhile(Reducer):
         bodyExpr=None
         for (i,b) in enumerate(gomer[2:]):
             bodyExpr=reduce(b,
-                            (i+2)<(len(gomer)-1),
+                            isStmt or ((i+2)<(len(gomer)-1)),
                             body.append)
         if body and not isStmt:
             body.append([S(':='),scratch,bodyExpr])
@@ -1549,6 +1549,15 @@ class ReduceImport(Reducer):
         if not isStmt:
             return last
 
+class ReduceAtom(Reducer):
+    def __init__(self,name):
+        self.name=S(name)
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert isStmt
+        assert len(gomer)==1
+        stmtCollector([self.name])
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1556,6 +1565,8 @@ reductionRules={S('if') : ReduceIf(),
                 S(':=') : ReduceAssign(),
                 S('begin') : ReduceBegin(),
                 S('import') : ReduceImport(),
+                S('break') : ReduceAtom('break'),
+                S('continue') : ReduceAtom('continue'),
                 }
 reduceDefault=ReduceDefault()
 

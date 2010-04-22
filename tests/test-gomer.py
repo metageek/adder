@@ -621,6 +621,66 @@ class ReduceTestCase(unittest.TestCase):
              ]
             ]
 
+    def testWhileStmtWithBreak(self):
+        whileCondScratch=gensym('scratch')
+        ifCondScratch=gensym('scratch')
+        gensym.nextId=1
+        src=[S('while'),
+                  [S('<'),S('n'),10],
+                  [S(':='),S('n'),[S('+'),S('n'),1]],
+                  [S('if'),[S('=='),S('n'),7],
+                   [S('break')]
+                   ]
+                  ]
+        x=self.r(src,
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+            [S('while'),
+             whileCondScratch,
+             [S('begin'),
+              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),ifCondScratch,[S('=='),S('n'),7]],
+              [S('if'),
+               ifCondScratch,
+               [S('break')]
+               ],
+              [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+              ]
+             ]
+            ]
+
+    def testWhileStmtWithContinue(self):
+        whileCondScratch=gensym('scratch')
+        ifCondScratch=gensym('scratch')
+        gensym.nextId=1
+        src=[S('while'),
+                  [S('<'),S('n'),10],
+                  [S(':='),S('n'),[S('+'),S('n'),1]],
+                  [S('if'),[S('=='),S('n'),7],
+                   [S('continue')]
+                   ]
+                  ]
+        x=self.r(src,
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+            [S('while'),
+             whileCondScratch,
+             [S('begin'),
+              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),ifCondScratch,[S('=='),S('n'),7]],
+              [S('if'),
+               ifCondScratch,
+               [S('continue')]
+               ],
+              [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+              ]
+             ]
+            ]
+
     def testDefunStmt(self):
         x=self.r([S('defun'),S('fact'),[S('n')],
                   [S('if'),
