@@ -983,6 +983,75 @@ class ReduceTestCase(unittest.TestCase):
             [S('yield'),scratch],
             ]
 
+    def testAnd0Expr(self):
+        x=self.r([S('and')],
+                 False)
+
+        assert x is True
+        assert not self.stmts
+
+    def testAnd1Expr(self):
+        x=self.r([S('and'),S('x')],
+                 False)
+
+        assert x==S('x')
+        assert not self.stmts
+
+    def testAnd2Expr(self):
+        x=self.r([S('and'),S('x'),S('y')],
+                 False)
+
+        scratch=gensym('scratch')
+        ifScratch=gensym('if')
+        assert x==ifScratch
+        assert self.stmts==[
+            [S(':='),scratch,S('x')],
+            [S('if'),scratch,
+             [S(':='),ifScratch,scratch],
+             [S(':='),ifScratch,S('y')],
+             ]
+            ]
+
+    def testAnd2Stmt(self):
+        x=self.r([S('and'),[S('f'),1],[S('f'),2]],
+                 True)
+
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),1]],
+            [S('if'),scratch,
+             [S('begin')],
+             [S('f'),2],
+             ]
+            ]
+
+    def testAnd3Expr(self):
+        x=self.r([S('and'),S('x'),S('y'),S('z')],
+                 False)
+
+        condScratch1=gensym('scratch')
+        ifScratch1=gensym('if')
+        condScratch2=gensym('scratch')
+        ifScratch2=gensym('if')
+        assert x==ifScratch1
+        expected=[
+            [S(':='),condScratch1,S('x')],
+            [S('if'),condScratch1,
+             [S(':='),ifScratch1,condScratch1],
+             [S('begin'),
+              [S(':='),condScratch2,S('y')],
+              [S('if'),condScratch2,
+               [S(':='),ifScratch2,condScratch2],
+               [S(':='),ifScratch2,S('z')]
+               ],
+              [S(':='),ifScratch1,ifScratch2]
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]

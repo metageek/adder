@@ -1592,6 +1592,22 @@ class ReduceYield(Reducer):
         if not isStmt:
             return expr
 
+class ReduceAnd(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        if len(gomer)==1:
+            if isStmt:
+                return
+            else:
+                return True
+        if len(gomer)==2:
+            return reduce(gomer[1],isStmt,stmtCollector)
+        scratch=gensym('scratch')
+        return reduce([S('if'),
+                       [S(':='),scratch,gomer[1]],
+                       scratch,
+                       [S('and')]+gomer[2:]],
+                      isStmt,stmtCollector)
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1604,6 +1620,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('quote') : ReduceQuote(),
                 S('return') : ReduceReturn(),
                 S('yield') : ReduceYield(),
+                S('and') : ReduceAnd(),
                 }
 reduceDefault=ReduceDefault()
 
