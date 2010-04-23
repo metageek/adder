@@ -142,6 +142,7 @@
 </li>
 <li>reraise := (reraise)
 </li>
+<li>binop := (binop $var $simple $simple)</li>
 <li>quote := (quote $any)
 </li>
 <li>if := (if $simple $stmt $stmt?)
@@ -164,9 +165,9 @@
 <li>dot := (. $simple ($var)*)
 </li>
 
-<li>stmt := $return | $yield | $try | $raise
+<li>stmt := $return | $yield | $try | $raise | $reraise
       | $if | $while | $def | $break | $continue | $pass | $begin
-      | $assign | $import | $dot
+      | $assign | $import | $dot | $binop | $quote
       | $fcall
 </li>
 </ul>

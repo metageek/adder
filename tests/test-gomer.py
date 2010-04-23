@@ -1308,6 +1308,56 @@ class ReduceTestCase(unittest.TestCase):
             [S('print'),5,scratch]
             ]
 
+    def testPlus0Expr(self):
+        x=self.r([S('+')],
+                 False)
+
+        assert x==0
+        assert not self.stmts
+
+    def testPlus1VarExpr(self):
+        x=self.r([S('+'),5],
+                 False)
+
+        assert x==5
+        assert not self.stmts
+
+    def testPlus1FExpr(self):
+        x=self.r([S('+'),[S('f'),7]],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),7]],
+            ]
+
+    def testPlus2Expr(self):
+        x=self.r([S('+'),5,[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('+'),5,scratch1]],
+            ]
+
+    def testPlus3Expr(self):
+        x=self.r([S('+'),5,[S('f'),7],9],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        assert x==scratch3
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('+'),scratch1,9]],
+            [S(':='),scratch3,[S('binop'),S('+'),5,scratch2]],
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
@@ -1628,7 +1678,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(BuildTestCase,'test'),
-      unittest.makeSuite(ReduceTestCase,'test'),
+      unittest.makeSuite(ReduceTestCase,'testPlus'),
       unittest.makeSuite(CompyleTestCase,'test'),
      )
     )

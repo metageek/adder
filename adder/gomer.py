@@ -1662,6 +1662,25 @@ class ReducePrint(Reducer):
         if not isStmt:
             return expr
 
+class ReduceAdditiveBinop(Reducer):
+    def __init__(self,op,identity):
+        self.op=op
+        self.identity=identity
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        def expr():
+            if len(gomer)==1:
+                return self.identity
+            op1=reduce(gomer[1],False,stmtCollector)
+            if len(gomer)==2:
+                return op1
+            return [S('binop'),self.op,op1,
+                    reduce([self.op]+gomer[2:],False,stmtCollector)
+                    ]
+        e=expr()
+        if not isStmt:
+            return e
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1679,6 +1698,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('.') : ReduceDot(),
                 S('raise') : ReduceRaise(),
                 S('print') : ReducePrint(),
+                S('+') : ReduceAdditiveBinop(S('+'),0),
                 }
 reduceDefault=ReduceDefault()
 
