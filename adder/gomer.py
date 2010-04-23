@@ -1570,6 +1570,28 @@ class ReduceQuote(Reducer):
                 return gomer[1]
         return gomer
 
+class ReduceReturn(Reducer):
+    # Always make (return) a statment.  If you use it as an expr,
+    #  it'll get put into the statement stream in the correct
+    #  order.  Of course, it *can't* have a value, since it skips
+    #  past the value, so it doesn't matter what we return as the
+    #  expr code.  So we don't, and let the caller get None.
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer)==2
+        stmtCollector([S('return'),reduce(gomer[1],False,stmtCollector)])
+
+class ReduceYield(Reducer):
+    # Python yield has to be a statement; Adder (yield) does not.  If
+    #  you use it as an expr, it'll get put into the statement stream
+    #  in the correct order, and the value yielded will be used as
+    #  the value of the expr.
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer)==2
+        expr=reduce(gomer[1],False,stmtCollector)
+        stmtCollector([S('yield'),expr])
+        if not isStmt:
+            return expr
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1580,6 +1602,8 @@ reductionRules={S('if') : ReduceIf(),
                 S('break') : ReduceAtom('break'),
                 S('continue') : ReduceAtom('continue'),
                 S('quote') : ReduceQuote(),
+                S('return') : ReduceReturn(),
+                S('yield') : ReduceYield(),
                 }
 reduceDefault=ReduceDefault()
 

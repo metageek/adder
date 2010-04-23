@@ -935,6 +935,54 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
         assert not self.stmts
 
+    def testReturnStmt(self):
+        x=self.r([S('return'),[S('*'),9,7]],
+                 True)
+
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('*'),9,7]],
+            [S('return'),scratch],
+            ]
+
+    def testReturnExpr(self):
+        x=self.r([S('return'),[S('*'),9,7]],
+                 False)
+
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('*'),9,7]],
+            [S('return'),scratch],
+            ]
+
+    def testYieldStmt(self):
+        x=self.r([S('yield'),[S('*'),9,7]],
+                 True)
+
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('*'),9,7]],
+            [S('yield'),scratch],
+            ]
+
+    def testYieldExpr(self):
+        x=self.r([S('yield'),[S('*'),9,7]],
+                 False)
+
+        scratch=gensym('scratch')
+
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('*'),9,7]],
+            [S('yield'),scratch],
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
