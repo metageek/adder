@@ -1001,14 +1001,12 @@ class ReduceTestCase(unittest.TestCase):
         x=self.r([S('and'),S('x'),S('y')],
                  False)
 
-        scratch=gensym('scratch')
         ifScratch=gensym('if')
         assert x==ifScratch
         assert self.stmts==[
-            [S(':='),scratch,S('x')],
-            [S('if'),scratch,
-             [S(':='),ifScratch,scratch],
+            [S('if'),S('x'),
              [S(':='),ifScratch,S('y')],
+             [S(':='),ifScratch,S('x')],
              ]
             ]
 
@@ -1022,8 +1020,8 @@ class ReduceTestCase(unittest.TestCase):
         assert self.stmts==[
             [S(':='),scratch,[S('f'),1]],
             [S('if'),scratch,
-             [S('begin')],
              [S('f'),2],
+             [S('begin')],
              ]
             ]
 
@@ -1031,25 +1029,84 @@ class ReduceTestCase(unittest.TestCase):
         x=self.r([S('and'),S('x'),S('y'),S('z')],
                  False)
 
-        condScratch1=gensym('scratch')
         ifScratch1=gensym('if')
-        condScratch2=gensym('scratch')
         ifScratch2=gensym('if')
-        assert x==ifScratch1
         expected=[
-            [S(':='),condScratch1,S('x')],
-            [S('if'),condScratch1,
-             [S(':='),ifScratch1,condScratch1],
+            [S('if'),S('x'),
              [S('begin'),
-              [S(':='),condScratch2,S('y')],
-              [S('if'),condScratch2,
-               [S(':='),ifScratch2,condScratch2],
+              [S('if'),S('y'),
+               [S(':='),ifScratch1,S('z')],
+               [S(':='),ifScratch1,S('y')]
+               ],
+              [S(':='),ifScratch2,ifScratch1]
+              ],
+             [S(':='),ifScratch2,S('x')]
+             ]
+            ]
+        assert x==ifScratch2
+        assert self.stmts==expected
+
+    def testOr0Expr(self):
+        x=self.r([S('or')],
+                 False)
+
+        assert x is False
+        assert not self.stmts
+
+    def testOr1Expr(self):
+        x=self.r([S('or'),S('x')],
+                 False)
+
+        assert x==S('x')
+        assert not self.stmts
+
+    def testOr2Expr(self):
+        x=self.r([S('or'),S('x'),S('y')],
+                 False)
+
+        ifScratch=gensym('if')
+        assert x==ifScratch
+        assert self.stmts==[
+            [S('if'),S('x'),
+             [S(':='),ifScratch,S('x')],
+             [S(':='),ifScratch,S('y')],
+             ]
+            ]
+
+    def testOr2Stmt(self):
+        x=self.r([S('or'),[S('f'),1],[S('f'),2]],
+                 True)
+
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),1]],
+            [S('if'),scratch,
+             [S('begin')],
+             [S('f'),2],
+             ]
+            ]
+
+    def testOr3Expr(self):
+        x=self.r([S('or'),S('x'),S('y'),S('z')],
+                 False)
+
+        ifScratch1=gensym('if')
+        ifScratch2=gensym('if')
+        expected=[
+            [S('if'),S('x'),
+             [S(':='),ifScratch1,S('x')],
+             [S('begin'),
+              [S('if'),S('y'),
+               [S(':='),ifScratch2,S('y')],
                [S(':='),ifScratch2,S('z')]
                ],
               [S(':='),ifScratch1,ifScratch2]
               ]
              ]
             ]
+        assert x==ifScratch1
         assert self.stmts==expected
 
 class CompyleTestCase(unittest.TestCase):

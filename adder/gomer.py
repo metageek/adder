@@ -1601,11 +1601,29 @@ class ReduceAnd(Reducer):
                 return True
         if len(gomer)==2:
             return reduce(gomer[1],isStmt,stmtCollector)
-        scratch=gensym('scratch')
+        cond=reduce(gomer[1],False,stmtCollector)
         return reduce([S('if'),
-                       [S(':='),scratch,gomer[1]],
-                       scratch,
-                       [S('and')]+gomer[2:]],
+                       cond,
+                       [S('and')]+gomer[2:],
+                       cond
+                       ],
+                      isStmt,stmtCollector)
+
+class ReduceOr(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        if len(gomer)==1:
+            if isStmt:
+                return
+            else:
+                return False
+        if len(gomer)==2:
+            return reduce(gomer[1],isStmt,stmtCollector)
+        cond=reduce(gomer[1],False,stmtCollector)
+        return reduce([S('if'),
+                       cond,
+                       cond,
+                       [S('or')]+gomer[2:]
+                       ],
                       isStmt,stmtCollector)
 
 reductionRules={S('if') : ReduceIf(),
@@ -1621,6 +1639,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('return') : ReduceReturn(),
                 S('yield') : ReduceYield(),
                 S('and') : ReduceAnd(),
+                S('or') : ReduceOr(),
                 }
 reduceDefault=ReduceDefault()
 
