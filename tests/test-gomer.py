@@ -1109,6 +1109,127 @@ class ReduceTestCase(unittest.TestCase):
         assert x==ifScratch1
         assert self.stmts==expected
 
+    def testVarDot0Expr(self):
+        x=self.r([S('.'),S('x')],
+                 False)
+
+        assert x==S('x')
+        assert not self.stmts
+
+    def testVarDot1Expr(self):
+        x=self.r([S('.'),S('x'),S('y')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('.'),S('x'),S('y')]]
+            ]
+
+    def testVarDot2Expr(self):
+        x=self.r([S('.'),S('x'),S('y'),S('z')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('.'),S('x'),S('y'),S('z')]]
+            ]
+
+    # F. Dot Fitzgerald
+    def testFDot0Expr(self):
+        x=self.r([S('.'),[S('f'),7]],
+                 False)
+        scratch=gensym('scratch')
+
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,
+             [S('f'),7]],
+            ]
+
+    def testFDot1Expr(self):
+        x=self.r([S('.'),[S('f'),7],S('y')],
+                 False)
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,
+             [S('f'),7]],
+            [S(':='),scratch2,
+             [S('.'),scratch1,S('y')]]
+            ]
+
+    def testFDot2Expr(self):
+        x=self.r([S('.'),[S('f'),7],S('y'),S('z')],
+                 False)
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,
+             [S('f'),7]],
+            [S(':='),scratch2,
+             [S('.'),scratch1,S('y'),S('z')]]
+            ]
+
+    def testVarDot0Stmt(self):
+        x=self.r([S('.'),S('x')],
+                 True)
+
+        assert x is None
+        assert not self.stmts
+
+    def testVarDot1Stmt(self):
+        x=self.r([S('.'),S('x'),S('y')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testVarDot2Stmt(self):
+        x=self.r([S('.'),S('x'),S('y'),S('z')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    # F. Dot Fitzgerald
+    def testFDot0Stmt(self):
+        x=self.r([S('.'),[S('f'),7]],
+                 True)
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S('f'),7]
+            ]
+
+    def testFDot1Stmt(self):
+        x=self.r([S('.'),[S('f'),7],S('y')],
+                 True)
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),7]]
+            ]
+
+    def testFDot2Stmt(self):
+        x=self.r([S('.'),[S('f'),7],S('y'),S('z')],
+                 True)
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),7]]
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]

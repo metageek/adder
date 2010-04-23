@@ -1626,6 +1626,23 @@ class ReduceOr(Reducer):
                        ],
                       isStmt,stmtCollector)
 
+class ReduceDot(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer)>1
+        if len(gomer)==2:
+            return reduce(gomer[1],isStmt,stmtCollector)
+        obj=reduce(gomer[1],False,stmtCollector)
+        if isStmt:
+            # x.y as a statement is a nop,
+            # But f().y as a statement is equiv to f().
+            return
+
+        res=[S('.'),obj]
+        for name in gomer[2:]:
+            assert isinstance(name,S)
+            res.append(name)
+        return res
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1640,6 +1657,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('yield') : ReduceYield(),
                 S('and') : ReduceAnd(),
                 S('or') : ReduceOr(),
+                S('.') : ReduceDot(),
                 }
 reduceDefault=ReduceDefault()
 
