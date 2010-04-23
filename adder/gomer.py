@@ -1643,6 +1643,14 @@ class ReduceDot(Reducer):
             res.append(name)
         return res
 
+class ReduceRaise(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer) in [1,2]
+        if len(gomer)==1:
+            stmtCollector([S('reraise')])
+        else:
+            stmtCollector([S('raise'),reduce(gomer[1],False,stmtCollector)])
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1658,6 +1666,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('and') : ReduceAnd(),
                 S('or') : ReduceOr(),
                 S('.') : ReduceDot(),
+                S('raise') : ReduceRaise(),
                 }
 reduceDefault=ReduceDefault()
 

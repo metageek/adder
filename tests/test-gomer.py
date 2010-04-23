@@ -1230,6 +1230,26 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('f'),7]]
             ]
 
+    def testRaise(self):
+        x=self.r([S('raise'),[S('f'),7]],
+                 True)
+        scratch=gensym('scratch')
+
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),7]],
+            [S('raise'),scratch]
+            ]
+
+    def testReraise(self):
+        x=self.r([S('raise')],
+                 True)
+
+        assert x is None
+        assert self.stmts==[
+            [S('reraise')]
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
