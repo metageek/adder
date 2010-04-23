@@ -596,7 +596,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              condScratch,
              [S('begin'),
-              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
               [S(':='),whileScratch,S('n')],
               [S(':='),condScratch,[S('<'),S('n'),10]]
               ]
@@ -617,7 +617,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              condScratch,
              [S('begin'),
-              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
               [S(':='),condScratch,[S('<'),S('n'),10]]
               ]
              ]
@@ -642,7 +642,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              whileCondScratch,
              [S('begin'),
-              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
               [S(':='),ifCondScratch,[S('=='),S('n'),7]],
               [S('if'),
                ifCondScratch,
@@ -672,7 +672,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('while'),
              whileCondScratch,
              [S('begin'),
-              [S(':='),S('n'),[S('+'),S('n'),1]],
+              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
               [S(':='),ifCondScratch,[S('=='),S('n'),7]],
               [S('if'),
                ifCondScratch,
@@ -1678,7 +1678,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ScopeTestCase,'test'),
       unittest.makeSuite(ExprTestCase,'test'),
       unittest.makeSuite(BuildTestCase,'test'),
-      unittest.makeSuite(ReduceTestCase,'testPlus'),
+      unittest.makeSuite(ReduceTestCase,'test'),
       unittest.makeSuite(CompyleTestCase,'test'),
      )
     )

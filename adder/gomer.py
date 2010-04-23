@@ -1522,7 +1522,7 @@ class ReduceAssign(Reducer):
         if self.isSimple(rhs):
             stmtCollector(gomer)
         else:
-            rhsExpr=reduce(rhs,False,stmtCollector)
+            rhsExpr=reduce(rhs,False,stmtCollector,inAssignment=True)
             stmtCollector([S(':='),lhs,rhsExpr])
         if not isStmt:
             return lhs
@@ -1708,7 +1708,7 @@ def getReducer(f):
     else:
         return reduceDefault
 
-def reduce(gomer,isStmt,stmtCollector):
+def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False):
     if isinstance(gomer,list):
         assert gomer
         reducer=getReducer(gomer[0])
@@ -1717,7 +1717,10 @@ def reduce(gomer,isStmt,stmtCollector):
         if isinstance(gomer,list):
             stmtCollector(gomer)
     else:
-        if isinstance(gomer,list) and gomer[0]!=S(':='):
+        if ((not inAssignment)
+            and isinstance(gomer,list)
+            and gomer[0]!=S(':=')
+            ):
             scratch=gensym('scratch')
             stmtCollector([S(':='),scratch,gomer])
             gomer=scratch
