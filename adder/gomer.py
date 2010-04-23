@@ -1651,6 +1651,17 @@ class ReduceRaise(Reducer):
         else:
             stmtCollector([S('raise'),reduce(gomer[1],False,stmtCollector)])
 
+class ReducePrint(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        expr=None
+        stmt=[S('print')]
+        for arg in gomer[1:]:
+            expr=reduce(arg,False,stmtCollector)
+            stmt.append(expr)
+        stmtCollector(stmt)
+        if not isStmt:
+            return expr
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1667,6 +1678,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('or') : ReduceOr(),
                 S('.') : ReduceDot(),
                 S('raise') : ReduceRaise(),
+                S('print') : ReducePrint(),
                 }
 reduceDefault=ReduceDefault()
 

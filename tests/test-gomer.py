@@ -1250,6 +1250,64 @@ class ReduceTestCase(unittest.TestCase):
             [S('reraise')]
             ]
 
+    def testPrint0Stmt(self):
+        x=self.r([S('print')],
+                 True)
+
+        assert x is None
+        assert self.stmts==[
+            [S('print')]
+            ]
+
+    def testPrint1Stmt(self):
+        x=self.r([S('print'),5],
+                 True)
+
+        assert x is None
+        assert self.stmts==[
+            [S('print'),5]
+            ]
+
+    def testPrint2Stmt(self):
+        x=self.r([S('print'),5,[S('x'),12]],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('x'),12]],
+            [S('print'),5,scratch]
+            ]
+
+    def testPrint0Expr(self):
+        x=self.r([S('print')],
+                 False)
+
+        assert x is None
+        assert self.stmts==[
+            [S('print')]
+            ]
+
+    def testPrint1Expr(self):
+        x=self.r([S('print'),5],
+                 False)
+
+        assert x==5
+        assert self.stmts==[
+            [S('print'),5]
+            ]
+
+    def testPrint2Expr(self):
+        x=self.r([S('print'),5,[S('x'),12]],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('x'),12]],
+            [S('print'),5,scratch]
+            ]
+
 class CompyleTestCase(unittest.TestCase):
     def setUp(self):
         self.stmts=[]
