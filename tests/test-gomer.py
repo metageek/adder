@@ -688,7 +688,7 @@ class ReduceTestCase(unittest.TestCase):
                   [S('if'),
                    [S('<'),S('n'),2],
                    1,
-                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   [S('binop'),S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
                    ]
                   ],
                  True)
@@ -710,9 +710,9 @@ class ReduceTestCase(unittest.TestCase):
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
-                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
                 [S(':='),scratch3,[S('fact'),scratch2]],
-                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
                ],
@@ -749,9 +749,9 @@ class ReduceTestCase(unittest.TestCase):
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
-                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
                 [S(':='),scratch3,[S('fact'),scratch2]],
-                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
                ],
@@ -790,9 +790,9 @@ class ReduceTestCase(unittest.TestCase):
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
-                [S(':='),scratch2,[S('-'),S('n'),1]],
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
                 [S(':='),scratch3,[S('fact'),scratch2]],
-                [S(':='),scratch4,[S('*'),S('n'),scratch3]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
                ],
@@ -828,7 +828,7 @@ class ReduceTestCase(unittest.TestCase):
         assert self.stmts==[
              [S(':='),S('x'),9],
              [S(':='),S('y'),7],
-             [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+             [S(':='),S('z'),[S('binop'),S('*'),S('x'),S('y')]],
             ]
 
     def testBeginExpr(self):
@@ -844,7 +844,7 @@ class ReduceTestCase(unittest.TestCase):
         assert self.stmts==[
              [S(':='),S('x'),9],
              [S(':='),S('y'),7],
-             [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+             [S(':='),S('z'),[S('binop'),S('*'),S('x'),S('y')]],
             ]
 
     def testAssignStmt(self):
@@ -854,7 +854,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
 
         assert self.stmts==[
-             [S(':='),S('z'),[S('*'),9,7]],
+             [S(':='),S('z'),[S('binop'),S('*'),9,7]],
             ]
 
     def testAssignExpr(self):
@@ -864,7 +864,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x==S('z')
 
         assert self.stmts==[
-             [S(':='),S('z'),[S('*'),9,7]],
+             [S(':='),S('z'),[S('binop'),S('*'),9,7]],
             ]
 
     def testImportStmt(self):
@@ -943,7 +943,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('*'),9,7]],
+            [S(':='),scratch,[S('binop'),S('*'),9,7]],
             [S('return'),scratch],
             ]
 
@@ -955,7 +955,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('*'),9,7]],
+            [S(':='),scratch,[S('binop'),S('*'),9,7]],
             [S('return'),scratch],
             ]
 
@@ -967,7 +967,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('*'),9,7]],
+            [S(':='),scratch,[S('binop'),S('*'),9,7]],
             [S('yield'),scratch],
             ]
 
@@ -979,7 +979,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x==scratch
         assert self.stmts==[
-            [S(':='),scratch,[S('*'),9,7]],
+            [S(':='),scratch,[S('binop'),S('*'),9,7]],
             [S('yield'),scratch],
             ]
 
@@ -1356,6 +1356,212 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch1,[S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('+'),scratch1,9]],
             [S(':='),scratch3,[S('binop'),S('+'),5,scratch2]],
+            ]
+
+    def testTimes0Expr(self):
+        x=self.r([S('*')],
+                 False)
+
+        assert x==1
+        assert not self.stmts
+
+    def testTimes1VarExpr(self):
+        x=self.r([S('*'),5],
+                 False)
+
+        assert x==5
+        assert not self.stmts
+
+    def testTimes1FExpr(self):
+        x=self.r([S('*'),[S('f'),7]],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('f'),7]],
+            ]
+
+    def testTimes2Expr(self):
+        x=self.r([S('*'),5,[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('*'),5,scratch1]],
+            ]
+
+    def testTimes3Expr(self):
+        x=self.r([S('*'),5,[S('f'),7],9],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        assert x==scratch3
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('*'),scratch1,9]],
+            [S(':='),scratch3,[S('binop'),S('*'),5,scratch2]],
+            ]
+
+    def testMinus0Expr(self):
+        x=self.r([S('-')],
+                 False)
+
+        assert x==0
+        assert not self.stmts
+
+    def testMinus1VarExpr(self):
+        x=self.r([S('-'),5],
+                 False)
+
+        assert x==-5
+        assert not self.stmts
+
+    def testMinus1FExpr(self):
+        x=self.r([S('-'),[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('-'),0,scratch1]],
+            ]
+
+    def testMinus2Expr(self):
+        x=self.r([S('-'),5,[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('-'),5,scratch1]],
+            ]
+
+    def testMinus3Expr(self):
+        x=self.r([S('-'),5,[S('f'),7],9],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        assert x==scratch3
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('-'),5,scratch1]],
+            [S(':='),scratch3,[S('binop'),S('-'),scratch2,9]],
+            ]
+
+    def testFdiv0Expr(self):
+        x=self.r([S('/')],
+                 False)
+
+        assert x==1
+        assert not self.stmts
+
+    def testFdiv1VarExpr(self):
+        x=self.r([S('/'),5],
+                 False)
+
+        assert x==1/5
+        assert not self.stmts
+
+    def testFdiv1FExpr(self):
+        x=self.r([S('/'),[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('/'),1,scratch1]],
+            ]
+
+    def testFdiv2Expr(self):
+        x=self.r([S('/'),5,[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('/'),5,scratch1]],
+            ]
+
+    def testFdiv3Expr(self):
+        x=self.r([S('/'),5,[S('f'),7],9],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        assert x==scratch3
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('/'),5,scratch1]],
+            [S(':='),scratch3,[S('binop'),S('/'),scratch2,9]],
+            ]
+
+    def testIdiv0Expr(self):
+        x=self.r([S('//')],
+                 False)
+
+        assert x==1
+        assert not self.stmts
+
+    def testIdiv1VarExpr(self):
+        x=self.r([S('//'),5],
+                 False)
+
+        assert x==0
+        assert not self.stmts
+
+    def testIdiv1FExpr(self):
+        x=self.r([S('//'),[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('//'),1,scratch1]],
+            ]
+
+    def testIdiv2Expr(self):
+        x=self.r([S('//'),5,[S('f'),7]],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
+            ]
+
+    def testIdiv3Expr(self):
+        x=self.r([S('//'),5,[S('f'),7],9],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        assert x==scratch3
+        assert self.stmts==[
+            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
+            [S(':='),scratch3,[S('binop'),S('//'),scratch2,9]],
             ]
 
 class CompyleTestCase(unittest.TestCase):
