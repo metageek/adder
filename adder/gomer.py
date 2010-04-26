@@ -1681,6 +1681,29 @@ class ReduceAdditiveBinop(Reducer):
         if not isStmt:
             return e
 
+class ReduceSubtractiveBinop(Reducer):
+    def __init__(self,op,identity):
+        self.op=op
+        self.identity=identiyt
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        def expr():
+            if len(gomer)==1:
+                return self.identity
+            op1=reduce(gomer[1],False,stmtCollector)
+            if len(gomer)==2:
+                return [S('binop'),self.op,self.identity,op1]
+            op2=reduce(gomer[2],False,stmtCollector)
+            if len(gomer)==2:
+                return [S('binop'),self.op,op1,op2]
+            return reduce([S('binop'),self.op,
+                           [S('binop'),self.op,op1,op2]
+                           ]+gomer[2:],
+                           isStmt,stmtCollector)
+        e=expr()
+        if not isStmt:
+            return e
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1699,6 +1722,10 @@ reductionRules={S('if') : ReduceIf(),
                 S('raise') : ReduceRaise(),
                 S('print') : ReducePrint(),
                 S('+') : ReduceAdditiveBinop(S('+'),0),
+                S('*') : ReduceAdditiveBinop(S('*'),1),
+                S('-') : ReduceAdditiveBinop(S('-'),1),
+                S('/') : ReduceAdditiveBinop(S('/'),1),
+                S('//') : ReduceAdditiveBinop(S('//'),1),
                 }
 reduceDefault=ReduceDefault()
 
