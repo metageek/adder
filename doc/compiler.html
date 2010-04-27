@@ -15,11 +15,10 @@
 
 <h2>The intermediate languages</h2>
 
-<p>The Adder compiler uses three intermediate languages: Gomer, Reg,
-  and Pyle.  Adder is reduced to Gomer, which is reduced to Reg, which
-  is then transliterated to Pyle, which is then transliterated to
-  Python.  I intend to fold the last two steps Real Soon Now.  Then
-  the current Pyle will go away, and Reg will be renamed Pyle.
+<p>The Adder compiler uses two intermediate languages: Gomer
+  and Pyle.  Adder is reduced to Gomer, which is reduced to Pyle,
+  which is then transliterated to
+  Python.
 </p>
 
 <h3>Gomer</h3>
@@ -98,9 +97,11 @@
 <dt>apply</dt>
 </dl>
 
-<h3>Reg</h3>
+<h3>Pyle</h3>
 
-<p>Reg is an IL loosely based on register-based instruction sets.  The
+<p>Pyle (Python Lisplike Encoding) encodes a subset of Python into
+ Lispy data structures.  As an IL, it's loosely based on
+  register-based instruction sets.  The
   main characteristic is that there are no function arguments which
   include function calls, to avoid the problems that arose when I was
   less careful about statements which appeared inside expressions.
@@ -110,7 +111,7 @@
   the goal.
 </p>
 
-<p>In Reg, the
+<p>In Pyle, the
   only legal arguments to a function are constants and variable
   names.  Most statement arguments, such as the body of
   a <code>(while)</code>, are limited to single statements; to use
@@ -173,9 +174,9 @@
 </li>
 </ul>
 
-<h4>Reducing Gomer to Reg</h4>
+<h4>Reducing Gomer to Pyle</h4>
 
-<p>Gomer is reduced to Reg via a series of reduction rules.  There's a
+<p>Gomer is reduced to Pyle via a series of reduction rules.  There's a
   default rule for Gomer functions; all other Gomer forms need their
   own rules.  Rules are implemented as subclasses of
   adder.gomer.Reducer.  The current state of rules:
@@ -309,24 +310,6 @@
 <dd>Default rule</dd>
 
 </dl>
-
-
-<h3>Pyle</h3>
-
-<p>Pyle (Python Lisplike Encoding) is an encoding of a subset of
-  Python in Lispy data structures.  It doesn't need to encode all of
-  Python; it just needs to be the subset that the Gomer compiler will
-  emit.  I could write the compiler to emit Python directly; but
-  emitting code as text always gets so chaotic.  This should be
-  better.
-</p>
-
-<p>At this writing, the encoding currently called Pyle is being phased
-  out, to be replaced by Reg.  To do this, Reg will need to get Pyle's
-  utilities for emitting Python code in a structured fashion.  Once
-  that's done, the old Pyle will go away, and Reg will be renamed
-  Pyle.  For clarity, of course.
-</p>
 
 </body>
 </html>
