@@ -24,155 +24,13 @@
 <h3>Gomer</h3>
 
 <p>Gomer is actually a subset of Adder, a core language with no
-  macros. Gomer expressions get built into ASTs, which are annotated
+  macros. <strike>Gomer expressions get built into ASTs, which are annotated
   with knowledge of lexical scopes (and probably other stuff,
-  eventually).
+  eventually).</strike> With the new version of Pyle, the process of
+  transforming Gomer to Pyle is purely context-free.  The intelligence
+  formerly embodied in the Gomer-to-Pyle translation is going to have
+  to move to the Adder-to-Gomer translation.
 </p>
-
-<h4>Gomer special forms</h4>
-
-<dl>
-<dt>begin</dt>
-<dt>import</dt>
-<dt>defvar</dt>
-<dt>defun</dt>
-<dt>if</dt>
-<dt>lambda</dt>
-<dt>scope</dt>
-<dt>quote</dt>
-<dt><strike>-gomer-</strike>try</dt>
-<dd><strike>Each except: clause takes just a single statement; multiple
-  statements require a (begin).  Adder will need a macro to do that
-  wrapping.</strike>
-</dd>
-<dt>while</dt>
-<dt>break</dt>
-<dt>continue</dt>
-<dt>yield</dt>
-<dt>return</dt>
-<dt>and</dt>
-<dd>TODO (done in Pyle)</dd>
-<dt>or</dt>
-<dd>TODO (done in Pyle)</dd>
-<dt>:=</dt>
-<dt>.</dt>
-</dl>
-
-<h4>Gomer functions</h4>
-
-<dl>
-<dt>raise</dt>
-<dt>exec-py</dt>
-<dt>print</dt>
-<dt>==</dt>
-<dt>!=</dt>
-<dt>&lt;=</dt>
-<dt>&lt;</dt>
-<dt>&gt;=</dt>
-<dt>&gt;</dt>
-<dt>+</dt>
-<dt>-</dt>
-<dt>*</dt>
-<dt>/</dt>
-<dt>//</dt>
-<dt>%</dt>
-<dt>in</dt>
-<dt>gensym</dt>
-<dt>[]</dt>
-<dt>getattr</dt>
-<dt>slice</dt>
-<dt>list</dt>
-<dt>tuple</dt>
-<dt>set</dt>
-<dt>dict</dt>
-<dt>isinstance</dt>
-<dt>mk-list</dt>
-<dt>mk-tuple</dt>
-<dt>mk-set</dt>
-<dt>mk-dict</dt>
-<dt>mk-symbol</dt>
-<dt>reverse</dt>
-<dt>stdenv</dt>
-<dd>TODO.  (Done, but wrong.)</dd>
-<dt>apply</dt>
-</dl>
-
-<h3>Pyle</h3>
-
-<p>Pyle (Python Lisplike Encoding) encodes a subset of Python into
- Lispy data structures.  As an IL, it's loosely based on
-  register-based instruction sets.  The
-  main characteristic is that there are no function arguments which
-  include function calls, to avoid the problems that arose when I was
-  less careful about statements which appeared inside expressions.
-  For example, the translation of
-  <code>(if a (:= b ([] a 0)) None)</code>, as an expression, used to
-  put the assignment statement before the if, which is obviously not
-  the goal.
-</p>
-
-<p>In Pyle, the
-  only legal arguments to a function are constants and variable
-  names.  Most statement arguments, such as the body of
-  a <code>(while)</code>, are limited to single statements; to use
-  multiple statements, wrap them in a <code>(begin)</code>&mdash;which
-  is the only exception to this rule; obviously, it has to support
-  multiple statement arguments.
-</p>
-
-<p>The syntax is as follows:</p>
-
-<ul>
-<li>symbol ::= [instance of adder.common.Symbol]</li>
-<li>literal ::= [instance of int, str, float, or bool]</li>
-<li>list ::= [instance of list]</li>
-<li>var ::= $symbol</li>
-<li>any ::= $var | $literal | $list</li>
-<li>simple ::= $var | $literal</li>
-<li>fcall ::= LIST($var $simple* (LIST($var $simple))*) TODO:
-  implement the keyword args
-</li>
-<li>assign ::= LIST(:= $var ($simple | $fcall | $binop | $dot | $quote))
-</li>
-<li>return ::= LIST(return $simple)
-</li>
-<li>yield ::= LIST(yield $simple)
-</li>
-<li>try ::= LIST(try $stmt LIST(:$var $var $stmt)* LIST(:finally $stmt)?)
-</li>
-<li>raise ::= LIST(raise $var)
-</li>
-<li>reraise ::= LIST(reraise)
-</li>
-<li>binop ::= LIST(binop $var $simple $simple)</li>
-<li>quote ::= LIST(quote $any)
-</li>
-<li>if ::= LIST(if $simple $stmt $stmt?)
-</li>
-<li>while ::= LIST(while $simple $stmt)
-</li>
-<li>def ::= LIST(def $var LIST($var*) $stmt)
-</li>
-<li>break ::= LIST(break)
-</li>
-<li>continue ::= LIST(continue)
-</li>
-<li>pass ::= LIST(pass)
-</li>
-<li>begin ::= LIST(begin $var*)
-</li>
-<li>import ::= LIST(import $var)
-</li>
-
-<li>dot ::= LIST(. $simple ($var)*)
-</li>
-
-<li>stmt ::= $return | $yield | $try | $raise | $reraise
-      | $if | $while | $def | $break | $continue | $pass | $begin
-      | $assign | $import
-      | $fcall
-</li>
-</ul>
 
 <h4>Reducing Gomer to Pyle</h4>
 
@@ -310,6 +168,83 @@
 <dd>Default rule</dd>
 
 </dl>
+
+<h3>Pyle</h3>
+
+<p>Pyle (Python Lisplike Encoding) encodes a subset of Python into
+ Lispy data structures.  As an IL, it's loosely based on
+  register-based instruction sets.  The
+  main characteristic is that there are no function arguments which
+  include function calls, to avoid the problems that arose when I was
+  less careful about statements which appeared inside expressions.
+  For example, the translation of
+  <code>(if a (:= b ([] a 0)) None)</code>, as an expression, used to
+  put the assignment statement before the if, which is obviously not
+  the goal.
+</p>
+
+<p>In Pyle, the
+  only legal arguments to a function are constants and variable
+  names.  Most statement arguments, such as the body of
+  a <code>(while)</code>, are limited to single statements; to use
+  multiple statements, wrap them in a <code>(begin)</code>&mdash;which
+  is the only exception to this rule; obviously, it has to support
+  multiple statement arguments.
+</p>
+
+<p>The syntax is as follows:</p>
+
+<ul>
+<li>symbol ::= [instance of adder.common.Symbol]</li>
+<li>literal ::= [instance of int, str, float, or bool]</li>
+<li>list ::= [instance of list]</li>
+<li>var ::= $symbol</li>
+<li>any ::= $var | $literal | $list</li>
+<li>simple ::= $var | $literal</li>
+<li>fcall ::= LIST($var $simple* (LIST($var $simple))*) TODO:
+  implement the keyword args
+</li>
+<li>assign ::= LIST(:= $var ($simple | $fcall | $binop | $dot | $quote))
+</li>
+<li>return ::= LIST(return $simple)
+</li>
+<li>yield ::= LIST(yield $simple)
+</li>
+<li>try ::= LIST(try $stmt LIST(:$var $var $stmt)* LIST(:finally $stmt)?)
+</li>
+<li>raise ::= LIST(raise $var)
+</li>
+<li>reraise ::= LIST(reraise)
+</li>
+<li>binop ::= LIST(binop $var $simple $simple)</li>
+<li>quote ::= LIST(quote $any)
+</li>
+<li>if ::= LIST(if $simple $stmt $stmt?)
+</li>
+<li>while ::= LIST(while $simple $stmt)
+</li>
+<li>def ::= LIST(def $var LIST($var*) $stmt)
+</li>
+<li>break ::= LIST(break)
+</li>
+<li>continue ::= LIST(continue)
+</li>
+<li>pass ::= LIST(pass)
+</li>
+<li>begin ::= LIST(begin $var*)
+</li>
+<li>import ::= LIST(import $var)
+</li>
+
+<li>dot ::= LIST(. $simple ($var)*)
+</li>
+
+<li>stmt ::= $return | $yield | $try | $raise | $reraise
+      | $if | $while | $def | $break | $continue | $pass | $begin
+      | $assign | $import
+      | $fcall
+</li>
+</ul>
 
 </body>
 </html>

@@ -1709,6 +1709,30 @@ class ReduceSubtractiveBinop(Reducer):
         if not isStmt:
             return e
 
+class ReduceComparisonBinop(Reducer):
+    def __init__(self,op):
+        self.op=op
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        def expr():
+            if len(gomer)<=2:
+                return True
+            op1=reduce(gomer[1],False,stmtCollector)
+            op2=reduce(gomer[2],False,stmtCollector)
+            cmp12=[S('binop'),self.op,op1,op2]
+            if len(gomer)==3:
+                return cmp12
+            else:
+                return reduce([S('and'),
+                               cmp12,
+                               [self.op,op2]+gomer[3:]
+                               ],
+                              False,stmtCollector
+                              )
+        e=expr()
+        if not isStmt:
+            return e
+
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
@@ -1731,6 +1755,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('-') : ReduceSubtractiveBinop(S('-'),0,lambda x: -x),
                 S('/') : ReduceSubtractiveBinop(S('/'),1,lambda x: 1/x),
                 S('//') : ReduceSubtractiveBinop(S('//'),1,lambda x: 1//x),
+                S('==') : ReduceComparisonBinop(S('==')),
                 }
 reduceDefault=ReduceDefault()
 
