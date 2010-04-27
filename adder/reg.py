@@ -343,7 +343,7 @@ def build(reg):
         return Var(reg)
     for t in [int,str,float,bool]:
         if isinstance(reg,t):
-            return Literal(t)
+            return Literal(reg)
     assert isinstance(reg,list)
     assert reg
     f=reg[0]
@@ -361,6 +361,7 @@ def build(reg):
         finallyClause=None
         assert len(reg)>=2
         sawFinally=False
+        finallyBody=None
         for clause in reg[2:]:
             assert not sawFinally
             assert len(clause) in [2,3]
@@ -372,9 +373,9 @@ def build(reg):
                 assert isinstance(clause[0],S)
                 assert isinstance(clause[1],S)
                 assert str(clause[0])[0]==':'
-                klassClauses.push((Var(S(str(clause[0])[1:])),
-                                   Var(clause[1]),
-                                   build(clause[2])))
+                klassClauses.append((Var(S(str(clause[0])[1:])),
+                                     Var(clause[1]),
+                                     build(clause[2])))
         return Try(build(reg[1]),klassClauses,finallyBody)
     if f==S('raise'):
         assert len(reg)==2
@@ -389,7 +390,12 @@ def build(reg):
                      build(reg[3]))
     if f==S('quote'):
         assert len(reg)==2
-        return Quote(build(reg[1]))
+        def q(r):
+            if isinstance(r,list):
+                return List(list(map(q,r)))
+            else:
+                return Literal(r)
+        return Quote(q(reg[1]))
     if f==S('if'):
         assert len(reg) in [3,4]
         cond=build(reg[1])
@@ -404,9 +410,25 @@ def build(reg):
     if f==S('def'):
         assert len(reg)==4
         name=build(reg[1])
-        argList=list(map(build,reg[2]))
         body=build(reg[3])
-        return Def(name,argList,body)
+
+        posArgs=[]
+        kwArgs=[]
+        globals=[]
+        nonlocals=[]
+
+        states={'&key': kwArgs,
+                '&global': globals,
+                '&nonlocal': nonlocals}
+        cur=posArgs
+        for arg in reg[2]:
+            assert isinstance(arg,S)
+            if arg[0]=='&':
+                cur=states[str(arg)]
+            else:
+                cur.append(build(arg))
+
+        return Def(name,posArgs,kwArgs,globals,nonlocals,body)
     if f==S('break'):
         assert len(reg)==1
         return Break()

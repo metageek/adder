@@ -10,6 +10,7 @@ class Symbol:
             self.s=s.s
         else:
             assert isinstance(s,str)
+            assert s
             self.s=s
 
     def __getitem__(self,i):
