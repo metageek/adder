@@ -41,10 +41,10 @@
 <dt>lambda</dt>
 <dt>scope</dt>
 <dt>quote</dt>
-<dt>-gomer-try</dt>
-<dd>Each except: clause takes just a single statement; multiple
+<dt><strike>-gomer-</strike>try</dt>
+<dd><strike>Each except: clause takes just a single statement; multiple
   statements require a (begin).  Adder will need a macro to do that
-  wrapping.
+  wrapping.</strike>
 </dd>
 <dt>while</dt>
 <dt>break</dt>
@@ -122,52 +122,54 @@
 <p>The syntax is as follows:</p>
 
 <ul>
-<li>symbol := [instance of adder.common.Symbol]</li>
-<li>literal := [instance of int, str, float, or bool]</li>
-<li>list := [instance of list]</li>
+<li>symbol := {instance of adder.common.Symbol}</li>
+<li>literal := {instance of int, str, float, or bool}</li>
+<li>list := {instance of list; all elts must be $any}</li>
 <li>var := $symbol</li>
 <li>any := $var | $literal | $list</li>
 <li>simple := $var | $literal</li>
-<li>fcall := (:= $var ($var $simple*)) | ($var $simple*)
+<li>fcall := LIST($var, $simple*, LIST($var,$simple)*)
 </li>
-<li>assign := (:= $var $simple)
+<li>assign := LIST(:=, $var, ($simple | $fcall | $binop | $dot | $quote))
 </li>
-<li>return := (return $simple)
+<li>return := LIST(return, $simple)
 </li>
-<li>yield := (yield $simple)
+<li>yield := LIST(yield, $simple)
 </li>
-<li>try := (try $stmt (:$var $var $stmt)* (:finally $stmt)?)
+<li>try := LIST(try, $stmt,
+                LIST(:$var, $var, $stmt)*,
+                LIST(:finally, $stmt)?)
 </li>
-<li>raise := (raise $var)
+<li>raise := LIST(raise, $var)
 </li>
-<li>reraise := (reraise)
+<li>reraise := LIST(reraise)
 </li>
-<li>binop := (binop $var $simple $simple)</li>
-<li>quote := (quote $any)
+<li>binop := LIST(binop, $var, $simple, $simple)</li>
+<li>quote := LIST(quote, $any)
 </li>
-<li>if := (if $simple $stmt $stmt?)
+<li>if := LIST(if, $simple, $stmt, $stmt?)
 </li>
-<li>while := (while $simple $stmt)
+<li>while := LIST(while, $simple, $stmt)
 </li>
-<li>def := (def $var ($var*) $stmt)
+<li>def := LIST(def, $var, LIST($var*), $stmt)
 </li>
-<li>break := (break)
+<li>break := LIST(break)
 </li>
-<li>continue := (continue)
+<li>continue := LIST(continue)
 </li>
-<li>pass := (pass)
+<li>pass := LIST(pass)
 </li>
-<li>begin := (begin $var*)
+<li>begin := LIST(begin, $var*)
 </li>
-<li>import := (import $var)
+<li>import := LIST(import, $var)
 </li>
 
-<li>dot := (. $simple ($var)*)
+<li>dot := LIST(., $simple, ($var)+)
 </li>
 
 <li>stmt := $return | $yield | $try | $raise | $reraise
       | $if | $while | $def | $break | $continue | $pass | $begin
-      | $assign | $import | $dot | $binop | $quote
+      | $assign | $import
       | $fcall
 </li>
 </ul>
@@ -198,7 +200,7 @@
 
 <dt>quote</dt>
 
-<dt>-gomer-try</dt>
+<dt>try</dt>
 <dd>TODO</dd>
 
 <dt>while</dt>

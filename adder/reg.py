@@ -5,13 +5,36 @@
 
 from adder.common import Symbol as S
 
-def toPyle(il):
-    return il.toPyle()
+indentStep=2
+
+def flatten(tree,depth=0):
+    if isinstance(tree,str):
+        return (' '*(depth*indentStep))+tree+'\n'
+
+    if isinstance(tree,list):
+        indent=1
+    else:
+        indent=0
+
+    return ''.join(map(lambda t: flatten(t,depth+indent),tree))
 
 class IL:
+    def toPythonTree(self):
+        return str(self)
+
+    def toPythonFlat(self):
+        return flatten(self.toPythonTree())
+
+def toPythonTree(il):
+    return il.toPythonTree()
+
+def toPythonFlat(il):
+    return il.toPythonFlat()
+
+class Any(IL):
     pass
 
-class Simple(IL):
+class Simple(Any):
     pass
 
 class Var(Simple):
@@ -22,27 +45,40 @@ class Var(Simple):
     def __str__(self):
         return str(self.varSym)
 
-    def toPyle(self):
-        return self.varSym
-
 class Literal(Simple):
     def __init__(self,value):
+        assert (isinstance(value,int)
+                or isinstance(value,str)
+                or isinstance(value,float)
+                or isinstance(value,bool)
+                or isinstance(value,S)
+                )
         self.value=value
 
     def __str__(self):
         return repr(self.value)
 
-    def toPyle(self):
-        if isinstance(self.value,S) or isinstance(self.value,list):
-            return [S('quote'),[self.value]]
-        return self.value
+    def toPythonTree(self):
+        return repr(self.value)
+
+class List(Any):
+    def __init__(self,value):
+        assert isinstance(value,list)
+        for v in value:
+            assert isinstance(v,Any)
+        self.value=value
+
+    def __str__(self):
+        return '(%s)' % (' '.join(map(str,self.value)))
+
+    def toPythonTree(self):
+        return '[%s]' % (', '.join(map(toPythonTree,self.value)))
 
 class Stmt(IL):
     pass
 
 class Call(Stmt):
-    def __init__(self,lhs,f,posArgs,kwArgs):
-        assert isinstance(lhs,Var)
+    def __init__(self,f,posArgs,kwArgs):
         assert isinstance(f,Var)
         for arg in posArgs:
             assert isinstance(arg,Simple)
@@ -50,7 +86,6 @@ class Call(Stmt):
             assert isinstance(key,Var)
             assert isinstance(value,Simple)
 
-        self.lhs=lhs
         self.f=f
         self.posArgs=list(posArgs)
         self.kwArgs=list(map(tuple,kwArgs))
@@ -58,37 +93,28 @@ class Call(Stmt):
     def __str__(self):
         def kwArgToStr(arg):
             (key,value)=arg
-            return '%s=%s' % (str(key),str(value))
+            return '%s=%s' % (str(key),value.toPythonTree())
 
-        return '%s=%s(%s)' % (str(self.lhs),
-                              str(self.f),
-                              ','.join(list(map(str,self.posArgs))
-                                       +list(map(kwArgToStr,self.kwArgs))
-                                       )
-                              )
-
-    def toPyle(self):
-        return [S(':='),[self.lhs.toPyle(),
-                         [self.f.toPyle(),
-                          list(map(toPyle,self.posArgs)),
-                          list(map(lambda kx: [str(kx[0]),kx[1].toPyle()],
-                                   self.kwArgs))
-                          ]
-                         ]
-                ]
+        return '%s(%s)' % (str(self.f),
+                           ','.join(list(map(str,self.posArgs))
+                                    +list(map(kwArgToStr,self.kwArgs))
+                                    )
+                           )
 
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
         assert isinstance(lhs,Var)
-        assert isinstance(rhs,Simple)
+        assert (isinstance(rhs,Simple)
+                or isinstance(rhs,Call)
+                or isinstance(rhs,Binop)
+                or isinstance(rhs,Dot)
+                or isinstance(rhs,Quote)
+                )
         self.lhs=lhs
         self.rhs=rhs
 
     def __str__(self):
         return '%s=%s' % (str(self.lhs),str(self.rhs))
-
-    def toPyle(self):
-        return [S(':='),[self.lhs.toPyle(),self.rhs.toPyle()]]
 
 class Return(Stmt):
     def __init__(self,value):
@@ -98,9 +124,6 @@ class Return(Stmt):
     def __str__(self):
         return 'return %s' % str(self.value)
 
-    def toPyle(self):
-        return [S('return'),[self.value.toPyle()]]
-
 class Yield(Stmt):
     def __init__(self,value):
         assert isinstance(value,Simple)
@@ -108,27 +131,6 @@ class Yield(Stmt):
 
     def __str__(self):
         return 'yield %s' % str(self.value)
-
-    def toPyle(self):
-        return [S('yield'),[self.value.toPyle()]]
-
-class Raise(Stmt):
-    def __init__(self,value):
-        assert isinstance(value,Var)
-        self.value=value
-
-    def __str__(self):
-        return 'raise %s' % str(self.value)
-
-    def toPyle(self):
-        return [S('raise'),[self.value.toPyle()]]
-
-class Reraise(Stmt):
-    def __str__(self):
-        return 'raise'
-
-    def toPyle(self):
-        return [S('raise'),[]]
 
 class Try(Stmt):
     def __init__(self,body,klassClauses,finallyBody):
@@ -155,16 +157,55 @@ class Try(Stmt):
         res+='}'
         return res
 
-    def toPyle(self):
-        return [S('try'),
-                [self.body.toPyle()],
-                (list(map(lambda klassVarBody: [str(klassVarBody[0].varSym),
-                                                klassVarBody[1].toPyle(),
-                                                klassVarBody[2].toPyle()],
-                          self.klassClauses))
-                 +([['finally',None,self.finallyBody.toPyle()]]
-                   if self.finallyBody else [])
-                 )]
+    def toPythonTree(self):
+        res=['try:',
+             list(map(toPythonTree,self.body))]
+        sawFinally=False
+        for (klass,var,clause) in self.exns:
+            res.append('except %s as %s:' % (klass,var.toPython()))
+            res.append([clause.toPythonTree(),])
+        if self.finallyBody:
+            res.append('finally:')
+            res.append([finallyBody.toPythonTree(),])
+        return tuple(res)
+
+class Raise(Stmt):
+    def __init__(self,value):
+        assert isinstance(value,Var)
+        self.value=value
+
+    def __str__(self):
+        return 'raise %s' % str(self.value)
+
+class Reraise(Stmt):
+    def __str__(self):
+        return 'raise'
+
+class Binop(IL):
+    def __init__(self,op,left,right):
+        assert isinstance(op,Var)
+        assert isinstance(left,Simple)
+        assert isinstance(right,Simple)
+
+        self.op=op
+        self.left=left
+        self.right=right
+
+    def __str__(self):
+        return '%s%s%s' % (str(self.left),
+                           str(self.op),
+                           str(self.right))
+
+class Quote(Stmt):
+    def __init__(self,value):
+        assert isinstance(value,Any)
+        self.value=value
+
+    def __str__(self):
+        return str(self.value)
+
+    def toPythonTree(self):
+        return self.value.toPythonTree()
 
 class If(Stmt):
     def __init__(self,cond,thenBody,elseBody):
@@ -182,15 +223,13 @@ class If(Stmt):
         res+='}'
         return res
 
-    def toPyle(self):
+    def toPythonTree(self):
+        res=['if %s:' % self.cond.toPythonTree(),
+             maybeList(self.thenBody.toPythonTree())]
         if self.elseBody:
-            return [S('if-stmt'),[self.cond.toPyle(),
-                                  self.thenBody.toPyle(),
-                                  self.elseBody.toPyle()]]
-        else:
-            return [S('if-stmt'),[self.cond.toPyle(),
-                                  self.thenBody.toPyle()]]
-                 
+            res.append('else:')
+            res.append(maybeList(self.thenBody.toPythonTree()))
+        return res
 
 class While(Stmt):
     def __init__(self,cond,body):
@@ -202,10 +241,9 @@ class While(Stmt):
     def __str__(self):
         return '{while %s %s}' % (str(self.cond),str(self.body))
 
-    def toPyle(self):
-        return [S('while'),
-                [self.cond.toPyle(),self.body.toPyle()]
-                ]
+    def toPythonTree(self):
+        return [S('while %s:' % self.cond.toPythonTree()),
+                maybeList(self.body.toPythonTree())]
 
 class Def(Stmt):
     def __init__(self,f,posArgs,kwArgs,globals,nonlocals,body):
@@ -243,41 +281,30 @@ class Def(Stmt):
                                         globalDecl,nonlocalDecl,
                                         str(self.body))
 
-    def toPyle(self):
-        args=list(map(toPyle,self.posArgs))
-        for (marker,vars) in [('&key',self.kwArgs),
-                              ('&globals',self.globals),
-                              ('&nonlocals',self.nonlocals)]:
-            if vars:
-                args.append(S(marker))
-                args+=list(map(toPyle,vars))
-            
-        return [S('def'),
-                [self.f.toPyle(),args,self.body.toPyle()]
+    def toPythonTree(self):
+        defLine='def %s(%s%s%s):' % (str(self.f),
+                                     ','.join(map(str,self.posArgs)),
+                                     (',*,' if (self.posArgs and self.kwArgs)
+                                      else ''),
+                                     ','.join(map(str,self.kwArgs))
+                                     )
+        return [defLine,
+                maybeList(self.body.toPythonTree())
                 ]
 
 class Break(Stmt):
     def __str__(self):
         return 'break'
 
-    def toPyle(self):
-        return [S('break'),[]]
-
 class Continue(Stmt):
     def __str__(self):
         return 'continue'
-
-    def toPyle(self):
-        return [S('continue'),[]]
 
 class Pass(Stmt):
     def __str__(self):
         return 'pass'
 
-    def toPyle(self):
-        return [S('begin'),[]]
-
-class Block(Stmt):
+class Begin(Stmt):
     def __init__(self,stmts):
         for stmt in stmts:
             assert isinstance(stmt,Stmt)
@@ -286,5 +313,113 @@ class Block(Stmt):
     def __str__(self):
         return '{%s}' % '; '.join(map(str,self.stmts))
 
-    def toPyle(self):
-        return [S('begin'),list(map(toPyle,self.stmts))]
+    def toPythonTree(self):
+        return tuple(map(toPythonTree,self.stmts))
+
+class Import(Stmt):
+    def __init__(self,module):
+        assert isinstance(module,Var)
+        self.module=module
+
+    def __str__(self):
+        return 'import %s' % str(self.module)
+
+def build(reg):
+    if isinstance(reg,S):
+        return Var(reg)
+    for t in [int,str,float,bool]:
+        if isinstance(reg,t):
+            return Literal(t)
+    assert isinstance(reg,list)
+    assert reg
+    f=reg[0]
+    if f==S(':='):
+        assert len(reg)==3
+        return Assign(build(reg[1]),build(reg[2]))
+    if f==S('return'):
+        assert len(reg)==2
+        return Return(build(reg[1]))
+    if f==S('yield'):
+        assert len(reg)==2
+        return Yield(build(reg[1]))
+    if f==S('try'):
+        klassClauses=[]
+        finallyClause=None
+        assert len(reg)>=2
+        sawFinally=False
+        for clause in reg[2:]:
+            assert not sawFinally
+            assert len(clause) in [2,3]
+            if len(clause)==2:
+                assert clause[0]==S(':finally')
+                sawFinally=True
+                finallyBody=build(clause[1])
+            else:
+                assert isinstance(clause[0],S)
+                assert isinstance(clause[1],S)
+                assert str(clause[0])[0]==':'
+                klassClauses.push((Var(S(str(clause[0])[1:])),
+                                   Var(clause[1]),
+                                   build(clause[2])))
+        return Try(build(reg[1]),klassClauses,finallyBody)
+    if f==S('raise'):
+        assert len(reg)==2
+        return Raise(build(reg[1]))
+    if f==S('reraise'):
+        assert len(reg)==1
+        return Reraise()
+    if f==S('binop'):
+        assert len(reg)==4
+        return Binop(build(reg[1]),
+                     build(reg[2]),
+                     build(reg[3]))
+    if f==S('quote'):
+        assert len(reg)==2
+        return Quote(build(reg[1]))
+    if f==S('if'):
+        assert len(reg) in [3,4]
+        cond=build(reg[1])
+        thenClause=build(reg[2])
+        elseClause=build(reg[3]) if len(reg)==4 else None
+        return If(cond,thenClause,elseClause)
+    if f==S('while'):
+        assert len(reg)==3
+        cond=build(reg[1])
+        body=build(reg[2])
+        return While(cond,body)
+    if f==S('def'):
+        assert len(reg)==4
+        name=build(reg[1])
+        argList=list(map(build,reg[2]))
+        body=build(reg[3])
+        return Def(name,argList,body)
+    if f==S('break'):
+        assert len(reg)==1
+        return Break()
+    if f==S('continue'):
+        assert len(reg)==1
+        return Continue()
+    if f==S('pass'):
+        assert len(reg)==1
+        return Pass()
+    if f==S('begin'):
+        return Begin(list(map(build,reg[1:])))
+    if f==S('import'):
+        assert len(reg)==2
+        return Import(build(reg[1]))
+    if f==S('import'):
+        assert len(reg)==2
+        return Import(build(reg[1]))
+    if f==S('.'):
+        assert len(reg)>2
+        return Dot(build(reg[1]),
+                   list(map(build,reg[2:])))
+    
+    def buildPair(varAndVal):
+        (var,val)=varAndVal
+        return (build(var),build(val))
+
+    return Call(build(reg[0]),
+                list(map(build,reg[1])),
+                list(map(buildPair,reg[2]))
+                )
