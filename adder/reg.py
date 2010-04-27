@@ -5,7 +5,7 @@
 
 from adder.common import Symbol as S
 
-indentStep=2
+indentStep=4
 
 def flatten(tree,depth=0):
     if isinstance(tree,str):
@@ -159,14 +159,14 @@ class Try(Stmt):
 
     def toPythonTree(self):
         res=['try:',
-             list(map(toPythonTree,self.body))]
+             [self.body.toPythonTree()]]
         sawFinally=False
-        for (klass,var,clause) in self.exns:
-            res.append('except %s as %s:' % (klass,var.toPython()))
-            res.append([clause.toPythonTree(),])
+        for (klass,var,clause) in self.klassClauses:
+            res.append('except %s as %s:' % (klass,var.toPythonTree()))
+            res.append([clause.toPythonTree()])
         if self.finallyBody:
             res.append('finally:')
-            res.append([finallyBody.toPythonTree(),])
+            res.append([self.finallyBody.toPythonTree()])
         return tuple(res)
 
 class Raise(Stmt):
@@ -225,11 +225,12 @@ class If(Stmt):
 
     def toPythonTree(self):
         res=['if %s:' % self.cond.toPythonTree(),
-             maybeList(self.thenBody.toPythonTree())]
+             [self.thenBody.toPythonTree()]
+             ]
         if self.elseBody:
             res.append('else:')
-            res.append(maybeList(self.thenBody.toPythonTree()))
-        return res
+            res.append([self.elseBody.toPythonTree()])
+        return tuple(res)
 
 class While(Stmt):
     def __init__(self,cond,body):
@@ -242,8 +243,8 @@ class While(Stmt):
         return '{while %s %s}' % (str(self.cond),str(self.body))
 
     def toPythonTree(self):
-        return [S('while %s:' % self.cond.toPythonTree()),
-                maybeList(self.body.toPythonTree())]
+        return ('while %s:' % self.cond.toPythonTree(),
+                [self.body.toPythonTree()])
 
 class Def(Stmt):
     def __init__(self,f,posArgs,kwArgs,globals,nonlocals,body):
@@ -282,15 +283,22 @@ class Def(Stmt):
                                         str(self.body))
 
     def toPythonTree(self):
-        defLine='def %s(%s%s%s):' % (str(self.f),
+        body=[]
+        
+        if self.globals:
+            body.append('global %s' % (','.join(map(str,self.globals))))
+        if self.nonlocals:
+            body.append('nonlocal %s' % (','.join(map(str,self.nonlocals))))
+        body.append(self.body.toPythonTree())
+                        
+        return ('def %s(%s%s%s):' % (str(self.f),
                                      ','.join(map(str,self.posArgs)),
                                      (',*,' if (self.posArgs and self.kwArgs)
-                                      else ''),
+                                      else ('*,' if self.kwArgs else '')
+                                      ),
                                      ','.join(map(str,self.kwArgs))
-                                     )
-        return [defLine,
-                maybeList(self.body.toPythonTree())
-                ]
+                                     ),
+                body)
 
 class Break(Stmt):
     def __str__(self):
@@ -314,7 +322,13 @@ class Begin(Stmt):
         return '{%s}' % '; '.join(map(str,self.stmts))
 
     def toPythonTree(self):
-        return tuple(map(toPythonTree,self.stmts))
+        t=tuple(map(toPythonTree,self.stmts))
+        if t:
+            if len(t)>1:
+                return t
+            return t[0]
+        else:
+            return "pass"
 
 class Import(Stmt):
     def __init__(self,module):

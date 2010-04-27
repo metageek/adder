@@ -174,9 +174,16 @@ class StrTestCase(unittest.TestCase):
                     Assign(Var(S('z')),Literal(7))]))=='{x=9; z=7}'
 
 class ToPythonTestCase(unittest.TestCase):
+    def setUp(self):
+        self.verbose=False
+
     def toP(self,il):
         tree=il.toPythonTree()
         flat=flatten(tree)
+        if self.verbose:
+            print()
+            print(tree)
+            print(flat)
         return (tree,flat)
 
     def testVar(self):
@@ -187,6 +194,15 @@ class ToPythonTestCase(unittest.TestCase):
 
     def testLiteralSym(self):
         assert Literal(S('fred')).toPythonTree()=="adder.common.Symbol('fred')"
+
+    def testQuoteList(self):
+        t=Quote(List([Literal(S('fred')),
+                      Literal(5),
+                      List([Literal(S('barney'))])
+                      ]
+                     )
+                ).toPythonTree()
+        assert t=="[adder.common.Symbol('fred'), 5, [adder.common.Symbol('barney')]]"
 
     def testCall0(self):
         assert self.toP(Call(Var(S('fred')),[],[]))==("fred()","fred()\n")
@@ -242,6 +258,320 @@ class ToPythonTestCase(unittest.TestCase):
                                Call(Var(S('barney')),
                                     [Literal(3)],[])))==("fred=barney(3)",
                                                          "fred=barney(3)\n")
+
+    def testReturn(self):
+        assert self.toP(Return(Literal(7)))==("return 7","return 7\n")
+
+    def testYield(self):
+        assert self.toP(Yield(Literal(7)))==("yield 7","yield 7\n")
+
+    def testTry1Exn(self):
+        assert self.toP(Try(Call(Var(S('f')),[],[]),
+                            [(Var(S('Exception')),
+                              Var(S('e')),
+                              Call(Var(S('print')),[Var(S('e'))],[]))],
+                            None))==(
+            ("try:",
+             ["f()"],
+             "except Exception as e:",
+             ["print(e)"]
+             ),
+            """try:
+    f()
+except Exception as e:
+    print(e)
+""")
+
+    def testTry2Exn(self):
+        assert self.toP(Try(Call(Var(S('f')),[],[]),
+                            [(Var(S('ValueError')),
+                              Var(S('v')),
+                              Call(Var(S('f')),[Var(S('v'))],[])),
+                             (Var(S('Exception')),
+                              Var(S('e')),
+                              Call(Var(S('print')),[Var(S('e'))],[])),
+                             ],
+                            None))==(
+            ("try:",
+             ["f()"],
+             "except ValueError as v:",
+             ["f(v)"],
+             "except Exception as e:",
+             ["print(e)"]
+             ),
+            """try:
+    f()
+except ValueError as v:
+    f(v)
+except Exception as e:
+    print(e)
+""")
+
+    def testTry0ExnFinally(self):
+        assert self.toP(Try(Call(Var(S('f')),[],[]),
+                            [],
+                            Call(Var(S('g')),[],[])
+                            ))==(
+            ("try:",
+             ["f()"],
+             "finally:",
+             ["g()"]
+             ),
+            """try:
+    f()
+finally:
+    g()
+""")
+
+    def testTry1ExnFinally(self):
+        assert self.toP(Try(Call(Var(S('f')),[],[]),
+                            [(Var(S('ValueError')),
+                              Var(S('v')),
+                              Call(Var(S('f')),[Var(S('v'))],[])),
+                             ],
+                            Call(Var(S('g')),[],[])
+                            ))==(
+            ("try:",
+             ["f()"],
+             "except ValueError as v:",
+             ["f(v)"],
+             "finally:",
+             ["g()"]
+             ),
+            """try:
+    f()
+except ValueError as v:
+    f(v)
+finally:
+    g()
+""")
+
+    def testTry2ExnFinally(self):
+        assert self.toP(Try(Call(Var(S('f')),[],[]),
+                            [(Var(S('ValueError')),
+                              Var(S('v')),
+                              Call(Var(S('f')),[Var(S('v'))],[])),
+                             (Var(S('Exception')),
+                              Var(S('e')),
+                              Call(Var(S('print')),[Var(S('e'))],[])),
+                             ],
+                            Call(Var(S('g')),[],[])
+                            ))==(
+            ("try:",
+             ["f()"],
+             "except ValueError as v:",
+             ["f(v)"],
+             "except Exception as e:",
+             ["print(e)"],
+             "finally:",
+             ["g()"]
+             ),
+            """try:
+    f()
+except ValueError as v:
+    f(v)
+except Exception as e:
+    print(e)
+finally:
+    g()
+""")
+
+    def testRaise(self):
+        assert self.toP(Raise(Var(S('x'))))==("raise x","raise x\n")
+
+    def testReraise(self):
+        assert self.toP(Reraise())==("raise","raise\n")
+
+    def testBinop(self):
+        assert Binop(Var(S('*')),
+                     Literal(9),
+                     Literal(7)).toPythonTree()=="9*7"
+
+    def testIf(self):
+        assert self.toP(If(Var(S('c')),
+                           Call(Var(S('print')),[Var(S('c'))],[]),
+                           None))==(("if c:",["print(c)"]),
+                                    """if c:
+    print(c)
+""")
+
+    def testIfElse(self):
+        assert self.toP(If(Var(S('c')),
+                           Call(Var(S('print')),[Var(S('c'))],[]),
+                           Call(Var(S('f')),[Var(S('q'))],[])
+                           ))==(("if c:",
+                                 ["print(c)"],
+                                 "else:",
+                                 ["f(q)"]
+                                 ),
+                                    """if c:
+    print(c)
+else:
+    f(q)
+""")
+
+    def testWhile(self):
+        assert self.toP(While(Var(S('c')),
+                              Call(Var(S('print')),[Var(S('c'))],[])
+                              ))==(("while c:",["print(c)"]),
+                                   """while c:
+    print(c)
+""")
+
+    def testDef0(self):
+        assert self.toP(Def(Var(S('f')),
+                            [],
+                            [],[],[],
+                            Return(Literal(9))))==(("def f():",["return 9"]),
+                                                    """def f():
+    return 9
+""")
+
+    def testDef1Pos(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x'))],
+                            [],[],[],
+                            Return(Var(S('x')))))==(("def f(x):",["return x"]),
+                                                    """def f(x):
+    return x
+""")
+
+    def testDef2Pos(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x')),Var(S('y'))],
+                            [],[],[],
+                            Return(Var(S('x')))))==(("def f(x,y):",["return x"]),
+                                                    """def f(x,y):
+    return x
+""")
+
+    def testDef2Pos1Kw(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x')),Var(S('y'))],
+                            [Var(S('z'))],[],[],
+                            Return(Var(S('x')))))==(("def f(x,y,*,z):",["return x"]),
+                                                    """def f(x,y,*,z):
+    return x
+""")
+
+    def testDef2Pos2Kw(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x')),Var(S('y'))],
+                            [Var(S('z')),Var(S('a'))],[],[],
+                            Return(Var(S('x')))))==(("def f(x,y,*,z,a):",["return x"]),
+                                                    """def f(x,y,*,z,a):
+    return x
+""")
+
+    def testDef0Pos2Kw(self):
+        assert self.toP(Def(Var(S('f')),
+                            [],
+                            [Var(S('z')),Var(S('a'))],[],[],
+                            Return(Var(S('z')))))==(("def f(*,z,a):",["return z"]),
+                                                    """def f(*,z,a):
+    return z
+""")
+
+    def testDef1Pos2Kw(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x'))],
+                            [Var(S('z')),Var(S('a'))],[],[],
+                            Return(Var(S('x')))))==(("def f(x,*,z,a):",["return x"]),
+                                                    """def f(x,*,z,a):
+    return x
+""")
+
+    def testDef1Pos2Kw2Globals(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x'))],
+                            [Var(S('z')),Var(S('a'))],
+                            [Var(S('g1')),Var(S('g2'))],
+                            [],
+                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
+                                                     ["global g1,g2",
+                                                      "return x"
+                                                      ]),
+                                                    """def f(x,*,z,a):
+    global g1,g2
+    return x
+""")
+
+    def testDef1Pos2Kw2Nonlocals(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x'))],
+                            [Var(S('z')),Var(S('a'))],
+                            [],
+                            [Var(S('nl1')),Var(S('nl2'))],
+                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
+                                                     ["nonlocal nl1,nl2",
+                                                      "return x"
+                                                      ]),
+                                                    """def f(x,*,z,a):
+    nonlocal nl1,nl2
+    return x
+""")
+
+    def testDef1Pos2Kw2Globals2Nonlocals(self):
+        assert self.toP(Def(Var(S('f')),
+                            [Var(S('x'))],
+                            [Var(S('z')),Var(S('a'))],
+                            [Var(S('g1')),Var(S('g2'))],
+                            [Var(S('nl1')),Var(S('nl2'))],
+                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
+                                                     ["global g1,g2",
+                                                      "nonlocal nl1,nl2",
+                                                      "return x"
+                                                      ]),
+                                                    """def f(x,*,z,a):
+    global g1,g2
+    nonlocal nl1,nl2
+    return x
+""")
+
+    def testBreak(self):
+        assert self.toP(Break())==("break","break\n")
+
+    def testContinue(self):
+        assert self.toP(Continue())==("continue","continue\n")
+
+    def testPass(self):
+        assert self.toP(Pass())==("pass","pass\n")
+
+    def testBegin0(self):
+        assert self.toP(Begin([]))==("pass","pass\n")
+
+    def testBegin1(self):
+        assert self.toP(Begin([Call(Var(S('f')),
+                                    [Literal(9)],
+                                    [])]))==("f(9)","f(9)\n")
+
+    def testBegin2(self):
+        assert self.toP(Begin([Assign(Var(S('x')),Literal(9)),
+                               Call(Var(S('f')),
+                                    [Var(S('x'))],
+                                    [])]))==(("x=9","f(x)"),
+                                             """x=9
+f(x)
+""")
+
+    def testBegin4(self):
+        assert self.toP(Begin([Assign(Var(S('x')),Literal(9)),
+                               Assign(Var(S('y')),Literal(7)),
+                               Assign(Var(S('z')),
+                                      Binop(Var(S('*')),
+                                            Var(S('x')),
+                                            Var(S('y')))),
+                               Call(Var(S('print')),
+                                    [Var(S('z'))],
+                                    [])]))==(("x=9","y=7","z=x*y","print(z)"),
+                                             """x=9
+y=7
+z=x*y
+print(z)
+""")
+
+    def testImport(self):
+        assert self.toP(Import(Var(S('re'))))==("import re","import re\n")
 
 suite=unittest.TestSuite(
     ( 
