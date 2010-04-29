@@ -1151,6 +1151,16 @@ class ReduceTestCase(unittest.TestCase):
              ]
             ]
 
+    def testInExpr(self):
+        x=self.r([S('in'),5,S('l')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('binop'),S('in'),5,S('l')]]
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

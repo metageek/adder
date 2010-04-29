@@ -8,110 +8,158 @@
 
 <h2>Overview</h2>
 
-<p>Adder is a Lisp-1, meaning that function names are variable
-names, as in Scheme, not a separate set of names, as in
-Common Lisp.  (Python also has a single namespace, while Ruby has
-two.  I sometimes think of Python as a Perl-1, and Ruby as a Perl-2.)
-All names must be defined before being used; setting a
-variable without binding it is an error.  There are no Common
-Lisp-style packages; a symbol is purely a name.
-</p>
-
-<p>All Python builtins are available in the "python" package; so, for
-example, (python.sum '(1 2 3)) is legal Adder.
-</p>
-
-<p>Adder supports Common Lisp-style (defmacro).
+<p>Adder is a Lisp-1, meaning that function names are variable names,
+as in Scheme.  By contrast, in a Lisp-2, such as Common Lisp or Emacs
+Lisp, function names are a separate namespace, so that, in the
+expression <code>(foo foo)</code>, the two <code>foo</code>s are
+unrelated.  (Python also has a single namespace, while Ruby has two.
+I sometimes think of Python as a Perl-1, and Ruby as a Perl-2.)  All
+names must be defined before being used; setting a variable without
+defining it is an error.  There are no Common Lisp-style packages; a
+symbol is purely a name.
 </p>
 
 <p>Adder supports object field access via Python syntax: foo.bar.baz,
-  for 
-example.  In addition, .bar.baz is a function, so that (.bar.baz foo)
-is equivalent to (foo.bar.baz).
+  for example.  There is also a Lispy syntax, as in (. foo bar baz),
+  which you'll need when you want to access a field of an object
+  that's not in a variable.
+  In addition, .bar.baz is a function, so that (.bar.baz foo)
+  is equivalent to foo.bar.baz.  This is so you can write functional
+  code without having to write quite so many trivial lambdas.
+  The equivalent Lispy syntax is (.. bar baz).
+</p>
+
+<p>All Python builtins are available as members of the object
+named <code>python</code>; so, for example, (python.sum '(1 2 3)) is
+legal Adder.
+</p>
+
+<p>Adder supports Common Lisp-style (defmacro).
 </p>
 
 <h2>Builtins</h2>
 
 <h3>Special forms</h3>
 
-<p>Implemented in Gomer:</p>
-
 <dl>
 <dt>quote</dt>
+<dd>TODO</dd>
 <dt>import</dt>
+<dd>TODO</dd>
 <dt>if</dt>
+<dd>TODO</dd>
 <dt>while</dt>
-<dd>Currently can't be an expression.</dd>
+<dd>TODO</dd>
 <dt>break</dt>
+<dd>TODO</dd>
 <dt>continue</dt>
+<dd>TODO</dd>
 <dt>begin</dt>
+<dd>TODO</dd>
 <dt>yield</dt>
+<dd>TODO</dd>
 <dt>return</dt>
+<dd>TODO</dd>
 <dt>lambda</dt>
+<dd>TODO</dd>
 <dt>and</dt>
+<dd>TODO</dd>
 <dt>or</dt>
+<dd>TODO</dd>
 <dt>:=</dt>
+<dd>TODO</dd>
 <dt>.</dt>
-<dd>Adder <code>(. foo bar baz)</code> is equivalent to
-  Python <code>foo.bar.baz</code>.
-</dd>
+<dd>TODO</dd>
 <dt>defconst</dt>
-</dl>
-
-<p>Implemented in the Adder layer:</p>
-
-<dl>
+<dd>TODO</dd>
 <dt>defmacro</dt>
+<dd>TODO</dd>
 </dl>
 
 <h3>Functions</h3>
 
-<p>Implemented in Gomer:</p>
-
 <dl>
 <dt>==</dt>
+<dd>TODO</dd>
 <dt>!=</dt>
+<dd>TODO</dd>
 <dt>&lt;=</dt>
+<dd>TODO</dd>
 <dt>&lt;</dt>
+<dd>TODO</dd>
 <dt>&gt;=</dt>
+<dd>TODO</dd>
 <dt>&gt;</dt>
+<dd>TODO</dd>
 <dt>+</dt>
+<dd>TODO</dd>
 <dt>-</dt>
+<dd>TODO</dd>
 <dt>*</dt>
+<dd>TODO</dd>
 <dt>/</dt>
+<dd>TODO</dd>
 <dt>//</dt>
+<dd>TODO</dd>
 <dt>%</dt>
+<dd>TODO</dd>
 <dt>in</dt>
+<dd>TODO</dd>
 <dt>raise</dt>
+<dd>TODO</dd>
 <dt>print</dt>
+<dd>TODO</dd>
 <dt>gensym</dt>
+<dd>TODO</dd>
 <dt>[]</dt>
+<dd>TODO</dd>
 <dt>getattr</dt>
+<dd>TODO</dd>
 <dt>slice</dt>
+<dd>TODO</dd>
 <dt>list</dt>
+<dd>TODO</dd>
 <dt>tuple</dt>
+<dd>TODO</dd>
 <dt>set</dt>
+<dd>TODO</dd>
 <dt>dict</dt>
+<dd>TODO</dd>
 <dt>isinstance</dt>
+<dd>TODO</dd>
 <dt>mk-list</dt>
+<dd>TODO</dd>
 <dt>mk-tuple</dt>
+<dd>TODO</dd>
 <dt>mk-set</dt>
+<dd>TODO</dd>
 <dt>mk-dict</dt>
+<dd>TODO</dd>
 <dt>mk-symbol</dt>
+<dd>TODO</dd>
 <dt>reverse</dt>
+<dd>TODO</dd>
 <dt>eval</dt>
+<dd>TODO</dd>
 <dt>stdenv</dt>
+<dd>TODO</dd>
 <dt>exec-py</dt>
+<dd>TODO</dd>
 <dt>apply</dt>
+<dd>TODO</dd>
 <dt>load</dt>
+<dd>TODO</dd>
 </dl>
 
 <h3>Constants</h3>
 
 <dl>
 <dt>true</dt>
+<dd>TODO</dd>
 <dt>false</dt>
+<dd>TODO</dd>
 <dt>None</dt>
+<dd>TODO</dd>
 </dl>
 
 <h2>Prelude</h2>
@@ -120,38 +168,53 @@ is equivalent to (foo.bar.baz).
 
 <dl>
 <dt>stdin</dt>
+<dd>TODO</dd>
 <dt>stdout</dt>
+<dd>TODO</dd>
 <dt>stderr</dt>
+<dd>TODO</dd>
 <dt>type-list</dt>
+<dd>TODO</dd>
 <dt>type-tuple</dt>
+<dd>TODO</dd>
 <dt>type-set</dt>
+<dd>TODO</dd>
 <dt>type-dict</dt>
+<dd>TODO</dd>
 <dt>type-symbol</dt>
+<dd>TODO</dd>
 <dt>type-int</dt>
+<dd>TODO</dd>
 </dl>
 
 <h3>Macros</h3>
 
 <dl>
 <dt>cond</dt>
+<dd>TODO</dd>
 <dt>case</dt>
+<dd>TODO</dd>
 <dt>ecase</dt>
+<dd>TODO</dd>
 <dt>..</dt>
-<dd>A function generator.  <code>(.. bar baz)</code>
+<dd>TODO.
+A function generator.  <code>(.. bar baz)</code>
  is equivalent to <code>(lambda (x) (. x bar baz))</code>.
 </dd>
 <dt>try</dt>
-<dd>TODO.
-Currently we have (-gomer-try), which can't be an expression.</dd>
+<dd>TODO</dd>
 <dt>let</dt>
-<dd>Yes, it can be defined in terms of lambda; but that depends on
+<dd>TODO.
+Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap
   enough.  Instead I'm using rewriting to distinguish which scope a
   given var comes from.
 </dd>
 <dt>let*</dt>
+<dd>TODO</dd>
 <dt>define</dt>
-<dd>Scheme-type syntax:
+<dd>TODO.
+Scheme-type syntax:
 <code>(define (f x) (* x x))</code> or <code>(define y 9)</code>.
 </dd>
 </dl>
@@ -161,19 +224,33 @@ Currently we have (-gomer-try), which can't be an expression.</dd>
 
 <dl>
 <dt>error</dt>
+<dd>TODO</dd>
 <dt>reverse!</dt>
+<dd>TODO</dd>
 <dt>cons</dt>
+<dd>TODO</dd>
 <dt>list?</dt>
+<dd>TODO</dd>
 <dt>tuple?</dt>
+<dd>TODO</dd>
 <dt>set?</dt>
+<dd>TODO</dd>
 <dt>dict?</dt>
+<dd>TODO</dd>
 <dt>symbol?</dt>
+<dd>TODO</dd>
 <dt>int?</dt>
+<dd>TODO</dd>
 <dt>head</dt>
+<dd>TODO</dd>
 <dt>tail</dt>
+<dd>TODO</dd>
 <dt>eval-py</dt>
+<dd>TODO</dd>
 <dt>map</dt>
+<dd>TODO</dd>
 <dt>zip</dt>
+<dd>TODO</dd>
 </dl>
 
 </body>
