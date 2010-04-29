@@ -613,38 +613,38 @@ class BuildToPythonTestCase(unittest.TestCase):
         assert t=="[adder.common.Symbol('fred'), 5, [adder.common.Symbol('barney')]]"
 
     def testCall0(self):
-        assert self.toP([S('fred'),[],[]])==("fred()","fred()\n")
+        assert self.toP([S('call'),S('fred'),[],[]])==("fred()","fred()\n")
 
     def testCall1Pos(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [S('x')],
                          []])==("fred(x)","fred(x)\n")
 
     def testCall2Pos(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [S('x'),S('y')],
                          []])==("fred(x,y)","fred(x,y)\n")
 
     def testCall1Kw(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [],
                          [[S('x'),9]]
                          ])==("fred(x=9)","fred(x=9)\n")
 
     def testCall2Kw(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [],
                          [[S('x'),9],[S('y'),7]]
                          ])==("fred(x=9,y=7)","fred(x=9,y=7)\n")
 
     def testCall2Pos1Kw(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [3,5],
                          [[S('x'),9]]
                          ])==("fred(3,5,x=9)","fred(3,5,x=9)\n")
 
     def testCall2Pos2Kw(self):
-        assert self.toP([S('fred'),
+        assert self.toP([S('call'),S('fred'),
                          [3,5],
                          [[S('x'),9],[S('y'),7]]
                          ])==("fred(3,5,x=9,y=7)","fred(3,5,x=9,y=7)\n")
@@ -657,7 +657,7 @@ class BuildToPythonTestCase(unittest.TestCase):
 
     def testAssignCall(self):
         assert self.toP([S(':='),S('fred'),
-                         [S('barney'),[3],[]]
+                         [S('call'),S('barney'),[3],[]]
                          ])==("fred=barney(3)",
                               "fred=barney(3)\n")
 
@@ -669,9 +669,9 @@ class BuildToPythonTestCase(unittest.TestCase):
 
     def testTry1Exn(self):
         assert self.toP([S('try'),
-                         [S('f'),[],[]],
+                         [S('call'),S('f'),[],[]],
                          [S(':Exception'),S('e'),
-                          [S('print'),[S('e')],[]]
+                          [S('call'),S('print'),[S('e')],[]]
                           ]
                          ])==(
             ("try:",
@@ -687,12 +687,12 @@ except Exception as e:
 
     def testTry2Exn(self):
         assert self.toP([S('try'),
-                         [S('f'),[],[]],
+                         [S('call'),S('f'),[],[]],
                          [S(':ValueError'),S('v'),
-                          [S('f'),[S('v')],[]]
+                          [S('call'),S('f'),[S('v')],[]]
                           ],
                          [S(':Exception'),S('e'),
-                          [S('print'),[S('e')],[]]
+                          [S('call'),S('print'),[S('e')],[]]
                           ]
                          ])==(
             ("try:",
@@ -712,9 +712,9 @@ except Exception as e:
 
     def testTry0ExnFinally(self):
         assert self.toP([S('try'),
-                         [S('f'),[],[]],
+                         [S('call'),S('f'),[],[]],
                          [S(':finally'),
-                          [S('g'),[],[]
+                          [S('call'),S('g'),[],[]
                            ]
                           ]
                          ])==(
@@ -731,12 +731,12 @@ finally:
 
     def testTry1ExnFinally(self):
         assert self.toP([S('try'),
-                         [S('f'),[],[]],
+                         [S('call'),S('f'),[],[]],
                          [S(':ValueError'),S('v'),
-                          [S('f'),[S('v')],[]]
+                          [S('call'),S('f'),[S('v')],[]]
                           ],
                          [S(':finally'),
-                          [S('g'),[],[]
+                          [S('call'),S('g'),[],[]
                            ]
                           ]
                          ])==(
@@ -757,15 +757,15 @@ finally:
 
     def testTry2ExnFinally(self):
         assert self.toP([S('try'),
-                         [S('f'),[],[]],
+                         [S('call'),S('f'),[],[]],
                          [S(':ValueError'),S('v'),
-                          [S('f'),[S('v')],[]]
+                          [S('call'),S('f'),[S('v')],[]]
                           ],
                          [S(':Exception'),S('e'),
-                          [S('print'),[S('e')],[]]
+                          [S('call'),S('print'),[S('e')],[]]
                           ],
                          [S(':finally'),
-                          [S('g'),[],[]
+                          [S('call'),S('g'),[],[]
                            ]
                           ]
                          ])==(
@@ -813,7 +813,7 @@ finally:
     def testIf(self):
         assert self.toP([S('if'),
                          S('c'),
-                         [S('print'),[S('c')],[]]
+                         [S('call'),S('print'),[S('c')],[]]
                          ])==(("if c:",["print(c)"]),
                                     """if c:
     print(c)
@@ -822,8 +822,8 @@ finally:
     def testIfElse(self):
         assert self.toP([S('if'),
                          S('c'),
-                         [S('print'),[S('c')],[]],
-                         [S('f'),[S('q')],[]]
+                         [S('call'),S('print'),[S('c')],[]],
+                         [S('call'),S('f'),[S('q')],[]]
                          ])==(("if c:",
                                  ["print(c)"],
                                  "else:",
@@ -838,7 +838,7 @@ else:
     def testWhile(self):
         assert self.toP([S('while'),
                          S('c'),
-                         [S('print'),[S('c')],[]]
+                         [S('call'),S('print'),[S('c')],[]]
                          ])==(("while c:",["print(c)"]),
                                    """while c:
     print(c)
@@ -982,13 +982,13 @@ else:
 
     def testBegin1(self):
         assert self.toP([S('begin'),
-                         [S('f'),[9],[]]
+                         [S('call'),S('f'),[9],[]]
                          ])==("f(9)","f(9)\n")
 
     def testBegin2(self):
         assert self.toP([S('begin'),
                          [S(':='),S('x'),9],
-                         [S('f'),[S('x')],[]]
+                         [S('call'),S('f'),[S('x')],[]]
                          ])==(("x=9","f(x)"),
                               """x=9
 f(x)
@@ -1001,7 +1001,7 @@ f(x)
                          [S(':='),S('z'),
                           [S('binop'),S('*'),S('x'),S('y')]
                           ],
-                         [S('print'),[S('z')],[]]
+                         [S('call'),S('print'),[S('z')],[]]
                          ])==(("x=9","y=7","z=x*y","print(z)"),
                               """x=9
 y=7

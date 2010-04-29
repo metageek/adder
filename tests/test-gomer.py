@@ -38,7 +38,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch=gensym('scratch')
         gensym.nextId=1
         assert self.r([S('fred'),7,8],False)==scratch
-        assert self.stmts==[[S(':='),scratch,[S('fred'),7,8]]]
+        assert self.stmts==[[S(':='),scratch,[S('call'),S('fred'),7,8]]]
 
     def testNestedFuncExpr(self):
         scratch1=gensym('scratch')
@@ -47,15 +47,15 @@ class ReduceTestCase(unittest.TestCase):
         assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
                       False)==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
-            [S(':='),scratch2,[S('fred'),7,scratch1]]
+            [S(':='),scratch1,[S('call'),S('barney'),9,S('pebbles')]],
+            [S(':='),scratch2,[S('call'),S('fred'),7,scratch1]]
             ]
 
     def testSimpleFuncStmt(self):
         scratch=gensym('scratch')
         gensym.nextId=1
         assert self.r([S('fred'),7,8],True) is None
-        assert self.stmts==[[S('fred'),7,8]]
+        assert self.stmts==[[S('call'),S('fred'),7,8]]
 
     def testNestedFuncStmt(self):
         scratch1=gensym('scratch')
@@ -73,8 +73,8 @@ class ReduceTestCase(unittest.TestCase):
         assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
                       True) is None
         assert self.stmts==[
-            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
-            [S('fred'),7,scratch1]
+            [S(':='),scratch1,[S('call'),S('barney'),9,S('pebbles')]],
+            [S('call'),S('fred'),7,scratch1]
             ]
 
     def testIfWithElseExpr(self):
@@ -91,14 +91,14 @@ class ReduceTestCase(unittest.TestCase):
                       False)
         assert x==ifScratch
         assert self.stmts==[
-            [S(':='),scratch1,[S('<'),S('n'),10]],
+            [S(':='),scratch1,[S('binop'),S('<'),S('n'),10]],
             [S('if'),
              scratch1,
              [S('begin'),
-              [S(':='),scratch2,[S('barney'),9,S('bam-bam')]],
+              [S(':='),scratch2,[S('call'),S('barney'),9,S('bam-bam')]],
               [S(':='),ifScratch,scratch2]],
              [S('begin'),
-              [S(':='),scratch4,[S('fred'),7,S('pebbles')]],
+              [S(':='),scratch4,[S('call'),S('fred'),7,S('pebbles')]],
               [S(':='),ifScratch,scratch4]],
              ],
             ]
@@ -114,11 +114,11 @@ class ReduceTestCase(unittest.TestCase):
                  True)
         assert x is None
         assert self.stmts==[
-            [S(':='),ifScratch,[S('<'),S('n'),10]],
+            [S(':='),ifScratch,[S('binop'),S('<'),S('n'),10]],
             [S('if'),
              ifScratch,
-             [S('barney'),9,S('bam-bam')],
-             [S('fred'),7,S('pebbles')]
+             [S('call'),S('barney'),9,S('bam-bam')],
+             [S('call'),S('fred'),7,S('pebbles')]
              ]
             ]
 
@@ -134,13 +134,13 @@ class ReduceTestCase(unittest.TestCase):
         assert x==whileScratch
         assert self.stmts==[
             [S(':='),whileScratch,None],
-            [S(':='),condScratch,[S('<'),S('n'),10]],
+            [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]],
             [S('while'),
              condScratch,
              [S('begin'),
               [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
               [S(':='),whileScratch,S('n')],
-              [S(':='),condScratch,[S('<'),S('n'),10]]
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]]
               ]
              ]
             ]
@@ -155,12 +155,12 @@ class ReduceTestCase(unittest.TestCase):
                  True)
         assert x is None
         assert self.stmts==[
-            [S(':='),condScratch,[S('<'),S('n'),10]],
+            [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]],
             [S('while'),
              condScratch,
              [S('begin'),
               [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
-              [S(':='),condScratch,[S('<'),S('n'),10]]
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]]
               ]
              ]
             ]
@@ -180,7 +180,7 @@ class ReduceTestCase(unittest.TestCase):
                  True)
         assert x is None
         expected=[
-            [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+            [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
             [S('while'),
              whileCondScratch,
              [S('begin'),
@@ -190,7 +190,7 @@ class ReduceTestCase(unittest.TestCase):
                ifCondScratch,
                [S('break')]
                ],
-              [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+              [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
               ]
              ]
             ]
@@ -211,7 +211,7 @@ class ReduceTestCase(unittest.TestCase):
                  True)
         assert x is None
         assert self.stmts==[
-            [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+            [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
             [S('while'),
              whileCondScratch,
              [S('begin'),
@@ -221,7 +221,7 @@ class ReduceTestCase(unittest.TestCase):
                ifCondScratch,
                [S('continue')]
                ],
-              [S(':='),whileCondScratch,[S('<'),S('n'),10]],
+              [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
               ]
              ]
             ]
@@ -229,7 +229,7 @@ class ReduceTestCase(unittest.TestCase):
     def testDefunStmt(self):
         x=self.r([S('defun'),S('fact'),[S('n')],
                   [S('if'),
-                   [S('<'),S('n'),2],
+                   [S('binop'),S('<'),S('n'),2],
                    1,
                    [S('binop'),S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
                    ]
@@ -248,13 +248,13 @@ class ReduceTestCase(unittest.TestCase):
         expected=[
             [S('def'),S('fact'),[S('n')],
              [S('begin'),
-              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
               [S('if'),
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
                 [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
-                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch3,[S('call'),S('fact'),scratch2]],
                 [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
@@ -263,6 +263,7 @@ class ReduceTestCase(unittest.TestCase):
               ]
              ]
             ]
+        print(self.stmts)
         assert self.stmts==expected
 
     def testDefunExpr(self):
@@ -287,13 +288,13 @@ class ReduceTestCase(unittest.TestCase):
         expected=[
             [S('def'),S('fact'),[S('n')],
              [S('begin'),
-              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
               [S('if'),
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
                 [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
-                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch3,[S('call'),S('fact'),scratch2]],
                 [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
@@ -328,13 +329,13 @@ class ReduceTestCase(unittest.TestCase):
         expected=[
             [S('def'),lambdaScratch,[S('n')],
              [S('begin'),
-              [S(':='),condScratch,[S('<'),S('n'),2]],
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
               [S('if'),
                condScratch,
                [S(':='),ifScratch,1],
                [S('begin'),
                 [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
-                [S(':='),scratch3,[S('fact'),scratch2]],
+                [S(':='),scratch3,[S('call'),S('fact'),scratch2]],
                 [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
                 [S(':='),ifScratch,scratch4]
                 ]
@@ -561,9 +562,9 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),1]],
+            [S(':='),scratch,[S('call'),S('f'),1]],
             [S('if'),scratch,
-             [S('f'),2],
+             [S('call'),S('f'),2],
              [S('begin')],
              ]
             ]
@@ -624,10 +625,10 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),1]],
+            [S(':='),scratch,[S('call'),S('f'),1]],
             [S('if'),scratch,
              [S('begin')],
-             [S('f'),2],
+             [S('call'),S('f'),2],
              ]
             ]
 
@@ -688,7 +689,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x==scratch
         assert self.stmts==[
             [S(':='),scratch,
-             [S('f'),7]],
+             [S('call'),S('f'),7]],
             ]
 
     def testFDot1Expr(self):
@@ -700,7 +701,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x==scratch2
         assert self.stmts==[
             [S(':='),scratch1,
-             [S('f'),7]],
+             [S('call'),S('f'),7]],
             [S(':='),scratch2,
              [S('.'),scratch1,S('y')]]
             ]
@@ -714,7 +715,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x==scratch2
         assert self.stmts==[
             [S(':='),scratch1,
-             [S('f'),7]],
+             [S('call'),S('f'),7]],
             [S(':='),scratch2,
              [S('.'),scratch1,S('y'),S('z')]]
             ]
@@ -750,7 +751,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('f'),7]
+            [S('call'),S('f'),7]
             ]
 
     def testFDot1Stmt(self):
@@ -760,7 +761,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),7]]
+            [S(':='),scratch,[S('call'),S('f'),7]]
             ]
 
     def testFDot2Stmt(self):
@@ -770,7 +771,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),7]]
+            [S(':='),scratch,[S('call'),S('f'),7]]
             ]
 
     def testRaise(self):
@@ -780,7 +781,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),7]],
+            [S(':='),scratch,[S('call'),S('f'),7]],
             [S('raise'),scratch]
             ]
 
@@ -818,7 +819,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch=gensym('scratch')
         assert x is None
         assert self.stmts==[
-            [S(':='),scratch,[S('x'),12]],
+            [S(':='),scratch,[S('call'),S('x'),12]],
             [S('print'),5,scratch]
             ]
 
@@ -847,7 +848,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch=gensym('scratch')
         assert x==scratch
         assert self.stmts==[
-            [S(':='),scratch,[S('x'),12]],
+            [S(':='),scratch,[S('call'),S('x'),12]],
             [S('print'),5,scratch]
             ]
 
@@ -872,7 +873,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch=gensym('scratch')
         assert x==scratch
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),7]],
+            [S(':='),scratch,[S('call'),S('f'),7]],
             ]
 
     def testPlus2Expr(self):
@@ -883,7 +884,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('+'),5,scratch1]],
             ]
 
@@ -896,7 +897,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch3=gensym('scratch')
         assert x==scratch3
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('+'),scratch1,9]],
             [S(':='),scratch3,[S('binop'),S('+'),5,scratch2]],
             ]
@@ -922,7 +923,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch=gensym('scratch')
         assert x==scratch
         assert self.stmts==[
-            [S(':='),scratch,[S('f'),7]],
+            [S(':='),scratch,[S('call'),S('f'),7]],
             ]
 
     def testTimes2Expr(self):
@@ -933,7 +934,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('*'),5,scratch1]],
             ]
 
@@ -946,7 +947,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch3=gensym('scratch')
         assert x==scratch3
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('*'),scratch1,9]],
             [S(':='),scratch3,[S('binop'),S('*'),5,scratch2]],
             ]
@@ -973,7 +974,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('-'),0,scratch1]],
             ]
 
@@ -985,7 +986,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('-'),5,scratch1]],
             ]
 
@@ -998,7 +999,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch3=gensym('scratch')
         assert x==scratch3
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('-'),5,scratch1]],
             [S(':='),scratch3,[S('binop'),S('-'),scratch2,9]],
             ]
@@ -1025,7 +1026,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('/'),1,scratch1]],
             ]
 
@@ -1037,7 +1038,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('/'),5,scratch1]],
             ]
 
@@ -1050,7 +1051,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch3=gensym('scratch')
         assert x==scratch3
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('/'),5,scratch1]],
             [S(':='),scratch3,[S('binop'),S('/'),scratch2,9]],
             ]
@@ -1077,7 +1078,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('//'),1,scratch1]],
             ]
 
@@ -1089,7 +1090,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch2=gensym('scratch')
         assert x==scratch2
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
             ]
 
@@ -1102,7 +1103,7 @@ class ReduceTestCase(unittest.TestCase):
         scratch3=gensym('scratch')
         assert x==scratch3
         assert self.stmts==[
-            [S(':='),scratch1,[S('f'),7]],
+            [S(':='),scratch1,[S('call'),S('f'),7]],
             [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
             [S(':='),scratch3,[S('binop'),S('//'),scratch2,9]],
             ]

@@ -1425,7 +1425,11 @@ class ReduceDefault(Reducer):
             return reduce(gomer[i],
                           False,
                           stmtCollector)
-        return list(map(reduceArg,range(len(gomer))))
+        return [S('call')]+list(map(reduceArg,range(len(gomer))))
+
+class ReduceDont(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        return gomer
 
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
@@ -1784,10 +1788,16 @@ reductionRules={S('if') : ReduceIf(),
                 S('/') : ReduceSubtractiveBinop(S('/'),1,lambda x: 1/x),
                 S('//') : ReduceSubtractiveBinop(S('//'),1,lambda x: 1//x),
                 S('==') : ReduceComparisonBinop(S('==')),
+                S('!=') : ReduceComparisonBinop(S('!=')),
+                S('<=') : ReduceComparisonBinop(S('<=')),
+                S('<') : ReduceComparisonBinop(S('<')),
+                S('>=') : ReduceComparisonBinop(S('>=')),
+                S('>') : ReduceComparisonBinop(S('>')),
                 S('in') : ReduceSimpleBinop(S('in')),
                 S('%') : ReduceSimpleBinop(S('%')),
                 S('[]') : ReduceSubscript(),
                 S('slice') : ReduceSlice(),
+                S('binop') : ReduceDont(),
                 }
 reduceDefault=ReduceDefault()
 
@@ -1814,25 +1824,3 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False):
             stmtCollector([S(':='),scratch,gomer])
             gomer=scratch
         return gomer
-
-def evalTopLevel(expr,scope,globals,isStmt,*,verbose=False):
-    pyleStmts=[]
-    pythonFlat=''
-    exprPyleList=build(scope,expr,isStmt).compyle(pyleStmts.append)
-    if exprPyleList is not None:
-        exprPyleAST=adder.pyle.buildExpr(exprPyleList)
-        exprPython=exprPyleAST.toPython(False)
-    else:
-        exprPython=None
-    for pyleList in pyleStmts:
-        pyleAST=adder.pyle.buildStmt(pyleList)
-        pythonTree=pyleAST.toPythonTree()
-        pythonFlat+=adder.pyle.flatten(pythonTree)
-    if verbose:
-        print('exprPyleList: ',exprPyleList)
-        print('pyleStmts: ',pyleStmts)
-        print('pythonFlat: ',pythonFlat)
-    if pythonFlat:
-        exec(pythonFlat,globals)
-    if exprPython is not None:
-        return eval(exprPython,globals)

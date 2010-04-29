@@ -498,11 +498,14 @@ def build(reg):
         assert len(reg)==4
         return Slice(build(reg[1]),build(reg[2]),build(reg[3]))
 
-    def buildPair(varAndVal):
-        (var,val)=varAndVal
-        return (build(var),build(val))
+    if f==S('call'):
+        def buildPair(varAndVal):
+            (var,val)=varAndVal
+            return (build(var),build(val))
 
-    return Call(build(reg[0]),
-                list(map(build,reg[1])),
-                list(map(buildPair,reg[2]))
-                )
+        assert len(reg)==4
+        return Call(build(reg[1]),
+                    list(map(build,reg[2])),
+                    list(map(buildPair,reg[3]))
+                    )
+    assert False
