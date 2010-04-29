@@ -394,6 +394,11 @@ finally:
     def testSubscript(self):
         assert Subscript(Var(S('x')),Var(S('y'))).toPythonTree()=="x[y]"
 
+    def testSliceLR(self):
+        assert Slice(Var(S('x')),
+                     Var(S('y')),
+                     Var(S('z'))).toPythonTree()=="x[y:z]"
+
     def testIf(self):
         assert self.toP(If(Var(S('c')),
                            Call(Var(S('print')),[Var(S('c'))],[]),
@@ -800,6 +805,10 @@ finally:
 
     def testSubscript(self):
         assert build([S('[]'),S('x'),S('y')]).toPythonTree()=="x[y]"
+
+    def testSliceLR(self):
+        assert build([S('slice'),S('x'),
+                      S('y'),S('z')]).toPythonTree()=="x[y:z]"
 
     def testIf(self):
         assert self.toP([S('if'),

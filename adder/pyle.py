@@ -221,6 +221,21 @@ class Subscript(IL):
     def __str__(self):
         return '%s[%s]' % (str(self.obj),str(self.key))
 
+class Slice(IL):
+    def __init__(self,obj,left,right):
+        assert isinstance(obj,Simple)
+        assert left is None or isinstance(left,Simple)
+        assert right is None or isinstance(right,Simple)
+
+        self.obj=obj
+        self.left=left
+        self.right=right
+
+    def __str__(self):
+        return '%s[%s:%s]' % (str(self.obj),
+                              str(self.left),
+                              str(self.right))
+
 class Quote(Stmt):
     def __init__(self,value):
         assert isinstance(value,Any)
@@ -478,7 +493,11 @@ def build(reg):
     if f==S('[]'):
         assert len(reg)==3
         return Subscript(build(reg[1]),build(reg[2]))
-    
+
+    if f==S('slice'):
+        assert len(reg)==4
+        return Slice(build(reg[1]),build(reg[2]),build(reg[3]))
+
     def buildPair(varAndVal):
         (var,val)=varAndVal
         return (build(var),build(val))

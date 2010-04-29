@@ -123,7 +123,6 @@
 <dd>Default rule</dd>
 
 <dt>slice</dt>
-<dd>TODO</dd>
 
 <dt>list</dt>
 <dd>TODO</dd>
@@ -193,7 +192,7 @@
 
 <ul>
 <li>symbol ::= [instance of adder.common.Symbol]</li>
-<li>literal ::= [instance of int, str, float, or bool]</li>
+<li>literal ::= [instance of int, str, float, bool, or None]</li>
 <li>list ::= [instance of list]</li>
 <li>var ::= $symbol</li>
 <li>any ::= $var | $literal | $list</li>
@@ -235,7 +234,18 @@
 
 <li>dot ::= LIST(. $simple $var*)
 </li>
-<li>subscript ::= LIST([] $simple $simple)</li>
+<li>subscript ::= LIST([] $simple $simple [$simple])</li>
+<li>slice ::= LIST(slice $simple $simple $simple)
+<ul>
+<li>Second and third args are the range of the slice.  If None,
+  omitted.  So (slice x None 5) is x[:5]; (slice x 5 None) is x[5:],
+  (slice x None None) s x[:], which, yes, is legal Python, and doesn't
+  <em>necessarily</em> mean the same as x.  (x[a:b] is equivalent to
+  x.__getitem__(slice(a,b,None)), which could return just about
+  anything.)
+</li>
+</ul>
+</li>
 
 <li>stmt ::= $return | $yield | $try | $raise | $reraise
       | $if | $while | $def | $break | $continue | $pass | $begin

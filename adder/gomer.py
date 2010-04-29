@@ -1745,15 +1745,21 @@ class ReduceSimpleBinop(Reducer):
             return [S('binop'),self.op,op1,op2]
 
 class ReduceSubscript(Reducer):
-    def __init__(self,op):
-        self.op=op
-
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer)==3
-        op1=reduce(gomer[1],False,stmtCollector)
-        op2=reduce(gomer[2],False,stmtCollector)
+        obj=reduce(gomer[1],False,stmtCollector)
+        index=reduce(gomer[2],False,stmtCollector)
         if not isStmt:
-            return [S('binop'),self.op,op1,op2]
+            return [S('[]'),obj,index]
+
+class ReduceSlice(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer) in [3,4]
+        obj=reduce(gomer[1],False,stmtCollector)
+        left=reduce(gomer[2],False,stmtCollector)
+        right=reduce(gomer[3],False,stmtCollector) if len(gomer)==4 else None
+        if not isStmt:
+            return [S('slice'),obj,left,right]
 
 reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
@@ -1780,7 +1786,8 @@ reductionRules={S('if') : ReduceIf(),
                 S('==') : ReduceComparisonBinop(S('==')),
                 S('in') : ReduceSimpleBinop(S('in')),
                 S('%') : ReduceSimpleBinop(S('%')),
-                S('[]') : ReduceSubscript(S('[]')),
+                S('[]') : ReduceSubscript(),
+                S('slice') : ReduceSlice(),
                 }
 reduceDefault=ReduceDefault()
 

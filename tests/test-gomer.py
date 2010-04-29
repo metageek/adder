@@ -1173,6 +1173,70 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch2,[S('binop'),S('in'),scratch1,S('l')]]
             ]
 
+    def testSubscriptExpr(self):
+        x=self.r([S('[]'),S('l'),5],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('[]'),S('l'),5]]
+            ]
+
+    def testSubscriptStmt(self):
+        x=self.r([S('[]'),S('l'),5],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testSubscriptNestingStmt(self):
+        x=self.r([S('[]'),S('l'),[S('+'),5,7]],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert self.stmts==[
+            [S(':='),scratch,[S('binop'),S('+'),5,7]]
+            ]
+
+    def testSliceLExpr(self):
+        x=self.r([S('slice'),S('l'),5],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('slice'),S('l'),5,None]]
+            ]
+
+    def testSliceLRExpr(self):
+        x=self.r([S('slice'),S('l'),5,7],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('slice'),S('l'),5,7]]
+            ]
+
+    def testSliceLStmt(self):
+        x=self.r([S('slice'),S('l'),5],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testSliceLRStmt(self):
+        x=self.r([S('slice'),S('l'),5,7],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),
