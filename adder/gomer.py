@@ -1421,11 +1421,30 @@ class Reducer:
 
 class ReduceDefault(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
-        def reduceArg(i):
-            return reduce(gomer[i],
-                          False,
-                          stmtCollector)
-        return [S('call')]+list(map(reduceArg,range(len(gomer))))
+        f=reduce(gomer[0],False,stmtCollector)
+        posArgs=[]
+        kwArgs=[]
+        keyword=None
+        for arg in gomer[1:]:
+            if isinstance(arg,S) and arg.isKeyword():
+                curKeyword=S(str(arg)[1:])
+            else:
+                curKeyword=None
+                argExpr=reduce(arg,False,stmtCollector)
+
+            if keyword is None:
+                if curKeyword:
+                    keyword=curKeyword
+                else:
+                    posArgs.append(argExpr)
+            else:
+                if curKeyword:
+                    raise TwoConsecutiveKeywords(keyword,curKeyword)
+                else:
+                    kwArgs.append([keyword,argExpr])
+                    keyword=None
+
+        return [S('call'),f,posArgs,kwArgs]
 
 class ReduceDont(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
