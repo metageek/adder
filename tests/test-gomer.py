@@ -1161,6 +1161,18 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('binop'),S('in'),5,S('l')]]
             ]
 
+    def testInExpr2(self):
+        x=self.r([S('in'),[S('+'),5,7],S('l')],
+                 False)
+
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        assert x==scratch2
+        assert self.stmts==[
+            [S(':='),scratch1,[S('binop'),S('+'),5,7]],
+            [S(':='),scratch2,[S('binop'),S('in'),scratch1,S('l')]]
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

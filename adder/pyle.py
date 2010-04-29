@@ -108,6 +108,7 @@ class Assign(Stmt):
                 or isinstance(rhs,Call)
                 or isinstance(rhs,Binop)
                 or isinstance(rhs,Dot)
+                or isinstance(rhs,Subscript)
                 or isinstance(rhs,Quote)
                 )
         self.lhs=lhs
@@ -195,6 +196,30 @@ class Binop(IL):
         return '%s%s%s' % (str(self.left),
                            str(self.op),
                            str(self.right))
+
+class Dot(IL):
+    def __init__(self,obj,members):
+        assert isinstance(obj,Simple)
+        assert isinstance(members,list)
+        for m in members:
+            assert isinstance(m,Var)
+
+        self.obj=obj
+        self.members=members
+
+    def __str__(self):
+        return '.'.join(map(str,[self.obj]+self.members))
+
+class Subscript(IL):
+    def __init__(self,obj,key):
+        assert isinstance(obj,Simple)
+        assert isinstance(key,Simple)
+
+        self.obj=obj
+        self.key=key
+
+    def __str__(self):
+        return '%s[%s]' % (str(self.obj),str(self.key))
 
 class Quote(Stmt):
     def __init__(self,value):
@@ -450,6 +475,9 @@ def build(reg):
         assert len(reg)>2
         return Dot(build(reg[1]),
                    list(map(build,reg[2:])))
+    if f==S('[]'):
+        assert len(reg)==3
+        return Subscript(build(reg[1]),build(reg[2]))
     
     def buildPair(varAndVal):
         (var,val)=varAndVal

@@ -386,6 +386,14 @@ finally:
                      Literal(9),
                      Literal(7)).toPythonTree()=="9*7"
 
+    def testDot(self):
+        assert Dot(Var(S('x')),
+                   [Var(S('y')),
+                    Var(S('z'))]).toPythonTree()=="x.y.z"
+
+    def testSubscript(self):
+        assert Subscript(Var(S('x')),Var(S('y'))).toPythonTree()=="x[y]"
+
     def testIf(self):
         assert self.toP(If(Var(S('c')),
                            Call(Var(S('print')),[Var(S('c'))],[]),
@@ -783,6 +791,15 @@ finally:
 
     def testBinop(self):
         assert build([S('binop'),S('*'),9,7]).toPythonTree()=="9*7"
+
+    def testDot(self):
+        assert build([S('.'),
+                      S('x'),
+                      S('y'),
+                      S('z')]).toPythonTree()=="x.y.z"
+
+    def testSubscript(self):
+        assert build([S('[]'),S('x'),S('y')]).toPythonTree()=="x[y]"
 
     def testIf(self):
         assert self.toP([S('if'),
