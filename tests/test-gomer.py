@@ -229,9 +229,9 @@ class ReduceTestCase(unittest.TestCase):
     def testDefunStmt(self):
         x=self.r([S('defun'),S('fact'),[S('n')],
                   [S('if'),
-                   [S('binop'),S('<'),S('n'),2],
+                   [S('<'),S('n'),2],
                    1,
-                   [S('binop'),S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
                    ]
                   ],
                  True)
@@ -263,7 +263,6 @@ class ReduceTestCase(unittest.TestCase):
               ]
              ]
             ]
-        print(self.stmts)
         assert self.stmts==expected
 
     def testDefunExpr(self):
