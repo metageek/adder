@@ -43,7 +43,7 @@ class Var(Simple):
         self.varSym=varSym
 
     def __str__(self):
-        return str(self.varSym)
+        return self.varSym.toPython()
 
 class Literal(Simple):
     def __init__(self,value):
@@ -194,7 +194,7 @@ class Binop(IL):
 
     def __str__(self):
         return '%s%s%s' % (str(self.left),
-                           str(self.op),
+                           str(self.op.varSym),
                            str(self.right))
 
 class Dot(IL):
