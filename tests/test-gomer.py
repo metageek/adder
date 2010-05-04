@@ -1273,6 +1273,78 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
         assert not self.stmts
 
+    def testToListStmt(self):
+        x=self.r([S('to-list'),S('l')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testToListExpr(self):
+        x=self.r([S('to-list'),S('l')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('call'),S('python.list'),[S('l')],[]]]
+            ]
+
+    def testToTupleStmt(self):
+        x=self.r([S('to-tuple'),S('l')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testToTupleExpr(self):
+        x=self.r([S('to-tuple'),S('l')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('call'),S('python.tuple'),[S('l')],[]]]
+            ]
+
+    def testToSetStmt(self):
+        x=self.r([S('to-set'),S('l')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testToSetExpr(self):
+        x=self.r([S('to-set'),S('l')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('call'),S('python.set'),[S('l')],[]]]
+            ]
+
+    def testToDictStmt(self):
+        x=self.r([S('to-dict'),S('l')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testToDictExpr(self):
+        x=self.r([S('to-dict'),S('l')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('call'),S('python.dict'),[S('l')],[]]]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -2535,6 +2607,25 @@ class ToPythonTestCase(unittest.TestCase):
 
         scratch=gensym('scratch')
         assert x is None
+
+    def testToListStmt(self):
+        assert self.toP([S('to-list'),S('l')],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testToListExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('to-list'),S('l')],
+                        False)==(
+            ["%s=python.list(l)" % scratchP],
+            "%s=python.list(l)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
 
 suite=unittest.TestSuite(
     ( 

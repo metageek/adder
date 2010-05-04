@@ -1420,8 +1420,11 @@ class Reducer:
         pass
 
 class ReduceDefault(Reducer):
+    def getF(self,gomer,stmtCollector):
+        return reduce(gomer[0],False,stmtCollector)
+
     def reduce(self,gomer,isStmt,stmtCollector):
-        f=reduce(gomer[0],False,stmtCollector)
+        f=self.getF(gomer,stmtCollector)
         posArgs=[]
         kwArgs=[]
         keyword=None
@@ -1449,6 +1452,19 @@ class ReduceDefault(Reducer):
 class ReduceDont(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         return gomer
+
+class ReduceRenameFunc(ReduceDefault):
+    def __init__(self,pyFunc,isPure):
+        self.pyFunc=S(pyFunc)
+        self.isPure=isPure
+
+    def getF(self,gomer,stmtCollector):
+        return self.pyFunc
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        res=ReduceDefault.reduce(self,gomer,isStmt,stmtCollector)
+        if not (isStmt and self.isPure):
+            return res
 
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
@@ -1817,6 +1833,10 @@ reductionRules={S('if') : ReduceIf(),
                 S('[]') : ReduceSubscript(),
                 S('slice') : ReduceSlice(),
                 S('binop') : ReduceDont(),
+                S('to-list') : ReduceRenameFunc('python.list',True),
+                S('to-tuple') : ReduceRenameFunc('python.tuple',True),
+                S('to-set') : ReduceRenameFunc('python.set',True),
+                S('to-dict') : ReduceRenameFunc('python.dict',True),
                 }
 reduceDefault=ReduceDefault()
 

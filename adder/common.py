@@ -4,6 +4,11 @@ pythonLegal=re.compile('^[_a-z0-9A-Z]+$')
 
 pythonReservedWords={'def','global','nonlocal','class'}
 
+def isLegalPython(s):
+    if s in pythonReservedWords:
+        return False
+    return pythonLegal.match(s)
+
 class Symbol:
     def __init__(self,s):
         if isinstance(s,Symbol):
@@ -56,20 +61,20 @@ class Symbol:
         return 'adder.common.Symbol('+repr(str(self))+')'
 
     def isLegalPython(self):
-        if self.s in pythonReservedWords:
-            return False
-        return pythonLegal.match(self.s)
+        return isLegalPython(self.s)
 
     def toPython(self):
-        if self.isLegalPython():
-            return self.s
-        def escape1(ch):
-            if ch=='_':
-                return '__'
-            if pythonLegal.match(ch):
-                return ch
-            return '_%04x' % ord(ch)
-        return '__adder__'+''.join(map(escape1,self))
+        def escapeSegment(seg):
+            if isLegalPython(seg):
+                return seg
+            def escape1(ch):
+                if ch=='_':
+                    return '__'
+                if pythonLegal.match(ch):
+                    return ch
+                return '_%04x' % ord(ch)
+            return '__adder__'+''.join(map(escape1,seg))
+        return '.'.join(map(escapeSegment,self.s.split('.')))
             
 
 def gensym(base=None):
