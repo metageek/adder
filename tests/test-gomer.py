@@ -1345,6 +1345,29 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('call'),S('python.dict'),[S('l')],[]]]
             ]
 
+    def testIsinstanceStmt(self):
+        x=self.r([S('isinstance'),S('l'),S('list')],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testIsinstanceExpr(self):
+        x=self.r([S('isinstance'),S('l'),S('list')],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('call'),
+                              S('python.isinstance'),
+                              [S('l'),S('list')],
+                              []
+                              ]
+             ]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -2681,6 +2704,25 @@ class ToPythonTestCase(unittest.TestCase):
                         False)==(
             ["%s=python.dict(l)" % scratchP],
             "%s=python.dict(l)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
+    def testIsinstanceStmt(self):
+        assert self.toP([S('isinstance'),S('l'),S('list')],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testIsinstanceExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('isinstance'),S('l'),S('list')],
+                        False)==(
+            ["%s=python.isinstance(l,list)" % scratchP],
+            "%s=python.isinstance(l,list)\n" % scratchP,
             scratchP,"%s\n" % scratchP
             )
 

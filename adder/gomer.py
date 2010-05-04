@@ -1837,6 +1837,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('to-tuple') : ReduceRenameFunc('python.tuple',True),
                 S('to-set') : ReduceRenameFunc('python.set',True),
                 S('to-dict') : ReduceRenameFunc('python.dict',True),
+                S('isinstance') : ReduceRenameFunc('python.isinstance',True),
                 }
 reduceDefault=ReduceDefault()
 
