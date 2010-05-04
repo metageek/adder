@@ -1496,6 +1496,21 @@ class ReduceMkDict(Reducer):
         if not isStmt:
             return res
 
+class ReduceReverse(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer)==2
+        if isStmt:
+            return reduce([[S('.'),gomer[1],S('reverse')]],
+                          isStmt,stmtCollector)
+        else:
+            scratch=gensym('scratch')
+            return reduce([S('begin'),
+                           [S(':='),scratch,[S('to-list'),gomer[1]]],
+                           [[S('.'),scratch,S('reverse')]],
+                           scratch],
+                          isStmt,stmtCollector)
+        
+
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
@@ -1875,11 +1890,12 @@ reductionRules={S('if') : ReduceIf(),
                 S('mk-dict') : ReduceMkDict(),
                 S('mk-symbol') : ReduceRenameFunc('adder.common.Symbol',
                                                   True),
+                S('reverse') : ReduceReverse(),
                 }
 reduceDefault=ReduceDefault()
 
 def getReducer(f):
-    if f in reductionRules:
+    if isinstance(f,S) and f in reductionRules:
         return reductionRules[f]
     else:
         return reduceDefault

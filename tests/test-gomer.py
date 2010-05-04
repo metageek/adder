@@ -2883,6 +2883,25 @@ class ToPythonTestCase(unittest.TestCase):
             scratchP,"%s\n" % scratchP
             )
 
+    def testReverseExpr(self):
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
+        gensym.nextId=1
+
+        self.verbose=True
+
+        assert self.toP([S('reverse'),S('l')],
+                        False)==(
+            ["%s=python.list(l)" % scratch1P,
+             "%s.reverse()" % scratch1P],
+            """%s=python.list(l)
+%s.reverse()
+""" % (scratch1P,scratch1P),
+            scratch1P,"%s\n" % scratch1P
+            )
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),
