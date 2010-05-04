@@ -804,6 +804,18 @@ finally:
     def testMkList(self):
         assert build([S('mk-list'),9,7]).toPythonTree()=="[9, 7]"
 
+    def testMkTuple(self):
+        assert build([S('mk-tuple'),9,7]).toPythonTree()=="(9, 7)"
+
+    def testMkSet0(self):
+        assert build([S('mk-set')]).toPythonTree()=="set()"
+
+    def testMkSet1(self):
+        assert build([S('mk-set'),9]).toPythonTree()=="{9}"
+
+    def testMkSet2(self):
+        assert build([S('mk-set'),9,7]).toPythonTree()=="{9, 7}"
+
     def testDot(self):
         assert build([S('.'),
                       S('x'),

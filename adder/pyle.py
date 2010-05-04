@@ -111,6 +111,9 @@ class Assign(Stmt):
                 or isinstance(rhs,Subscript)
                 or isinstance(rhs,Quote)
                 or isinstance(rhs,MkList)
+                or isinstance(rhs,MkTuple)
+                or isinstance(rhs,MkSet)
+                #or isinstance(rhs,MkDict)
                 )
         self.lhs=lhs
         self.rhs=rhs
@@ -386,6 +389,23 @@ class MkList(Stmt):
     def __str__(self):
         return '[%s]' % (', '.join(map(str,self.items)))
 
+class MkTuple(Stmt):
+    def __init__(self,items):
+        self.items=items
+
+    def __str__(self):
+        return '(%s)' % (', '.join(map(str,self.items)))
+
+class MkSet(Stmt):
+    def __init__(self,items):
+        self.items=items
+
+    def __str__(self):
+        if self.items:
+            return '{%s}' % (', '.join(map(str,self.items)))
+        else:
+            return 'set()'
+
 def build(reg):
     if isinstance(reg,S):
         return Var(reg)
@@ -406,6 +426,12 @@ def build(reg):
         return Yield(build(reg[1]))
     if f==S('mk-list'):
         return MkList(list(map(build,reg[1:])))
+    if f==S('mk-tuple'):
+        return MkTuple(list(map(build,reg[1:])))
+    if f==S('mk-set'):
+        return MkSet(list(map(build,reg[1:])))
+    #if f==S('mk-dict'):
+    #    return MkDict(list(map(build,reg[1:])))
     if f==S('try'):
         klassClauses=[]
         finallyClause=None
