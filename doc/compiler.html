@@ -132,13 +132,8 @@
 <dt>isinstance</dt>
 
 <dt>mk-list</dt>
-<dd>TODO</dd>
-
 <dt>mk-tuple</dt>
-<dd>TODO</dd>
-
 <dt>mk-set</dt>
-<dd>TODO</dd>
 
 <dt>mk-dict</dt>
 <dd>TODO</dd>
@@ -226,13 +221,13 @@
 </li>
 <li>import ::= LIST(import $var)
 </li>
-<li>mk-list ::= LIST(mk-list $var)
+<li>mk-list ::= LIST(mk-list $simple)
 </li>
-<li>mk-tuple ::= LIST(mk-tuple $var)
+<li>mk-tuple ::= LIST(mk-tuple $simple)
 </li>
-<li>mk-set ::= LIST(mk-set $var)
+<li>mk-set ::= LIST(mk-set $simple)
 </li>
-<li>mk-dict ::= LIST(mk-dict $var)
+<li>mk-dict ::= LIST(mk-dict LIST($var $simple)*)
 </li>
 
 <li>dot ::= LIST(. $simple $var*)
