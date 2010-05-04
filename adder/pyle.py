@@ -80,26 +80,50 @@ class Stmt(IL):
 class Call(Stmt):
     def __init__(self,f,posArgs,kwArgs):
         assert isinstance(f,Var)
-        for arg in posArgs:
-            assert isinstance(arg,Simple)
-        for (key,value) in kwArgs:
-            assert isinstance(key,Var)
-            assert isinstance(value,Simple)
+        if isinstance(posArgs,list):
+            for arg in posArgs:
+                assert isinstance(arg,Simple)
+        else:
+            assert isinstance(posArgs,Var)
+
+        if isinstance(kwArgs,list):
+            for (key,value) in kwArgs:
+                assert isinstance(key,Var)
+                assert isinstance(value,Simple)
+        else:
+            assert isinstance(kwArgs,Var)
 
         self.f=f
-        self.posArgs=list(posArgs)
-        self.kwArgs=list(map(tuple,kwArgs))
+        self.posArgs=posArgs
+        if isinstance(kwArgs,list):
+            self.kwArgs=list(map(tuple,kwArgs))
+        else:
+            self.kwArgs=kwArgs
 
     def __str__(self):
         def kwArgToStr(arg):
             (key,value)=arg
             return '%s=%s' % (str(key),value.toPythonTree())
 
-        return '%s(%s)' % (str(self.f),
-                           ','.join(list(map(str,self.posArgs))
-                                    +list(map(kwArgToStr,self.kwArgs))
-                                    )
-                           )
+        res=str(self.f)+'('
+        posArgsNonEmpty=False
+        if isinstance(self.posArgs,list):
+            res+=','.join(map(str,self.posArgs))
+            posArgsNonEmpty=len(self.posArgs)>0
+        else:
+            res+='*'+str(self.posArgs)
+            posArgsNonEmpty=True
+
+        if self.kwArgs:
+            if posArgsNonEmpty:
+                res+=','
+            if isinstance(self.kwArgs,list):
+                res+=','.join(map(kwArgToStr,self.kwArgs))
+            else:
+                res+='**'+str(self.kwArgs)
+
+        res+=')'
+        return res
 
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
@@ -549,8 +573,17 @@ def build(reg):
 
     if f==S('call'):
         assert len(reg)==4
-        return Call(build(reg[1]),
-                    list(map(build,reg[2])),
-                    list(map(buildPair,reg[3]))
-                    )
+
+        if isinstance(reg[2],list):
+            posArgs=list(map(build,reg[2]))
+        else:
+            posArgs=build(reg[2])
+
+        if isinstance(reg[3],list):
+            kwArgs=list(map(buildPair,reg[3]))
+        else:
+            kwArgs=build(reg[3])
+
+        return Call(build(reg[1]),posArgs,kwArgs)
+
     assert False

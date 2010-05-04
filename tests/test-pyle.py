@@ -639,6 +639,21 @@ class BuildToPythonTestCase(unittest.TestCase):
     def testCall0(self):
         assert self.toP([S('call'),S('fred'),[],[]])==("fred()","fred()\n")
 
+    def testCallVarargsPos(self):
+        assert self.toP([S('call'),S('fred'),S('args'),
+                         []])==("fred(*args)",
+                                "fred(*args)\n")
+
+    def testCallVarargsKw(self):
+        assert self.toP([S('call'),S('fred'),[],S('args')]
+                        )==("fred(**args)",
+                            "fred(**args)\n")
+
+    def testCallVarargsPosVarargsKw(self):
+        assert self.toP([S('call'),S('fred'),S('posArgs'),S('kwArgs')]
+                        )==("fred(*posArgs,**kwArgs)",
+                            "fred(*posArgs,**kwArgs)\n")
+
     def testCall1Pos(self):
         assert self.toP([S('call'),S('fred'),
                          [S('x')],

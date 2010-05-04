@@ -1440,6 +1440,53 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('mk-dict'),[S('x'),9],[S('y'),7]]]
             ]
 
+    def testApplyPos(self):
+        scratch=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('apply'),S('fred'),S('posArgs')],
+                      False)==scratch
+        assert self.stmts==[[S(':='),scratch,[S('call'),
+                                              S('fred'),
+                                              S('posArgs'),
+                                              []
+                                              ]
+                             ]
+                            ]
+
+    def testApplyKw(self):
+        scratch=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('apply'),
+                       S('fred'),
+                       [S('quote'),[]],
+                       S('kwArgs')
+                       ],
+                      False)==scratch
+        assert self.stmts==[[S(':='),scratch,[S('call'),
+                                              S('fred'),
+                                              [],
+                                              S('kwArgs')
+                                              ]
+                             ]
+                            ]
+
+    def testApplyPosKw(self):
+        scratch=gensym('scratch')
+        gensym.nextId=1
+        assert self.r([S('apply'),
+                       S('fred'),
+                       S('posArgs'),
+                       S('kwArgs')
+                       ],
+                      False)==scratch
+        assert self.stmts==[[S(':='),scratch,[S('call'),
+                                              S('fred'),
+                                              S('posArgs'),
+                                              S('kwArgs')
+                                              ]
+                             ]
+                            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1

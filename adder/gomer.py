@@ -1511,6 +1511,21 @@ class ReduceReverse(Reducer):
                           isStmt,stmtCollector)
         
 
+class ReduceApply(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        assert len(gomer) in [3,4]
+        f=reduce(gomer[1],False,stmtCollector)
+        if gomer[2]==[S('quote'),[]]:
+            posArgs=[]
+        else:
+            posArgs=reduce(gomer[2],False,stmtCollector)
+        if len(gomer)>3:
+            kwArgs=reduce(gomer[3],False,stmtCollector)
+        else:
+            kwArgs=[]
+
+        return [S('call'),f,posArgs,kwArgs]
+
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
@@ -1891,6 +1906,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('mk-symbol') : ReduceRenameFunc('adder.common.Symbol',
                                                   True),
                 S('reverse') : ReduceReverse(),
+                S('apply') : ReduceApply(),
                 }
 reduceDefault=ReduceDefault()
 
