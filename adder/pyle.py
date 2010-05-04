@@ -113,7 +113,7 @@ class Assign(Stmt):
                 or isinstance(rhs,MkList)
                 or isinstance(rhs,MkTuple)
                 or isinstance(rhs,MkSet)
-                #or isinstance(rhs,MkDict)
+                or isinstance(rhs,MkDict)
                 )
         self.lhs=lhs
         self.rhs=rhs
@@ -406,7 +406,20 @@ class MkSet(Stmt):
         else:
             return 'set()'
 
+class MkDict(Stmt):
+    def __init__(self,kvPairs):
+        self.kvPairs=kvPairs
+
+    def __str__(self):
+        def strPair(p):
+            (var,val)=p
+            return '%s: %s' % (str(var),str(val))
+        return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
+
 def build(reg):
+    def buildPair(varAndVal):
+        (var,val)=varAndVal
+        return (build(var),build(val))
     if isinstance(reg,S):
         return Var(reg)
     for t in [int,str,float,bool]:
@@ -430,8 +443,8 @@ def build(reg):
         return MkTuple(list(map(build,reg[1:])))
     if f==S('mk-set'):
         return MkSet(list(map(build,reg[1:])))
-    #if f==S('mk-dict'):
-    #    return MkDict(list(map(build,reg[1:])))
+    if f==S('mk-dict'):
+        return MkDict(list(map(buildPair,reg[1:])))
     if f==S('try'):
         klassClauses=[]
         finallyClause=None
@@ -535,10 +548,6 @@ def build(reg):
         return Slice(build(reg[1]),build(reg[2]),build(reg[3]))
 
     if f==S('call'):
-        def buildPair(varAndVal):
-            (var,val)=varAndVal
-            return (build(var),build(val))
-
         assert len(reg)==4
         return Call(build(reg[1]),
                     list(map(build,reg[2])),
