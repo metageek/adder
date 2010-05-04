@@ -1540,16 +1540,6 @@ class ToPythonTestCase(unittest.TestCase):
         assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
                       True) is None
         assert self.stmts==[
-            [S(':='),scratch1,[S('barney'),9,S('pebbles')]],
-            [S('fred'),7,scratch1]
-            ]
-
-    def testNestedFuncStmt(self):
-        scratch1=gensym('scratch')
-        gensym.nextId=1
-        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
-                      True) is None
-        assert self.stmts==[
             [S(':='),scratch1,[S('call'),S('barney'),[9,S('pebbles')],[]]],
             [S('call'),S('fred'),[7,scratch1],[]]
             ]
