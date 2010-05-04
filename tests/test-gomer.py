@@ -2864,6 +2864,25 @@ class ToPythonTestCase(unittest.TestCase):
             scratchP,"%s\n" % scratchP
             )
 
+    def testMkSymbolStmt(self):
+        assert self.toP([S('mk-symbol'),'l'],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testMkSymbolExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('mk-symbol'),'l'],
+                        False)==(
+            ["%s=adder.common.Symbol('l')" % scratchP],
+            "%s=adder.common.Symbol('l')\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

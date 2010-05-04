@@ -1867,11 +1867,14 @@ reductionRules={S('if') : ReduceIf(),
                 S('to-tuple') : ReduceRenameFunc('python.tuple',True),
                 S('to-set') : ReduceRenameFunc('python.set',True),
                 S('to-dict') : ReduceRenameFunc('python.dict',True),
-                S('isinstance') : ReduceRenameFunc('python.isinstance',True),
+                S('isinstance') : ReduceRenameFunc('python.isinstance',
+                                                   True),
                 S('mk-list') : ReduceFuncToSame('mk-list',True),
                 S('mk-tuple') : ReduceFuncToSame('mk-tuple',True),
                 S('mk-set') : ReduceFuncToSame('mk-set',True),
                 S('mk-dict') : ReduceMkDict(),
+                S('mk-symbol') : ReduceRenameFunc('adder.common.Symbol',
+                                                  True),
                 }
 reduceDefault=ReduceDefault()
 
