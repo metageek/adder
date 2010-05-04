@@ -2890,15 +2890,16 @@ class ToPythonTestCase(unittest.TestCase):
         scratch2P=scratch2.toPython()
         gensym.nextId=1
 
-        self.verbose=True
-
         assert self.toP([S('reverse'),S('l')],
                         False)==(
             ["%s=python.list(l)" % scratch1P,
-             "%s.reverse()" % scratch1P],
+             "%s=%s.reverse" % (scratch2P,scratch1P),
+             "%s()" % scratch2P,
+             ],
             """%s=python.list(l)
-%s.reverse()
-""" % (scratch1P,scratch1P),
+%s=%s.reverse
+%s()
+""" % (scratch1P,scratch2P,scratch1P,scratch2P),
             scratch1P,"%s\n" % scratch1P
             )
 
