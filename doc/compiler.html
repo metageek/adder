@@ -182,8 +182,7 @@
 <li>var ::= $symbol</li>
 <li>any ::= $var | $literal | $list</li>
 <li>simple ::= $var | $literal</li>
-<li>fcall ::= LIST(call $var $simple* (LIST($var $simple))*) TODO:
-  implement the keyword args
+<li>fcall ::= LIST(call $var $simple* (LIST($var $simple))*)
 </li>
 <li>assign ::= LIST(:= $var ($simple | $fcall | $binop
                              | $dot | $subscript | $quote
