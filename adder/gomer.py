@@ -1466,6 +1466,17 @@ class ReduceRenameFunc(ReduceDefault):
         if not (isStmt and self.isPure):
             return res
 
+class ReduceFuncToSame(Reducer):
+    def __init__(self,pyleTag,isPure):
+        self.pyleTag=S(pyleTag)
+        self.isPure=isPure
+
+    def reduce(self,gomer,isStmt,stmtCollector):
+        res=[self.pyleTag]+list(map(lambda s: reduce(s,False,stmtCollector),
+                                    gomer[1:]))
+        if not (isStmt and self.isPure):
+            return res
+
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
@@ -1838,6 +1849,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('to-set') : ReduceRenameFunc('python.set',True),
                 S('to-dict') : ReduceRenameFunc('python.dict',True),
                 S('isinstance') : ReduceRenameFunc('python.isinstance',True),
+                S('mk-list') : ReduceFuncToSame('mk-list',True),
                 }
 reduceDefault=ReduceDefault()
 

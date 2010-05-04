@@ -110,6 +110,7 @@ class Assign(Stmt):
                 or isinstance(rhs,Dot)
                 or isinstance(rhs,Subscript)
                 or isinstance(rhs,Quote)
+                or isinstance(rhs,MkList)
                 )
         self.lhs=lhs
         self.rhs=rhs
@@ -378,6 +379,13 @@ class Import(Stmt):
     def __str__(self):
         return 'import %s' % str(self.module)
 
+class MkList(Stmt):
+    def __init__(self,items):
+        self.items=items
+
+    def __str__(self):
+        return '[%s]' % (', '.join(map(str,self.items)))
+
 def build(reg):
     if isinstance(reg,S):
         return Var(reg)
@@ -396,6 +404,8 @@ def build(reg):
     if f==S('yield'):
         assert len(reg)==2
         return Yield(build(reg[1]))
+    if f==S('mk-list'):
+        return MkList(list(map(build,reg[1:])))
     if f==S('try'):
         klassClauses=[]
         finallyClause=None

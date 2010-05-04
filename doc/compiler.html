@@ -192,7 +192,10 @@
 <li>fcall ::= LIST(call $var $simple* (LIST($var $simple))*) TODO:
   implement the keyword args
 </li>
-<li>assign ::= LIST(:= $var ($simple | $fcall | $binop | $dot | $subscript | $quote))
+<li>assign ::= LIST(:= $var ($simple | $fcall | $binop
+                             | $dot | $subscript | $quote
+                             | $mk-list | $mk-tuple | $mk-set | $mk-dict
+                             ))
 </li>
 <li>return ::= LIST(return $simple)
 </li>
@@ -222,6 +225,14 @@
 <li>begin ::= LIST(begin $var*)
 </li>
 <li>import ::= LIST(import $var)
+</li>
+<li>mk-list ::= LIST(mk-list $var)
+</li>
+<li>mk-tuple ::= LIST(mk-tuple $var)
+</li>
+<li>mk-set ::= LIST(mk-set $var)
+</li>
+<li>mk-dict ::= LIST(mk-dict $var)
 </li>
 
 <li>dot ::= LIST(. $simple $var*)

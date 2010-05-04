@@ -386,6 +386,10 @@ finally:
                      Literal(9),
                      Literal(7)).toPythonTree()=="9*7"
 
+    def testMkList(self):
+        assert MkList([Literal(9),
+                       Literal(7)]).toPythonTree()=="[9, 7]"
+
     def testDot(self):
         assert Dot(Var(S('x')),
                    [Var(S('y')),
@@ -796,6 +800,9 @@ finally:
 
     def testBinop(self):
         assert build([S('binop'),S('*'),9,7]).toPythonTree()=="9*7"
+
+    def testMkList(self):
+        assert build([S('mk-list'),9,7]).toPythonTree()=="[9, 7]"
 
     def testDot(self):
         assert build([S('.'),

@@ -1368,6 +1368,24 @@ class ReduceTestCase(unittest.TestCase):
              ]
             ]
 
+    def testMkListStmt(self):
+        x=self.r([S('mk-list'),S('l'),9,7],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testMkListExpr(self):
+        x=self.r([S('mk-list'),S('l'),9,7],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('mk-list'),S('l'),9,7]]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -2723,6 +2741,25 @@ class ToPythonTestCase(unittest.TestCase):
                         False)==(
             ["%s=python.isinstance(l,list)" % scratchP],
             "%s=python.isinstance(l,list)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
+    def testMkListStmt(self):
+        assert self.toP([S('mk-list'),S('l'),9,7],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testMkListExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('mk-list'),S('l'),9,7],
+                        False)==(
+            ["%s=[l, 9, 7]" % scratchP],
+            "%s=[l, 9, 7]\n" % scratchP,
             scratchP,"%s\n" % scratchP
             )
 
