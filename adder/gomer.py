@@ -1850,6 +1850,8 @@ reductionRules={S('if') : ReduceIf(),
                 S('to-dict') : ReduceRenameFunc('python.dict',True),
                 S('isinstance') : ReduceRenameFunc('python.isinstance',True),
                 S('mk-list') : ReduceFuncToSame('mk-list',True),
+                S('mk-tuple') : ReduceFuncToSame('mk-tuple',True),
+                S('mk-set') : ReduceFuncToSame('mk-set',True),
                 }
 reduceDefault=ReduceDefault()
 

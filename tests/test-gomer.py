@@ -1386,6 +1386,42 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('mk-list'),S('l'),9,7]]
             ]
 
+    def testMkTupleStmt(self):
+        x=self.r([S('mk-tuple'),S('l'),9,7],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testMkTupleExpr(self):
+        x=self.r([S('mk-tuple'),S('l'),9,7],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('mk-tuple'),S('l'),9,7]]
+            ]
+
+    def testMkSetStmt(self):
+        x=self.r([S('mk-set'),S('l'),9,7],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testMkSetExpr(self):
+        x=self.r([S('mk-set'),S('l'),9,7],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('mk-set'),S('l'),9,7]]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -2760,6 +2796,44 @@ class ToPythonTestCase(unittest.TestCase):
                         False)==(
             ["%s=[l, 9, 7]" % scratchP],
             "%s=[l, 9, 7]\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
+    def testMkTupleStmt(self):
+        assert self.toP([S('mk-tuple'),S('l'),9,7],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testMkTupleExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('mk-tuple'),S('l'),9,7],
+                        False)==(
+            ["%s=(l, 9, 7)" % scratchP],
+            "%s=(l, 9, 7)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
+    def testMkSetStmt(self):
+        assert self.toP([S('mk-set'),S('l'),9,7],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testMkSetExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('mk-set'),S('l'),9,7],
+                        False)==(
+            ["%s={l, 9, 7}" % scratchP],
+            "%s={l, 9, 7}\n" % scratchP,
             scratchP,"%s\n" % scratchP
             )
 
