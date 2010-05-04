@@ -408,7 +408,7 @@ finally:
     def testMkDict(self):
         assert MkDict([[Var(S('x')),Literal(9)],
                        [Var(S('y')),Literal(7)]
-                       ]).toPythonTree()=="{x: 9, y: 7}"
+                       ]).toPythonTree()=="{'x': 9, 'y': 7}"
 
     def testDot(self):
         assert Dot(Var(S('x')),
@@ -838,7 +838,7 @@ finally:
 
     def testMkDict(self):
         assert build([S('mk-dict'),[S('x'),9],[S('y'),7]]
-                      ).toPythonTree()=="{x: 9, y: 7}"
+                      ).toPythonTree()=="{'x': 9, 'y': 7}"
 
     def testDot(self):
         assert build([S('.'),

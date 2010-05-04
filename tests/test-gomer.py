@@ -1422,6 +1422,24 @@ class ReduceTestCase(unittest.TestCase):
             [S(':='),scratch,[S('mk-set'),S('l'),9,7]]
             ]
 
+    def testMkDictStmt(self):
+        x=self.r([S('mk-dict'),S(':x'),9,S(':y'),7],
+                 True)
+
+        scratch=gensym('scratch')
+        assert x is None
+        assert not self.stmts
+
+    def testMkDictExpr(self):
+        x=self.r([S('mk-dict'),S(':x'),9,S(':y'),7],
+                 False)
+
+        scratch=gensym('scratch')
+        assert x==scratch
+        assert self.stmts==[
+            [S(':='),scratch,[S('mk-dict'),[S('x'),9],[S('y'),7]]]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -2824,6 +2842,25 @@ class ToPythonTestCase(unittest.TestCase):
                         False)==(
             ["%s={l, 9, 7}" % scratchP],
             "%s={l, 9, 7}\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+
+    def testMkDictStmt(self):
+        assert self.toP([S('mk-dict'),S(':x'),9,S(':y'),7],
+                        True)==(
+            [],"",
+            None,None
+            )
+
+    def testMkDictExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+
+        assert self.toP([S('mk-dict'),S(':x'),9,S(':y'),7],
+                        False)==(
+            ["%s={'x': 9, 'y': 7}" % scratchP],
+            "%s={'x': 9, 'y': 7}\n" % scratchP,
             scratchP,"%s\n" % scratchP
             )
 

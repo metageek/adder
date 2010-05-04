@@ -413,7 +413,7 @@ class MkDict(Stmt):
     def __str__(self):
         def strPair(p):
             (var,val)=p
-            return '%s: %s' % (str(var),str(val))
+            return '%s: %s' % (repr(str(var)),str(val))
         return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
 
 def build(reg):

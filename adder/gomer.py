@@ -1477,6 +1477,25 @@ class ReduceFuncToSame(Reducer):
         if not (isStmt and self.isPure):
             return res
 
+class ReduceMkDict(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        def groupPairs(i):
+            (first,hasFirst)=(None,False)
+            for x in i:
+                if hasFirst:
+                    yield (first,x)
+                    (first,hasFirst)=(None,False)
+                else:
+                    (first,hasFirst)=(x,True)
+            assert not hasFirst
+
+        res=[S('mk-dict')]
+        for (key,val) in groupPairs(gomer[1:]):
+            assert isinstance(key,S) and key.isKeyword()
+            res.append([S(str(key)[1:]),reduce(val,False,stmtCollector)])
+        if not isStmt:
+            return res
+
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
@@ -1852,6 +1871,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('mk-list') : ReduceFuncToSame('mk-list',True),
                 S('mk-tuple') : ReduceFuncToSame('mk-tuple',True),
                 S('mk-set') : ReduceFuncToSame('mk-set',True),
+                S('mk-dict') : ReduceMkDict(),
                 }
 reduceDefault=ReduceDefault()
 
