@@ -390,6 +390,21 @@ finally:
         assert MkList([Literal(9),
                        Literal(7)]).toPythonTree()=="[9, 7]"
 
+    def testMkTuple(self):
+        assert MkTuple([Literal(9),
+                        Literal(7)]).toPythonTree()=="(9, 7)"
+
+    def testMkSet0(self):
+        assert MkSet([]).toPythonTree()=="set()"
+
+
+    def testMkSet1(self):
+        assert MkSet([Literal(9)]).toPythonTree()=="{9}"
+
+    def testMkSet2(self):
+        assert MkSet([Literal(9),
+                      Literal(7)]).toPythonTree()=="{9, 7}"
+
     def testMkDict(self):
         assert MkDict([[Var(S('x')),Literal(9)],
                        [Var(S('y')),Literal(7)]
