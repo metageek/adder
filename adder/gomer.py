@@ -1526,6 +1526,42 @@ class ReduceApply(Reducer):
 
         return [S('call'),f,posArgs,kwArgs]
 
+class ReduceTry(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        def clauseStmt(clauseStmts):
+            clauseBody=[]
+            expr=reduce([S('begin')]+clauseStmts,
+                        isStmt,
+                        clauseBody.append)
+            return (maybeBegin(clauseBody),expr)
+
+        scratch=gensym('scratch') if not isStmt else None
+        last=None
+        body=[]
+        exnClauses=[]
+        finallyClause=None
+        for g in gomer[1:]:
+            assert not finallyClause
+            if isinstance(g,list) and isinstance(g[0],S) and g[0].isKeyword():
+                if g[0]==S(':finally'):
+                    (_,finallyStmt)=clauseStmt(g[1:])
+                    finallyClause=[S(':finally'),finallyStmt]
+                else:
+                    (exnStmt,exnScratch)=clauseStmt(g[2:])
+                    if scratch:
+                        exnStmt.append([S(':='),scratch,exnScratch])
+                    exnClauses.append([g[0],g[1],exnStmt])
+            else:
+                assert not exnClauses
+                last=reduce(g,isStmt,body.append)
+        if scratch and last:
+            body.append([S(':='),scratch,last])
+        res=[S('try'),maybeBegin(body)]+exnClauses
+        if finallyClause:
+            res.append(finallyClause)
+        stmtCollector(res)
+        return scratch
+
 class ReduceIf(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer) in [3,4]
@@ -1907,6 +1943,7 @@ reductionRules={S('if') : ReduceIf(),
                                                   True),
                 S('reverse') : ReduceReverse(),
                 S('apply') : ReduceApply(),
+                S('try') : ReduceTry(),
                 }
 reduceDefault=ReduceDefault()
 

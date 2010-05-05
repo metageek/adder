@@ -1487,6 +1487,30 @@ class ReduceTestCase(unittest.TestCase):
                              ]
                             ]
 
+    def testTry1ExnStmt(self):
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]]
+                  ],True)
+        assert x is None
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S('call'),S('z'),[12],[]]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S('call'),S('y'),[S('e')],[]]
+               ]
+              ]
+             ]
+            ]
+
 class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
