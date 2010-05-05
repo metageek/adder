@@ -835,7 +835,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print')]
+            [S('call'),S('print'),[],[]]
             ]
 
     def testPrint1Stmt(self):
@@ -844,7 +844,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print'),5]
+            [S('call'),S('print'),[5],[]]
             ]
 
     def testPrint2Stmt(self):
@@ -855,7 +855,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
         assert self.stmts==[
             [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('print'),5,scratch]
+            [S('call'),S('print'),[5,scratch],[]]
             ]
 
     def testPrint0Expr(self):
@@ -864,7 +864,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print')]
+            [S('call'),S('print'),[],[]]
             ]
 
     def testPrint1Expr(self):
@@ -873,7 +873,7 @@ class ReduceTestCase(unittest.TestCase):
 
         assert x==5
         assert self.stmts==[
-            [S('print'),5]
+            [S('call'),S('print'),[5],[]]
             ]
 
     def testPrint2Expr(self):
@@ -884,7 +884,7 @@ class ReduceTestCase(unittest.TestCase):
         assert x==scratch
         assert self.stmts==[
             [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('print'),5,scratch]
+            [S('call'),S('print'),[5,scratch],[]]
             ]
 
     def testPlus0Expr(self):
@@ -1505,7 +1505,7 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S('call'),S('y'),[S('e')],[]]
                ]
               ]
@@ -1535,7 +1535,7 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S(':='),scratch2,[S('call'),S('y'),[S('e')],[]]],
               [S(':='),scratch1,scratch2]
                ]
@@ -1570,7 +1570,7 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S('call'),S('y'),[S('e')],[]]
                ]
               ]
@@ -1611,7 +1611,7 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S(':='),scratch3,[S('call'),S('y'),[S('e')],[]]],
               [S(':='),scratch1,scratch3]
                ]
@@ -1648,12 +1648,12 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S('call'),S('y'),[S('e')],[]]
                ]
               ],
              [S(':finally'),
-              [S('print'),"gibbon"]
+              [S('call'),S('print'),["gibbon"],[]]
               ]
              ]
             ]
@@ -1674,7 +1674,8 @@ class ReduceTestCase(unittest.TestCase):
                    [S('print'),S('e')],
                    [S('y'),S('e')]],
                   [S(':finally'),
-                   [S('print'),"gibbon"]]
+                   [S('print'),"gibbon"]
+                   ]
                   ],
                  False)
         assert x is scratch1
@@ -1694,13 +1695,13 @@ class ReduceTestCase(unittest.TestCase):
               ],
              [S(':Exception'),S('e'),
               [S('begin'),
-               [S('print'),S('e')],
+               [S('call'),S('print'),[S('e')],[]],
                [S(':='),scratch3,[S('call'),S('y'),[S('e')],[]]],
               [S(':='),scratch1,scratch3]
                ]
               ],
              [S(':finally'),
-              [S('print'),"gibbon"]
+              [S('call'),S('print'),["gibbon"],[]]
               ]
              ]
             ]
@@ -2535,7 +2536,7 @@ class ToPythonTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print')]
+            [S('call'),S('print'),[],[]]
             ]
 
     def testPrint1Stmt(self):
@@ -2544,7 +2545,7 @@ class ToPythonTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print'),5]
+            [S('call'),S('print'),[5],[]]
             ]
 
     def testPrint2Stmt(self):
@@ -2555,7 +2556,7 @@ class ToPythonTestCase(unittest.TestCase):
         assert x is None
         assert self.stmts==[
             [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('print'),5,scratch]
+            [S('call'),S('print'),[5,scratch],[]]
             ]
 
     def testPrint0Expr(self):
@@ -2564,7 +2565,7 @@ class ToPythonTestCase(unittest.TestCase):
 
         assert x is None
         assert self.stmts==[
-            [S('print')]
+            [S('call'),S('print'),[],[]]
             ]
 
     def testPrint1Expr(self):
@@ -2573,7 +2574,7 @@ class ToPythonTestCase(unittest.TestCase):
 
         assert x==5
         assert self.stmts==[
-            [S('print'),5]
+            [S('call'),S('print'),[5],[]]
             ]
 
     def testPrint2Expr(self):
@@ -2584,7 +2585,7 @@ class ToPythonTestCase(unittest.TestCase):
         assert x==scratch
         assert self.stmts==[
             [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('print'),5,scratch]
+            [S('call'),S('print'),[5,scratch],[]]
             ]
 
     def testPlus0Expr(self):
@@ -3167,6 +3168,269 @@ class ToPythonTestCase(unittest.TestCase):
 """ % (scratch1P,scratch2P,scratch1P,scratch2P),
             scratch1P,"%s\n" % scratch1P
             )
+
+    def testTry1ExnStmt(self):
+        assert self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]]
+                         ],
+                        True)==(
+            [("try:",
+              [("f(9,7)",
+                "z(12)")],
+              "except Exception as e:",
+              [("print(e)",
+                "y(e)")]
+              )
+             ],
+            """try:
+    f(9,7)
+    z(12)
+except Exception as e:
+    print(e)
+    y(e)
+""",
+            None,None)
+
+    def testTry1ExnExpr(self):
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
+        scratch3=gensym('scratch')
+        scratch3P=scratch3.toPython()
+        gensym.nextId=1
+        actual=self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]]
+                         ],
+                        False)
+        expected=(
+            [("try:",
+              [("f(9,7)",
+                "%s=z(12)" % scratch3P,
+                "%s=%s" % (scratch1P,scratch3P)
+                )],
+              "except Exception as e:",
+              [("print(e)",
+                "%s=y(e)" % scratch2P,
+                "%s=%s" % (scratch1P,scratch2P)
+                )]
+              )
+             ],"""try:
+    f(9,7)
+    %s=z(12)
+    %s=%s
+except Exception as e:
+    print(e)
+    %s=y(e)
+    %s=%s
+""" % (scratch3P,scratch1P,scratch3P,scratch2P,scratch1P,scratch2P),
+            scratch1P,"%s\n" % scratch1P)
+        assert actual==expected
+
+    def testTry2ExnStmt(self):
+        assert self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':KeyError'),S('dd'),
+                          [S('fiddle'),S('dd')],
+                          [S('flangle'),S('bloober')]],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]]
+                         ],
+                        True)==(
+            [("try:",
+              [("f(9,7)",
+                "z(12)")],
+              "except KeyError as dd:",
+              [("fiddle(dd)",
+                "flangle(bloober)")],
+              "except Exception as e:",
+              [("print(e)",
+                "y(e)")]
+              )
+             ],
+            """try:
+    f(9,7)
+    z(12)
+except KeyError as dd:
+    fiddle(dd)
+    flangle(bloober)
+except Exception as e:
+    print(e)
+    y(e)
+""",
+            None,None)
+
+    def testTry2ExnExpr(self):
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
+        scratch3=gensym('scratch')
+        scratch3P=scratch3.toPython()
+        scratch4=gensym('scratch')
+        scratch4P=scratch4.toPython()
+        gensym.nextId=1
+        actual=self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':KeyError'),S('dd'),
+                          [S('fiddle'),S('dd')],
+                          [S('flangle'),S('bloober')]],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]]
+                         ],
+                        False)
+        expected=(
+            [("try:",
+              [("f(9,7)",
+                "%s=z(12)" % scratch4P,
+                "%s=%s" % (scratch1P,scratch4P)
+                )],
+              "except KeyError as dd:",
+              [("fiddle(dd)",
+                "%s=flangle(bloober)" % scratch2P,
+                "%s=%s" % (scratch1P,scratch2P)
+                )],
+              "except Exception as e:",
+              [("print(e)",
+                "%s=y(e)" % scratch3P,
+                "%s=%s" % (scratch1P,scratch3P)
+                )]
+              )
+             ],"""try:
+    f(9,7)
+    %s=z(12)
+    %s=%s
+except KeyError as dd:
+    fiddle(dd)
+    %s=flangle(bloober)
+    %s=%s
+except Exception as e:
+    print(e)
+    %s=y(e)
+    %s=%s
+""" % (scratch4P,scratch1P,scratch4P,
+       scratch2P,scratch1P,scratch2P,
+       scratch3P,scratch1P,scratch3P),
+            scratch1P,"%s\n" % scratch1P)
+        assert actual==expected
+
+    def testTry2ExnFinallyStmt(self):
+        actual=self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':KeyError'),S('dd'),
+                          [S('fiddle'),S('dd')],
+                          [S('flangle'),S('bloober')]],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]],
+                         [S(':finally'),
+                          [S('print'),"gibbon"]]
+                         ],
+                        True)
+        expected=(
+            [("try:",
+              [("f(9,7)",
+                "z(12)")],
+              "except KeyError as dd:",
+              [("fiddle(dd)",
+                "flangle(bloober)")],
+              "except Exception as e:",
+              [("print(e)",
+                "y(e)")],
+              "finally:",
+              ["print('gibbon')"]
+              )
+             ],
+            """try:
+    f(9,7)
+    z(12)
+except KeyError as dd:
+    fiddle(dd)
+    flangle(bloober)
+except Exception as e:
+    print(e)
+    y(e)
+finally:
+    print('gibbon')
+""",
+            None,None)
+        assert actual==expected
+
+    def testTry2ExnFinallyExpr(self):
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
+        scratch3=gensym('scratch')
+        scratch3P=scratch3.toPython()
+        scratch4=gensym('scratch')
+        scratch4P=scratch4.toPython()
+        gensym.nextId=1
+        actual=self.toP([S('try'),
+                         [S('f'),9,7],
+                         [S('z'),12],
+                         [S(':KeyError'),S('dd'),
+                          [S('fiddle'),S('dd')],
+                          [S('flangle'),S('bloober')]],
+                         [S(':Exception'),S('e'),
+                          [S('print'),S('e')],
+                          [S('y'),S('e')]],
+                         [S(':finally'),
+                          [S('print'),"gibbon"]
+                          ]
+                         ],
+                        False)
+        expected=(
+            [("try:",
+              [("f(9,7)",
+                "%s=z(12)" % scratch4P,
+                "%s=%s" % (scratch1P,scratch4P)
+                )],
+              "except KeyError as dd:",
+              [("fiddle(dd)",
+                "%s=flangle(bloober)" % scratch2P,
+                "%s=%s" % (scratch1P,scratch2P)
+                )],
+              "except Exception as e:",
+              [("print(e)",
+                "%s=y(e)" % scratch3P,
+                "%s=%s" % (scratch1P,scratch3P)
+                )],
+              "finally:",
+              ["print('gibbon')"]
+              )
+             ],"""try:
+    f(9,7)
+    %s=z(12)
+    %s=%s
+except KeyError as dd:
+    fiddle(dd)
+    %s=flangle(bloober)
+    %s=%s
+except Exception as e:
+    print(e)
+    %s=y(e)
+    %s=%s
+finally:
+    print('gibbon')
+""" % (scratch4P,scratch1P,scratch4P,
+       scratch2P,scratch1P,scratch2P,
+       scratch3P,scratch1P,scratch3P),
+            scratch1P,"%s\n" % scratch1P)
+        assert actual==expected
 
 suite=unittest.TestSuite(
     ( 

@@ -1794,10 +1794,13 @@ class ReduceRaise(Reducer):
 class ReducePrint(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         expr=None
-        stmt=[S('print')]
+        stmt=[S('call'),S('print')]
+        args=[]
         for arg in gomer[1:]:
             expr=reduce(arg,False,stmtCollector)
-            stmt.append(expr)
+            args.append(expr)
+        stmt.append(args)
+        stmt.append([])
         stmtCollector(stmt)
         if not isStmt:
             return expr
