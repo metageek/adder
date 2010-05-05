@@ -10,13 +10,20 @@ def isLegalPython(s):
     return pythonLegal.match(s)
 
 class Symbol:
-    def __init__(self,s):
+    registry={}
+    def __new__(cls,s):
         if isinstance(s,Symbol):
-            self.s=s.s
-        else:
-            assert isinstance(s,str)
-            assert s
-            self.s=s
+            return s
+        assert isinstance(s,str)
+        assert s
+        try:
+            return Symbol.registry[s]
+        except KeyError:
+            Symbol.registry[s]=super(Symbol,cls).__new__(cls)
+            return Symbol.registry[s]
+
+    def __init__(self,s):
+        self.s=s
 
     def __getitem__(self,i):
         return self.s[i]
@@ -37,7 +44,9 @@ class Symbol:
         return 7*hash(self.s)
 
     def __eq__(self,other):
-        return isinstance(other,Symbol) and self.s==other.s
+        return ((self is other)
+                or (isinstance(other,Symbol) and self.s==other.s)
+                )
 
     def __ne__(self,other):
         return not (self==other)
