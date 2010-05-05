@@ -1494,7 +1494,8 @@ class ReduceTestCase(unittest.TestCase):
                   [S(':Exception'),S('e'),
                    [S('print'),S('e')],
                    [S('y'),S('e')]]
-                  ],True)
+                  ],
+                 True)
         assert x is None
         assert self.stmts==[
             [S('try'),
@@ -1507,6 +1508,199 @@ class ReduceTestCase(unittest.TestCase):
                [S('print'),S('e')],
                [S('call'),S('y'),[S('e')],[]]
                ]
+              ]
+             ]
+            ]
+
+    def testTry1ExnExpr(self):
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]]
+                  ],
+                 False)
+        assert x is scratch1
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S(':='),scratch3,[S('call'),S('z'),[12],[]]],
+              [S(':='),scratch1,scratch3]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S(':='),scratch2,[S('call'),S('y'),[S('e')],[]]],
+              [S(':='),scratch1,scratch2]
+               ]
+              ]
+             ]
+            ]
+
+    def testTry2ExnStmt(self):
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':KeyError'),S('dd'),
+                   [S('fiddle'),S('dd')],
+                   [S('flangle'),S('bloober')]],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]]
+                  ],
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S('call'),S('z'),[12],[]]
+              ],
+             [S(':KeyError'),S('dd'),
+              [S('begin'),
+               [S('call'),S('fiddle'),[S('dd')],[]],
+               [S('call'),S('flangle'),[S('bloober')],[]]
+               ]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S('call'),S('y'),[S('e')],[]]
+               ]
+              ]
+             ]
+            ]
+
+    def testTry2ExnExpr(self):
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':KeyError'),S('dd'),
+                   [S('fiddle'),S('dd')],
+                   [S('flangle'),S('bloober')]],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]]
+                  ],
+                 False)
+        assert x is scratch1
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S(':='),scratch4,[S('call'),S('z'),[12],[]]],
+              [S(':='),scratch1,scratch4]
+              ],
+             [S(':KeyError'),S('dd'),
+              [S('begin'),
+               [S('call'),S('fiddle'),[S('dd')],[]],
+               [S(':='),scratch2,[S('call'),S('flangle'),[S('bloober')],[]]],
+              [S(':='),scratch1,scratch2]
+               ]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S(':='),scratch3,[S('call'),S('y'),[S('e')],[]]],
+              [S(':='),scratch1,scratch3]
+               ]
+              ]
+             ]
+            ]
+
+    def testTry2ExnFinallyStmt(self):
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':KeyError'),S('dd'),
+                   [S('fiddle'),S('dd')],
+                   [S('flangle'),S('bloober')]],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]],
+                  [S(':finally'),
+                   [S('print'),"gibbon"]]
+                  ],
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S('call'),S('z'),[12],[]]
+              ],
+             [S(':KeyError'),S('dd'),
+              [S('begin'),
+               [S('call'),S('fiddle'),[S('dd')],[]],
+               [S('call'),S('flangle'),[S('bloober')],[]]
+               ]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S('call'),S('y'),[S('e')],[]]
+               ]
+              ],
+             [S(':finally'),
+              [S('print'),"gibbon"]
+              ]
+             ]
+            ]
+
+    def testTry2ExnFinallyExpr(self):
+        scratch1=gensym('scratch')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('try'),
+                  [S('f'),9,7],
+                  [S('z'),12],
+                  [S(':KeyError'),S('dd'),
+                   [S('fiddle'),S('dd')],
+                   [S('flangle'),S('bloober')]],
+                  [S(':Exception'),S('e'),
+                   [S('print'),S('e')],
+                   [S('y'),S('e')]],
+                  [S(':finally'),
+                   [S('print'),"gibbon"]]
+                  ],
+                 False)
+        assert x is scratch1
+        assert self.stmts==[
+            [S('try'),
+             [S('begin'),
+              [S('call'),S('f'),[9,7],[]],
+              [S(':='),scratch4,[S('call'),S('z'),[12],[]]],
+              [S(':='),scratch1,scratch4]
+              ],
+             [S(':KeyError'),S('dd'),
+              [S('begin'),
+               [S('call'),S('fiddle'),[S('dd')],[]],
+               [S(':='),scratch2,[S('call'),S('flangle'),[S('bloober')],[]]],
+              [S(':='),scratch1,scratch2]
+               ]
+              ],
+             [S(':Exception'),S('e'),
+              [S('begin'),
+               [S('print'),S('e')],
+               [S(':='),scratch3,[S('call'),S('y'),[S('e')],[]]],
+              [S(':='),scratch1,scratch3]
+               ]
+              ],
+             [S(':finally'),
+              [S('print'),"gibbon"]
               ]
              ]
             ]

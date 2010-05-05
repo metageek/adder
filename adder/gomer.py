@@ -1537,14 +1537,14 @@ class ReduceTry(Reducer):
 
         scratch=gensym('scratch') if not isStmt else None
         last=None
-        body=[]
+        gomerBody=[]
         exnClauses=[]
         finallyClause=None
         for g in gomer[1:]:
             assert not finallyClause
             if isinstance(g,list) and isinstance(g[0],S) and g[0].isKeyword():
                 if g[0]==S(':finally'):
-                    (_,finallyStmt)=clauseStmt(g[1:])
+                    (finallyStmt,_)=clauseStmt(g[1:])
                     finallyClause=[S(':finally'),finallyStmt]
                 else:
                     (exnStmt,exnScratch)=clauseStmt(g[2:])
@@ -1553,10 +1553,15 @@ class ReduceTry(Reducer):
                     exnClauses.append([g[0],g[1],exnStmt])
             else:
                 assert not exnClauses
-                last=reduce(g,isStmt,body.append)
-        if scratch and last:
-            body.append([S(':='),scratch,last])
-        res=[S('try'),maybeBegin(body)]+exnClauses
+                gomerBody.append(g)
+        pyleBody=[]
+        for g in gomerBody[:-1]:
+            reduce(g,True,pyleBody.append)
+        if gomerBody:
+            last=reduce(gomerBody[-1],isStmt,pyleBody.append)
+        if scratch:
+            pyleBody.append([S(':='),scratch,last])
+        res=[S('try'),maybeBegin(pyleBody)]+exnClauses
         if finallyClause:
             res.append(finallyClause)
         stmtCollector(res)
