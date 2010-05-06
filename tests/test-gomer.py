@@ -3837,6 +3837,43 @@ class EvalTestCase(unittest.TestCase):
 
         assert z==289
 
+    def testWhile(self):
+        (val,g)=self.e([S('while'),
+                        [S('<='),S('n'),7],
+                        [S(':='),S('f'),[S('*'),S('n'),S('f')]],
+                        [S(':='),S('n'),[S('+'),S('n'),1]],
+                        S('f')],
+                       f=1,n=1)
+        assert val==5040
+        assert g['f']==5040
+        assert g['n']==8
+
+    def testBreak(self):
+        (val,g)=self.e([S('while'),
+                        [S('<='),S('n'),7],
+                        [S(':='),S('f'),[S('*'),S('n'),S('f')]],
+                        [S(':='),S('n'),[S('+'),S('n'),1]],
+                        [S('if'),[S('=='),S('n'),5],[S('break')]],
+                        S('f')],
+                       f=1,n=1)
+        assert val is None
+        assert g['f']==24
+        assert g['n']==5
+
+    def testContinue(self):
+        (val,g)=self.e([S('while'),
+                        [S('<='),S('n'),7],
+                        [S(':='),S('f'),[S('*'),S('n'),S('f')]],
+                        [S(':='),S('n'),[S('+'),S('n'),1]],
+                        [S('if'),[S('=='),S('n'),5],[S('continue')]],
+                        [[S('.'),S('sidebar'),S('append')],S('n')],
+                        S('f')],
+                       f=1,n=1,sidebar=[])
+        assert val==5040
+        assert g['f']==5040
+        assert g['n']==8
+        assert g['sidebar']==[2,3,4,6,7,8]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

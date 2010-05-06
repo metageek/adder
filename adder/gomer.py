@@ -197,6 +197,8 @@ class ReduceIf(Reducer):
         return scratch
 
 class ReduceWhile(Reducer):
+    scratchStack=[]
+
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer)>=2
         if isStmt:
@@ -204,6 +206,7 @@ class ReduceWhile(Reducer):
         else:
             scratch=gensym('while')
             stmtCollector([S(':='),scratch,None])
+        ReduceWhile.scratchStack.append(scratch)
         condBody=[]
         condExpr=reduce(gomer[1],False,condBody.append)
         for cb in condBody:
@@ -219,6 +222,7 @@ class ReduceWhile(Reducer):
         for cb in condBody:
             body.append(cb)
         stmtCollector([S('while'),condExpr,maybeBegin(body)])
+        ReduceWhile.scratchStack.pop()
         return scratch
 
 class ReduceDefun(Reducer):
@@ -294,13 +298,16 @@ class ReduceImport(Reducer):
         if not isStmt:
             return last
 
-class ReduceAtom(Reducer):
+class ReduceBreakOrContinue(Reducer):
     def __init__(self,name):
         self.name=S(name)
 
     def reduce(self,gomer,isStmt,stmtCollector):
         assert isStmt
         assert len(gomer)==1
+        scratch=ReduceWhile.scratchStack[-1]
+        if scratch:
+            stmtCollector([S(':='),scratch,None])
         stmtCollector([self.name])
 
 class ReduceQuote(Reducer):
@@ -516,8 +523,8 @@ reductionRules={S('if') : ReduceIf(),
                 S(':=') : ReduceAssign(),
                 S('begin') : ReduceBegin(),
                 S('import') : ReduceImport(),
-                S('break') : ReduceAtom('break'),
-                S('continue') : ReduceAtom('continue'),
+                S('break') : ReduceBreakOrContinue('break'),
+                S('continue') : ReduceBreakOrContinue('continue'),
                 S('quote') : ReduceQuote(),
                 S('return') : ReduceReturn(),
                 S('yield') : ReduceYield(),
