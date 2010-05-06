@@ -30,7 +30,8 @@
   eventually).</strike> With the new version of Pyle, the process of
   transforming Gomer to Pyle is purely context-free.  The intelligence
   formerly embodied in the Gomer-to-Pyle translation is going to have
-  to move to the Adder-to-Gomer translation.
+  to move to the Adder-to-Gomer translation.  As a result, Gomer no
+  longer includes constructs such as (scope) and (defvar).
 </p>
 
 <h4>Reducing Gomer to Pyle</h4>
@@ -47,15 +48,9 @@
 <dt>begin</dt>
 <dt>import</dt>
 
-<dt>defvar</dt>
-<dd>TODO</dd>
-
 <dt>defun</dt>
 <dt>if</dt>
 <dt>lambda</dt>
-
-<dt>scope</dt>
-<dd>TODO</dd>
 
 <dt>quote</dt>
 
@@ -137,9 +132,6 @@
 <dt>mk-symbol</dt>
 
 <dt>reverse</dt>
-
-<dt>stdenv</dt>
-<dd>TODO</dd>
 
 <dt>apply</dt>
 
