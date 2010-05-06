@@ -3874,6 +3874,73 @@ class EvalTestCase(unittest.TestCase):
         assert g['n']==8
         assert g['sidebar']==[2,3,4,6,7,8]
 
+    def testYield(self):
+        (val,g)=self.e([S('defun'),S('f'),[S('n')],
+                        [S(':='),S('i'),1],
+                        [S('while'),[S('<='),S('i'),S('n')],
+                         [S('yield'),[S('*'),S('i'),S('i')]],
+                         [S(':='),S('i'),[S('+'),S('i'),1]]]])
+        assert 'f' in g
+        assert val is g['f']
+        assert list(g['f'](5))==[1,4,9,16,25]
+
+    def testReturn(self):
+        (val,g)=self.e([S('defun'),S('f'),[S('a'),S('b')],
+                        [S('return'),[S('mk-list'),S('a'),S('b')]],
+                        [S('+'),
+                         [S('*'),S('a'),S('a')],
+                         [S('*'),S('b'),S('b')]]])
+        assert val is g['f']
+        assert g['f'](3,4)==[3,4]
+
+    def testAnd1(self):
+        (val,g)=self.e([S('and'),5,False,S('nonesuch')])
+        assert val is False
+
+    def testAnd2(self):
+        try:
+            (val,g)=self.e([S('and'),5,True,S('nonesuch')])
+        except NameError as ne:
+            assert ne.args==("name 'nonesuch' is not defined",)
+
+    def testAnd3(self):
+        (val,g)=self.e([S('and'),5,True,S('gensym')])
+        assert val is gensym
+
+    def testOr1(self):
+        (val,g)=self.e([S('or'),5,False,S('nonesuch')])
+        assert val is 5
+
+    def testOr2(self):
+        try:
+            (val,g)=self.e([S('or'),False,S('nonesuch'),5])
+        except NameError as ne:
+            assert ne.args==("name 'nonesuch' is not defined",)
+
+    def testOr3(self):
+        (val,g)=self.e([S('or'),False,S('gensym'),5])
+        assert val is gensym
+
+    def testDot1(self):
+        class O:
+            pass
+        o1=O()
+        o2=O()
+        o1.x=o2
+        o2.y=17
+        (val,g)=self.e([S('.'),S('o'),S('x')],o=o1)
+        assert val is o2
+
+    def testDot2(self):
+        class O:
+            pass
+        o1=O()
+        o2=O()
+        o1.x=o2
+        o2.y=17
+        (val,g)=self.e([S('.'),S('o'),S('x'),S('y')],o=o1)
+        assert val==17
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

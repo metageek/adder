@@ -226,7 +226,9 @@ class ReduceWhile(Reducer):
         return scratch
 
 class ReduceDefun(Reducer):
+    isGeneratorStack=[]
     def reduce(self,gomer,isStmt,stmtCollector):
+        ReduceDefun.isGeneratorStack.append(False)
         name=gomer[1]
         argList=gomer[2]
         body=[]
@@ -235,7 +237,8 @@ class ReduceDefun(Reducer):
             for g in bodyGs[:-1]:
                 reduce(g,True,body.append)
             resExpr=reduce(bodyGs[-1],False,body.append)
-            reduce([S('return'),resExpr],True,body.append)
+            if not ReduceDefun.isGeneratorStack.pop():
+                reduce([S('return'),resExpr],True,body.append)
         if body:
             body=maybeBegin(body)
         else:
@@ -339,6 +342,13 @@ class ReduceYield(Reducer):
     #  the value of the expr.
     def reduce(self,gomer,isStmt,stmtCollector):
         assert len(gomer)==2
+
+        # This guard is in place to permit the unit tests to test
+        # (yield) code generation independently.  When using (yield)
+        # correctly, the guard should never be needed.
+        if ReduceDefun.isGeneratorStack:
+            ReduceDefun.isGeneratorStack[-1]=True
+
         expr=reduce(gomer[1],False,stmtCollector)
         stmtCollector([S('yield'),expr])
         if not isStmt:
