@@ -589,11 +589,11 @@ def mkGlobals():
     g['adder']=a
     return g
 
-def geval(gomer,*,globalDict=None,localDict=None):
+def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     if globalDict is None:
         globalDict=mkGlobals()
     if localDict is None:
-        localDict={}
+        localDict=globalDict
     pyleBody=[]
     pyleExpr=reduce(gomer,False,pyleBody.append)
     stmtTrees=[]
@@ -605,5 +605,11 @@ def geval(gomer,*,globalDict=None,localDict=None):
     il=adder.pyle.build(pyleExpr)
     exprTree=il.toPythonTree()
     exprFlat=adder.pyle.flatten(exprTree)
+    if verbose:
+        print(stmtFlat)
+        print(exprFlat)
     exec(stmtFlat,globalDict,localDict)
-    return eval(exprFlat,globalDict,localDict)
+    res=eval(exprFlat,globalDict,localDict)
+    if verbose:
+        pdb.set_trace()
+    return res

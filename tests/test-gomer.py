@@ -3626,6 +3626,32 @@ class EvalTestCase(unittest.TestCase):
                        S(':d'), 7]],
                      globalDict=g)==[7,5,3,2]
 
+    def testAssign(self):
+        g=mkGlobals()
+        g['x']=0
+        assert geval([S(':='),S('x'),9],globalDict=g)==9
+        assert g['x']==9
+
+    def testBegin(self):
+        g=mkGlobals()
+        g['x']=0
+        g['y']=1
+        g['z']=2
+        assert geval([S('begin'),
+                      [S(':='),S('x'),9],
+                      [S(':='),S('y'),7],
+                      [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+                      [S('mk-list'),S('x'),S('y'),S('z')],
+                      ],globalDict=g)==[9,7,63]
+
+    def testImport(self):
+        g=mkGlobals()
+        assert geval([S('begin'),
+                      [S('import'),S('sys')],
+                      [S('.'),S('sys'),S('stdin')]
+                      ],globalDict=g) is sys.stdin
+        assert g['sys'] is sys
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),
