@@ -129,7 +129,8 @@ class Call(Stmt):
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
         assert isinstance(lhs,Var)
-        assert (isinstance(rhs,Simple)
+        assert (rhs is None
+                or isinstance(rhs,Simple)
                 or isinstance(rhs,Call)
                 or isinstance(rhs,Binop)
                 or isinstance(rhs,Dot)
@@ -148,7 +149,9 @@ class Assign(Stmt):
         return '%s=%s' % (str(self.lhs),str(self.rhs))
 
     def toPythonTree(self):
-        return '%s=%s' % (self.lhs.toPythonTree(),self.rhs.toPythonTree())
+        return '%s=%s' % (self.lhs.toPythonTree(),
+                          'None' if (self.rhs is None) else self.rhs.toPythonTree() 
+                          )
 
 class Return(Stmt):
     def __init__(self,value):

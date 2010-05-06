@@ -3442,6 +3442,11 @@ class EvalTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
 
+    def e(self,expr,verbose=False,**globalsToSet):
+        g=mkGlobals()
+        g.update(globalsToSet)
+        return (geval(expr,globalDict=g,verbose=verbose),g)
+
     def testConstInt(self):
         assert geval(1)==1
 
@@ -3651,6 +3656,75 @@ class EvalTestCase(unittest.TestCase):
                       [S('.'),S('sys'),S('stdin')]
                       ],globalDict=g) is sys.stdin
         assert g['sys'] is sys
+
+    def testDefun(self):
+        (val,g)=self.e([S('defun'),S('f'),[S('a'),S('b')],
+                        [S('+'),
+                         [S('*'),S('a'),S('a')],
+                         [S('*'),S('b'),S('b')]]])
+        assert val is g['f']
+        assert g['f'](3,4)==25
+
+    def testDefunRecursive(self):
+        (val,g)=self.e([S('defun'),S('fact'),[S('n')],
+                        [S('if'),
+                         [S('<'),S('n'),2],
+                         1,
+                         [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                         ]])
+        assert val is g['fact']
+        assert g['fact'](7)==5040
+
+    def testIfElseTrue(self):
+        (val,g)=self.e([S('if'),
+                        [S('<'),5,7],
+                        3,4])
+        assert val==3
+
+    def testIfElseFalse(self):
+        (val,g)=self.e([S('if'),
+                        [S('>'),5,7],
+                        3,4])
+        assert val==4
+
+    def testIfNoElseTrue(self):
+        (val,g)=self.e([S('if'),
+                        [S('<'),5,7],
+                        3])
+        assert val==3
+
+    def testIfNoElseFalse(self):
+        (val,g)=self.e([S('if'),
+                        [S('>'),5,7],
+                        3])
+        assert val is None
+
+    def testLambda(self):
+        (val,g)=self.e([S('lambda'),[S('n')],
+                        [S('*'),S('n'),S('n')]])
+        assert val(7)==49
+
+    def testLambdaCall(self):
+        (val,g)=self.e([[S('lambda'),[S('n')],
+                         [S('*'),S('n'),S('n')]],
+                        7])
+        assert val==49
+
+    def testQuoteInt(self):
+        (val,g)=self.e([S('quote'),17])
+        assert val==17
+
+    def testQuoteString(self):
+        (val,g)=self.e([S('quote'),'fibble'])
+        assert val=='fibble'
+
+    def testQuoteSymbol(self):
+        (val,g)=self.e([S('quote'),S('fibble')])
+        assert val is S('fibble')
+
+    def testQuoteList(self):
+        (val,g)=self.e([S('quote'),[S('bubble'),S('squeak')]])
+        assert val==[S('bubble'),S('squeak')]
 
 suite=unittest.TestSuite(
     ( 

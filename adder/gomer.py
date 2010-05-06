@@ -184,8 +184,10 @@ class ReduceIf(Reducer):
                            maybeBegin(thenBody),
                            maybeBegin(elseBody)])
         else:
-            stmtCollector([S('if'),condExpr,
-                           maybeBegin(thenBody)])
+            pyle=[S('if'),condExpr,maybeBegin(thenBody)]
+            if not isStmt:
+                pyle.append([S(':='),scratch,None])
+            stmtCollector(pyle)
         return scratch
 
 class ReduceWhile(Reducer):
