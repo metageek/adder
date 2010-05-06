@@ -4,6 +4,7 @@
 #  doc/compiler.html for the syntax.
 
 from adder.common import Symbol as S
+import re,pdb
 
 indentStep=4
 
@@ -133,6 +134,7 @@ class Assign(Stmt):
                 or isinstance(rhs,Binop)
                 or isinstance(rhs,Dot)
                 or isinstance(rhs,Subscript)
+                or isinstance(rhs,Slice)
                 or isinstance(rhs,Quote)
                 or isinstance(rhs,MkList)
                 or isinstance(rhs,MkTuple)
@@ -144,6 +146,9 @@ class Assign(Stmt):
 
     def __str__(self):
         return '%s=%s' % (str(self.lhs),str(self.rhs))
+
+    def toPythonTree(self):
+        return '%s=%s' % (self.lhs.toPythonTree(),self.rhs.toPythonTree())
 
 class Return(Stmt):
     def __init__(self,value):
@@ -211,6 +216,7 @@ class Reraise(Stmt):
         return 'raise'
 
 class Binop(IL):
+    allLetters=re.compile('^[a-z]+$',re.IGNORECASE)
     def __init__(self,op,left,right):
         assert isinstance(op,Var)
         assert isinstance(left,Simple)
@@ -219,10 +225,13 @@ class Binop(IL):
         self.op=op
         self.left=left
         self.right=right
+        self.opStr=str(self.op.varSym)
+        if Binop.allLetters.match(self.opStr):
+            self.opStr=' %s ' % self.opStr
 
     def __str__(self):
         return '%s%s%s' % (str(self.left),
-                           str(self.op.varSym),
+                           self.opStr,
                            str(self.right))
 
 class Dot(IL):
@@ -261,8 +270,9 @@ class Slice(IL):
 
     def __str__(self):
         return '%s[%s:%s]' % (str(self.obj),
-                              str(self.left),
-                              str(self.right))
+                              '' if (self.left is None) else str(self.left),
+                              '' if (self.right is None) else str(self.right),
+                              )
 
 class Quote(Stmt):
     def __init__(self,value):
@@ -446,6 +456,8 @@ def build(reg):
         return (build(var),build(val))
     if isinstance(reg,S):
         return Var(reg)
+    if reg is None:
+        return None
     for t in [int,str,float,bool]:
         if isinstance(reg,t):
             return Literal(reg)

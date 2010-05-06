@@ -2195,15 +2195,15 @@ class ToPythonTestCase(unittest.TestCase):
         assert x is None
 
     def testQuoteListExpr(self):
-        x=self.r([S('quote'),[1,2,3]],
-                 False)
+        actual=self.toP([S('quote'),[1,2,3]],
+                        False)
 
         scratch=gensym('scratch')
-
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('quote'),[1,2,3]]]
-            ]
+        scratchP=scratch.toPython()
+        expected=(["%s=[1, 2, 3]" % scratchP],
+                  "%s=[1, 2, 3]\n" % scratchP,
+                  scratchP,"%s\n" % scratchP)
+        assert actual==expected
 
     def testQuoteIntStmt(self):
         x=self.r([S('quote'),9],
@@ -2926,24 +2926,30 @@ class ToPythonTestCase(unittest.TestCase):
             ]
 
     def testSliceLExpr(self):
-        x=self.r([S('slice'),S('l'),5],
-                 False)
+        actual=self.toP([S('slice'),S('l'),5],
+                        False)
 
         scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('slice'),S('l'),5,None]]
-            ]
+        scratchP=scratch.toPython()
+        expected=(
+            ["%s=l[5:]" % scratchP],
+            "%s=l[5:]\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+        assert actual==expected
 
     def testSliceLRExpr(self):
-        x=self.r([S('slice'),S('l'),5,7],
-                 False)
+        actual=self.toP([S('slice'),S('l'),5,7],
+                        False)
 
         scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('slice'),S('l'),5,7]]
-            ]
+        scratchP=scratch.toPython()
+        expected=(
+            ["%s=l[5:7]" % scratchP],
+            "%s=l[5:7]\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
+        assert actual==expected
 
     def testSliceLStmt(self):
         x=self.r([S('slice'),S('l'),5],
@@ -3432,10 +3438,199 @@ finally:
             scratch1P,"%s\n" % scratch1P)
         assert actual==expected
 
+class EvalTestCase(unittest.TestCase):
+    def setUp(self):
+        gensym.nextId=1
+
+    def testConstInt(self):
+        assert geval(1)==1
+
+    def testConstString(self):
+        assert geval('foo')=='foo'
+
+    def testConstBool(self):
+        assert geval(True)==True
+
+    def testConstFloat(self):
+        assert geval(5.7)==5.7
+
+    def testVar(self):
+        g=mkGlobals()
+        g['x']=17
+        assert geval(S('x'),globalDict=g)==17
+
+    def testVarUndefined(self):
+        try:
+            geval(S('x'))
+            assert False
+        except NameError:
+            pass
+
+    def testCmpEq(self):
+        assert geval([S('=='),5,5])==True
+        assert geval([S('=='),5,7])==False
+
+    def testCmpNe(self):
+        assert geval([S('!='),5,5])==False
+        assert geval([S('!='),5,7])==True
+
+    def testCmpLt(self):
+        assert geval([S('<'),5,3])==False
+        assert geval([S('<'),5,5])==False
+        assert geval([S('<'),5,7])==True
+
+    def testCmpLe(self):
+        assert geval([S('<='),5,3])==False
+        assert geval([S('<='),5,5])==True
+        assert geval([S('<='),5,7])==True
+
+    def testCmpGt(self):
+        assert geval([S('>'),5,3])==True
+        assert geval([S('>'),5,5])==False
+        assert geval([S('>'),5,7])==False
+
+    def testCmpGe(self):
+        assert geval([S('>='),5,3])==True
+        assert geval([S('>='),5,5])==True
+        assert geval([S('>='),5,7])==False
+
+    def testCmpPlus(self):
+        assert geval([S('+')])==0
+        assert geval([S('+'),9])==9
+        assert geval([S('+'),9,7])==16
+        assert geval([S('+'),9,7,5])==21
+
+    def testCmpMinus(self):
+        assert geval([S('-')])==0
+        assert geval([S('-'),9])==-9
+        assert geval([S('-'),9,7])==2
+        assert geval([S('-'),9,7,5])==-3
+
+    def testCmpTimes(self):
+        assert geval([S('*')])==1
+        assert geval([S('*'),9])==9
+        assert geval([S('*'),9,7])==63
+        assert geval([S('*'),9,7,5])==315
+
+    def testCmpIDiv(self):
+        assert geval([S('//')])==1
+        assert geval([S('//'),9])==0
+        assert geval([S('//'),9,7])==1
+        assert geval([S('//'),9,7,5])==0
+        assert geval([S('//'),63,7])==9
+
+    def testCmpFDiv(self):
+        assert geval([S('/')])==1
+        assert geval([S('/'),9])==1/9
+        assert geval([S('/'),9,7])==9/7
+        assert geval([S('/'),9,7,5])==(9/7)/5
+        assert geval([S('/'),63,7])==9
+
+    def testCmpMod(self):
+        assert geval([S('%'),9,7])==2
+        assert geval([S('%'),-9,7])==5
+
+    def testCmpIn(self):
+        assert geval([S('in'),9,[S('quote'),[17,3,9]]])==True
+        assert geval([S('in'),5,[S('quote'),[17,3,9]]])==False
+
+    def testGensym(self):
+        fred1=geval([S('gensym'),"fred"])
+        gensym.nextId=1
+        gensym('skip')
+        fred2=gensym('fred')
+        assert fred1 is fred2
+
+    def testIndex(self):
+        assert geval([S('[]'),[S('quote'),[17,3,9]],1])==3
+
+    def testGetattr(self):
+        class O:
+            pass
+        o=O()
+        o.x=17
+        g=mkGlobals()
+        g['o']=o
+        assert geval([S('getattr'),S('o'),"x"],globalDict=g)==17
+
+    def testSlice(self):
+        l=[S('quote'),[2,4,8,16,32,64]]
+        assert geval([S('slice'),l,3])==[16,32,64]
+        assert geval([S('slice'),l,3,5])==[16,32]
+        assert geval([S('slice'),l,3,-1])==[16,32]
+        assert geval([S('slice'),l,None,3])==[2,4,8]
+        assert geval([S('slice'),l,None,-2])==[2,4,8,16]
+
+    def testToList(self):
+        g=mkGlobals()
+        g['x']=(2,3,5)
+        assert geval([S('to-list'),S('x')],globalDict=g)==[2,3,5]
+
+    def testToTuple(self):
+        g=mkGlobals()
+        g['x']=[2,3,5]
+        assert geval([S('to-tuple'),S('x')],globalDict=g)==(2,3,5)
+
+    def testToSet(self):
+        g=mkGlobals()
+        g['x']=(2,3,5)
+        assert geval([S('to-set'),S('x')],globalDict=g)=={2,3,5}
+
+    def testToDict(self):
+        g=mkGlobals()
+        g['x']=[['a',2],['b',3],['c',5]]
+        assert geval([S('to-dict'),S('x')],globalDict=g)=={'a': 2,
+                                                           'b': 3,
+                                                           'c': 5}
+    def testIsInstance(self):
+        g=mkGlobals()
+        g['x']=(2,3,5)
+        assert geval([S('isinstance'),S('x'),S('python.tuple')],
+                     globalDict=g)==True
+        assert geval([S('isinstance'),S('x'),S('python.list')],
+                     globalDict=g)==False
+
+    def testMkList(self):
+        assert geval([S('mk-list'),2,3,5])==[2,3,5]
+
+    def testMkTuple(self):
+        assert geval([S('mk-tuple'),2,3,5])==(2,3,5)
+
+    def testMkSet(self):
+        assert geval([S('mk-set'),2,3,5])=={2,3,5}
+
+    def testMkDict(self):
+        assert geval([S('mk-dict'),
+                      S(':a'),2,
+                      S(':b'),3,
+                      S(':c'),5])=={'a': 2, 'b': 3, 'c': 5}
+
+    def testMkSymbol(self):
+        assert geval([S('mk-symbol'),"fred"]) is S('fred')
+
+    def testReverse(self):
+        g=mkGlobals()
+        g['x']=[2,3,5]
+        assert geval([S('reverse'),S('x')],globalDict=g)==[5,3,2]
+        assert g['x']==[2,3,5]
+
+    def testApply(self):
+        def f(a,b,*,c,d):
+            return [d,c,b,a]
+        g=mkGlobals()
+        g['f']=f
+        assert geval([S('apply'),S('f'),
+                      [S('quote'),[2,3]],
+                      [S('mk-dict'),
+                       S(':c'), 5,
+                       S(':d'), 7]],
+                     globalDict=g)==[7,5,3,2]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),
       unittest.makeSuite(ToPythonTestCase,'test'),
+      unittest.makeSuite(EvalTestCase,'test'),
      )
     )
 

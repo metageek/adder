@@ -4,6 +4,7 @@
 
 import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym
+import adder.runtime
 
 def maybeBegin(body):
     if len(body)==1:
@@ -574,3 +575,35 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False):
             stmtCollector([S(':='),scratch,gomer])
             gomer=scratch
         return gomer
+
+def mkGlobals():
+    g=dict(adder.runtime.__dict__)
+    class O:
+        pass
+    python=O()
+    for (k,v) in __builtins__.items():
+        setattr(python,k,v)
+    g['python']=python
+    a=O()
+    a.common=adder.common
+    g['adder']=a
+    return g
+
+def geval(gomer,*,globalDict=None,localDict=None):
+    if globalDict is None:
+        globalDict=mkGlobals()
+    if localDict is None:
+        localDict={}
+    pyleBody=[]
+    pyleExpr=reduce(gomer,False,pyleBody.append)
+    stmtTrees=[]
+    for pyleStmt in pyleBody:
+        il=adder.pyle.build(pyleStmt)
+        stmtTree=il.toPythonTree()
+        stmtTrees.append(stmtTree)
+    stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
+    il=adder.pyle.build(pyleExpr)
+    exprTree=il.toPythonTree()
+    exprFlat=adder.pyle.flatten(exprTree)
+    exec(stmtFlat,globalDict,localDict)
+    return eval(exprFlat,globalDict,localDict)
