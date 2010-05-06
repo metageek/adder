@@ -3726,6 +3726,117 @@ class EvalTestCase(unittest.TestCase):
         (val,g)=self.e([S('quote'),[S('bubble'),S('squeak')]])
         assert val==[S('bubble'),S('squeak')]
 
+    def testTry1Exn(self):
+        def razor(x):
+            raise Exception(str(x))
+
+        (val,g)=self.e([S('try'),
+                        [S(':='),S('a'),17],
+                        [S('razor'),23],
+                        [S(':='),S('b'),19],
+                        [S(':Exception'),S('e'),
+                         [S('mk-tuple'),S('a'),S('e')]]],
+                       razor=razor)
+        assert g['a']==17
+        assert 'b' not in g
+        assert isinstance(val,tuple)
+        assert val[0]==17
+        assert isinstance(val[1],Exception)
+        assert val[1].args==('23',)
+
+    def testTry2Exn1(self):
+        def razor(x):
+            raise KeyError(str(x))
+
+        (val,g)=self.e([S('try'),
+                        [S(':='),S('a'),17],
+                        [S('razor'),23],
+                        [S(':='),S('b'),19],
+                        [S(':KeyError'),S('ke'),
+                         [S('mk-list'),S('a'),S('ke')]],
+                        [S(':Exception'),S('e'),
+                         [S('mk-tuple'),S('a'),S('e')]]],
+                       razor=razor)
+        assert g['a']==17
+        assert 'b' not in g
+        assert isinstance(val,list)
+        assert val[0]==17
+        assert isinstance(val[1],KeyError)
+        assert val[1].args==('23',)
+
+    def testTry2Exn2(self):
+        def razor(x):
+            raise Exception(str(x))
+
+        (val,g)=self.e([S('try'),
+                        [S(':='),S('a'),17],
+                        [S('razor'),23],
+                        [S(':='),S('b'),19],
+                        [S(':KeyError'),S('ke'),
+                         [S('mk-list'),S('a'),S('ke')]],
+                        [S(':Exception'),S('e'),
+                         [S('mk-tuple'),S('a'),S('e')]]],
+                       razor=razor)
+        assert g['a']==17
+        assert 'b' not in g
+        assert isinstance(val,tuple)
+        assert val[0]==17
+        assert isinstance(val[1],Exception)
+        assert val[1].args==('23',)
+
+    def testTry2Exn1Finally(self):
+        def razor(x):
+            raise KeyError(str(x))
+        z=0
+        def f(x):
+            nonlocal z
+            z=x
+
+        (val,g)=self.e([S('try'),
+                        [S(':='),S('a'),17],
+                        [S('razor'),23],
+                        [S(':='),S('b'),19],
+                        [S(':KeyError'),S('ke'),
+                         [S('mk-list'),S('a'),S('ke')]],
+                        [S(':Exception'),S('e'),
+                         [S('mk-tuple'),S('a'),S('e')]],
+                        [S(':finally'),
+                         [S('f'),[S('*'),S('a'),S('a')]]]
+                        ],
+                       razor=razor,
+                       f=f)
+        assert g['a']==17
+        assert 'b' not in g
+        assert isinstance(val,list)
+        assert val[0]==17
+        assert isinstance(val[1],KeyError)
+        assert val[1].args==('23',)
+        assert z==289
+
+    def testTry0Exn1Finally(self):
+        def razor(x):
+            raise KeyError(str(x))
+        z=0
+        def f(x):
+            nonlocal z
+            z=x
+
+        try:
+            (val,g)=self.e([S('try'),
+                            [S(':='),S('a'),17],
+                            [S('razor'),23],
+                            [S(':='),S('b'),19],
+                            [S(':finally'),
+                             [S('f'),[S('*'),S('a'),S('a')]]]
+                            ],
+                           razor=razor,
+                           f=f)
+            assert False
+        except KeyError as ke:
+            assert ke.args==('23',)
+
+        assert z==289
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(ReduceTestCase,'test'),

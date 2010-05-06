@@ -146,7 +146,13 @@ class ReduceTry(Reducer):
                 else:
                     (exnStmt,exnScratch)=clauseStmt(g[2:])
                     if scratch:
-                        exnStmt.append([S(':='),scratch,exnScratch])
+                        assignment=[S(':='),scratch,exnScratch]
+                        if (isinstance(exnStmt,list)
+                            and isinstance(exnStmt[0],S)
+                            and exnStmt[0]==S('begin')):
+                            exnStmt.append(assignment)
+                        else:
+                            exnStmt=[S('begin'),exnStmt,assignment]
                     exnClauses.append([g[0],g[1],exnStmt])
             else:
                 assert not exnClauses
@@ -599,6 +605,9 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     pyleBody=[]
     pyleExpr=reduce(gomer,False,pyleBody.append)
     stmtTrees=[]
+    if verbose:
+        print(pyleBody)
+        print(pyleExpr)
     for pyleStmt in pyleBody:
         il=adder.pyle.build(pyleStmt)
         stmtTree=il.toPythonTree()
