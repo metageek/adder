@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler2 import Scope,annotate
+from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
 
 class AnnotateTestCase(unittest.TestCase):
@@ -241,9 +241,111 @@ class AnnotateTestCase(unittest.TestCase):
         assert entry.constP
         assert entry.constValue==19
 
+class StripTestCase(unittest.TestCase):
+    def setUp(self):
+        Scope.nextId=1
+
+    def clarify(self,parsedExpr,*,scope=None):
+        if scope is None:
+            scope=Scope(None)
+        return stripAnnotations(annotate(parsedExpr,scope))
+
+    def testInt(self):
+        assert self.clarify((17,1))==17
+
+    def testStr(self):
+        assert self.clarify(('foo',1))=='foo'
+
+    def testFloat(self):
+        assert self.clarify((1.7,1))==1.7
+
+    def testBool(self):
+        assert self.clarify((True,1))==True
+
+    def testVar(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify((S('foo'),1),scope=scope)==S('foo-1')
+
+    def testDefun(self):
+        assert self.clarify(([(S('defun'),1),
+                              (S('foo'),1),
+                              ([(S('x'),1),
+                                (S('y'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))==[S('defun'),S('foo-1'),
+                                   [S('x-2'),S('y-2')],
+                                   [S('*'),S('x-2'),S('y-2')]
+                                   ]
+
+    def testLambda(self):
+        assert self.clarify(([(S('lambda'),1),
+                              ([(S('x'),1),
+                                (S('y'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))==[S('lambda'),
+                                   [S('x-2'),S('y-2')],
+                                   [S('*'),S('x-2'),S('y-2')]
+                                   ]
+
+    def testDefvar(self):
+        assert self.clarify(([(S('defvar'),1),
+                              (S('x'),1),
+                              (17,1)],
+                             1))==[S('defvar'),S('x-1'),17]
+
+    def testScopeTrivial(self):
+        assert self.clarify(([(S('scope'),1),
+                              (17,1)],
+                             1))==[S('scope'),17]
+
+    def testScopeOneVar(self):
+        assert self.clarify(([(S('scope'),1),
+                              ([(S('defvar'),1),
+                                (S('x'),1),
+                                (17,1)],
+                               1)
+                              ],
+                             1))==[S('scope'),
+                                   [S('defvar'),S('x-2'),17]
+                                   ]
+
+    def testScopeNested(self):
+        assert self.clarify(([(S('scope'),1),
+                              ([(S('defvar'),1),
+                                (S('x'),1),
+                                (17,1)],
+                               1),
+                              ([(S('defvar'),1),
+                                (S('y'),1),
+                                (19,1)],
+                               1),
+                              ([(S('scope'),2),
+                                ([(S('defvar'),2),
+                                  (S('x'),2),
+                                  (23,2)],
+                                 2)
+                                ],
+                               2)
+                              ],
+                             1))==[S('scope'),
+                                   [S('defvar'),S('x-2'),17],
+                                   [S('defvar'),S('y-2'),19],
+                                   [S('scope'),
+                                    [S('defvar'),S('x-3'),23],
+                                    ]
+                                   ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
+      unittest.makeSuite(StripTestCase,'test'),
      )
     )
 

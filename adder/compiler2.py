@@ -225,3 +225,11 @@ class Annotator:
                 line,scope)
 
 annotate=Annotator()
+
+def stripAnnotations(annotated):
+    (expr,line,scope)=annotated
+    if isinstance(expr,S) and scope.id>0:
+        return S('%s-%d' % (str(expr),scope.id))
+    if not isinstance(expr,list):
+        return expr
+    return list(map(stripAnnotations,expr))
