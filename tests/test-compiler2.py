@@ -456,6 +456,108 @@ class ParseAndStripTestCase(StripTestCase):
         S('import'),S('re'),S('pdb')
         ]
 
+    def testIf(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(if foo 9 7)",
+                            scope=scope)==[S('if'),S('foo-1'),9,7]
+
+    def testWhile(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')]
+                                           ]
+
+    def testBreak(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo) (break))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')],
+                                           [S('break')]
+                                           ]
+
+    def testContinue(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo) (continue))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')],
+                                           [S('continue')]
+                                           ]
+
+    def testBegin(self):
+        assert self.clarify("""(begin
+  (print 7)
+  (print 9)
+  (defvar x (* 9 7))
+  (print x)
+)
+""")==[
+            S('begin'),
+            [S('print'),7],
+            [S('print'),9],
+            [S('defvar'),S('x-1'),[S('*'),9,7]],
+            [S('print'),S('x-1')],
+            ]
+
+    def testYield(self):
+        assert self.clarify("(defun foo (x) (yield x) (yield (* x x)))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('yield'),S('x-2')],
+            [S('yield'),[S('*'),S('x-2'),S('x-2')]],
+            ]
+
+    def testReturn(self):
+        assert self.clarify("(defun foo (x) (return x))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('return'),S('x-2')],
+            ]
+
+    def testRaise(self):
+        assert self.clarify("(defun foo (x) (raise x))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('raise'),S('x-2')],
+            ]
+
+    def testAnd(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(and (>= foo 7) (<= foo 9))",
+                            scope=scope)==[
+            S('and'),
+            [S('>='),S('foo-1'),7],
+            [S('<='),S('foo-1'),9],
+            ]
+
+    def testOr(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(or (>= foo 7) (<= foo 9))",
+                            scope=scope)==[
+            S('or'),
+            [S('>='),S('foo-1'),7],
+            [S('<='),S('foo-1'),9],
+            ]
+
+    def testAssign(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(:= foo 9)",
+                            scope=scope)==[
+            S(':='),S('foo-1'),9
+            ]
+
+    def testDot(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(. foo x y)",
+                            scope=scope)==[
+            S('.'),S('foo-1'),S('x'),S('y')
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),

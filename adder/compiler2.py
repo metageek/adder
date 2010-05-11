@@ -185,6 +185,13 @@ Scope.root.addConst(S('false'),False,0)
 Scope.root.addConst(S('none'),None,0)
 
 class Annotator:
+    pynamesForSymbols={'.': 'dot'}
+    def methodFor(self,f):
+        s=str(f)
+        if s in Annotator.pynamesForSymbols:
+            s=Annotator.pynamesForSymbols[s]
+        return 'annotate_%s' % s
+
     def __call__(self,parsedExpr,scope):
         try:
             (expr,line)=parsedExpr
@@ -194,7 +201,7 @@ class Annotator:
         if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
             f=expr[0][0]
             if scope.requiredScope(f) is Scope.root:
-                m='annotate_%s' % str(f)
+                m=self.methodFor(f)
                 if hasattr(self,m):
                     return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
@@ -235,6 +242,19 @@ class Annotator:
             
         return (([self(expr[0],scope)]
                  +list(map(annotateDumbly,args))
+                 ),
+                line,scope)
+
+    def annotate_dot(self,expr,line,scope):
+        def annotateDumbly(parsedExpr):
+            (expr,line)=parsedExpr
+            assert isinstance(expr,S)
+            return (expr,line,scope)
+
+        return (([self(expr[0],scope),
+                  self(expr[1],scope)
+                  ]
+                 +list(map(annotateDumbly,expr[2:]))
                  ),
                 line,scope)
 
@@ -294,5 +314,11 @@ def stripAnnotations(annotated,*,quoted=False):
     if not quoted and expr[0][0] in [S('quote'),S('import')]:
         return ([expr[0][0]]
                 +list(map(lambda e: stripAnnotations(e,quoted=True),expr[1:]))
+                )
+    if not quoted and expr[0][0]==S('.'):
+        return ([expr[0][0],
+                 stripAnnotations(expr[1])]
+                 +list(map(lambda e: stripAnnotations(e,quoted=True),
+                           expr[2:]))
                 )
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
