@@ -140,7 +140,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[1])==[S('x')]
         assert scopes[1].parent is scopes[0]
         entry=scopes[1][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
 
     def testScopeTrivial(self):
@@ -179,7 +179,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==0
         assert sorted(scopes[2])==[S('x')]
         entry=scopes[2][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
 
     def testScopeNested(self):
@@ -228,17 +228,17 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==0
         assert sorted(scopes[2])==[S('x'),S('y')]
         entry=scopes[2][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
         entry=scopes[2][S('y')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==19
         assert sorted(scopes[3])==[S('x')]
         entry=scopes[3][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==23
         entry=scopes[3][S('y')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==19
 
 class StripTestCase(unittest.TestCase):
