@@ -369,6 +369,12 @@ class StripTestCase(unittest.TestCase):
                               ],1)
                             )==[S('quote'),[S('x'),19,23]]
 
+    def testImport(self):
+        assert self.clarify(([(S('import'),1),
+                              (S('re'),1),
+                              (S('pdb'),1)],
+                             1))==[S('import'),S('re'),S('pdb')]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),

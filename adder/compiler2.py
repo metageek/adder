@@ -210,6 +210,12 @@ class Annotator:
         return ([scopedScope]+scopedChildren,line,scope)
 
     def annotate_quote(self,expr,line,scope):
+        return self.quoteOrImport(expr,line,scope,True)
+
+    def annotate_import(self,expr,line,scope):
+        return self.quoteOrImport(expr,line,scope,False)
+
+    def quoteOrImport(self,expr,line,scope,justOneArg):
         def annotateDumbly(parsedExpr):
             try:
                 (expr,line)=parsedExpr
@@ -221,8 +227,15 @@ class Annotator:
             else:
                 return (expr,line,scope)
 
-        return ([self(expr[0],scope),
-                 annotateDumbly(expr[1])],
+        if justOneArg:
+            assert len(expr)==2
+            args=[expr[1]]
+        else:
+            args=expr[1:]
+            
+        return (([self(expr[0],scope)]
+                 +list(map(annotateDumbly,args))
+                 ),
                 line,scope)
 
     def annotate_defvar(self,expr,line,scope):
@@ -278,6 +291,8 @@ def stripAnnotations(annotated,*,quoted=False):
         return S('%s-%d' % (str(expr),scope.id))
     if not (expr and isinstance(expr,list)):
         return expr
-    if expr[0][0]==S('quote'):
-        return [S('quote'),stripAnnotations(expr[1],quoted=True)]
+    if not quoted and expr[0][0] in [S('quote'),S('import')]:
+        return ([expr[0][0]]
+                +list(map(lambda e: stripAnnotations(e,quoted=True),expr[1:]))
+                )
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
