@@ -2,7 +2,9 @@ from adder.common import Symbol as S, gensym
 import adder.gomer
 
 def const(expr):
-    for t in [int,float,str,bool,NoneType]:
+    if expr is None:
+        return (True,expr)
+    for t in [int,float,str,bool]:
         if isinstance(expr,t):
             return (True,expr)
     if (isinstance(expr,list)
@@ -62,11 +64,19 @@ const.knownFuncs={
     S('//'): idiv,
     }
 
+class Redefined(Exception):
+    def __init__(self,var,initExpr,oldEntry):
+        Exception.__init__(self,var,initExpr,oldEntry)
+
+    def __str__(self):
+        return 'Variable redefined: %s defined as %s after being defined at %s' % self.args
+
 class Scope:
     class Entry:
-        def __init__(self,*,initExpr):
+        def __init__(self,*,initExpr,line):
             self.initExpr=initExpr
             (self.constP,self.constValue)=const(initExpr)
+            self.line=line
 
     nextId=1
 
@@ -75,6 +85,12 @@ class Scope:
         self.entries={}
         self.id=Scope.nextId
         Scope.nextId+=1
+
+    def addDef(self,name,initExpr,line):
+        if name in self.entries:
+            raise Redefined(name,initExpr,self.entries[name])
+        self.entries[name]=Scope.Entry(initExpr=initExpr,
+                                       line=line)
 
     def __iter__(self):
         cur=self
@@ -100,12 +116,16 @@ class Scope:
 
 class Annotator:
     def __call__(self,parsedExpr,scope):
-        (expr,line)=parsedExpr
-        if expr and isinstance(expr,list) and isinstance(expr[0],S):
-            m='annotate_%s' % str(expr[0])
+        try:
+            (expr,line)=parsedExpr
+        except ValueError as ve:
+            print(ve,parsedExpr)
+            raise
+        if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
+            m='annotate_%s' % str(expr[0][0])
             if hasattr(self,m):
                 return getattr(self,m)(expr,line,scope)
-            scoped=list(map(self,expr))
+            scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         return (expr,line,scope)
 
@@ -130,7 +150,7 @@ class Annotator:
             scoped.append(self(namePE,scope))
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
-        for parsedExpr in expr[2:]:
+        for parsedExpr in bodyPEs:
             scoped.append(self(parsedExpr,childScope))
         return (scoped,line,scope)
 

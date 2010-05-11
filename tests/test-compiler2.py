@@ -11,7 +11,11 @@ class AnnotateTestCase(unittest.TestCase):
     def scopesToIds(self,scoped):
         scopes={}
         def walk(scoped):
-            (expr,line,scope)=scoped
+            try:
+                (expr,line,scope)=scoped
+            except ValueError as ve:
+                print(ve,scoped)
+                raise
             if scope.id in scopes:
                 assert scopes[scope.id] is scope
             else:
@@ -62,6 +66,31 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==1
         assert len(scopes[1])==0
+
+    def testDefun(self):
+        (scoped,scopes)=self.annotate(([(S('defun'),1),
+                                        (S('foo'),1),
+                                        ([(S('x'),1),
+                                          (S('y'),1)
+                                          ],1),
+                                        ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                                         2)
+                                        ],
+                                       1))
+        print(scoped)
+        assert scoped==([(S('defun'),1,1),
+                         (S('foo'),1,1),
+                         ([(S('x'),1,2),
+                           (S('y'),1,2)
+                           ],1,1),
+                         ([(S('*'),2,1),(S('x'),2,2),(S('y'),2,2)],2,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==2
+        assert list(scopes[1])==[S('defun')]
+        assert list(scopes[2])==[S('x'),S('y')]
+        assert scopes[2].parent is scopes[1]
 
 suite=unittest.TestSuite(
     ( 
