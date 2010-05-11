@@ -101,6 +101,29 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[2])==[S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
+    def testLambda(self):
+        (scoped,scopes)=self.annotate(([(S('lambda'),1),
+                                        ([(S('x'),1),
+                                          (S('y'),1)
+                                          ],1),
+                                        ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                                         2)
+                                        ],
+                                       1))
+        assert scoped==([(S('lambda'),1,0),
+                         ([(S('x'),1,2),
+                           (S('y'),1,2)
+                           ],1,1),
+                         ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert len(scopes[1])==0
+        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert scopes[2].parent is scopes[1]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),

@@ -140,7 +140,7 @@ class Scope:
     def requiredScope(self,sym):
         if sym in self.entries:
             return self
-        if self.parent:
+        if self.parent is not None:
             return self.parent.requiredScope(sym)
         raise Undefined(sym)
 
