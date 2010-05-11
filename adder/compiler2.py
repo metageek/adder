@@ -68,9 +68,35 @@ class Scope:
             self.initExpr=initExpr
             (self.constP,self.constValue)=const(initExpr)
 
+    nextId=1
+
     def __init__(self,parent):
         self.parent=parent
         self.entries={}
+        self.id=Scope.nextId
+        Scope.nextId+=1
+
+    def __iter__(self):
+        cur=self
+        already=set()
+        while cur is not None:
+            for key in self.entries:
+                if key not in already:
+                    already.add(key)
+                    yield key
+            cur=cur.parent
+
+    def __len__(self):
+        cur=self
+        already=set()
+        res=0
+        while cur is not None:
+            for key in self.entries:
+                if key not in already:
+                    already.add(key)
+                    res+=1
+            cur=cur.parent
+        return res
 
 class Annotator:
     def __call__(self,parsedExpr,scope):
@@ -103,7 +129,17 @@ class Annotator:
         if namePE:
             scoped.append(self(namePE,scope))
         (argsExpr,argsLine)=argsPE
-        scoped.append([list(map(doArg,argsExpr)))
+        scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
         for parsedExpr in expr[2:]:
             scoped.append(self(parsedExpr,childScope))
         return (scoped,line,scope)
+
+    def annotate_scope(self,expr,line,scope):
+        childScope=Scope(scope)
+        return (([self(expr[0],scope)]
+                 +list(map(lambda e: self(e,childScope),
+                           expr[1:]))
+                 ),
+                line,scope)
+
+annotate=Annotator()
