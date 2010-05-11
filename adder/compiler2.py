@@ -192,9 +192,11 @@ class Annotator:
             print(ve,parsedExpr)
             raise
         if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
-            m='annotate_%s' % str(expr[0][0])
-            if hasattr(self,m):
-                return getattr(self,m)(expr,line,scope)
+            f=expr[0][0]
+            if scope.requiredScope(f) is Scope.root:
+                m='annotate_%s' % str(f)
+                if hasattr(self,m):
+                    return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         if isinstance(expr,S):
