@@ -124,6 +124,22 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[2])==[S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
+    def testDefvar(self):
+        (scoped,scopes)=self.annotate(([(S('defvar'),1),
+                                        (S('x'),1),
+                                        (17,1)],
+                                       1))
+        assert scoped==([(S('defvar'),1,0),
+                         (S('x'),1,1),
+                         (17,1,1)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==2
+        assert scopes[0] is Scope.root
+        assert sorted(scopes[1])==[S('x')]
+        assert scopes[1].parent is scopes[0]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
