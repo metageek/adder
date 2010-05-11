@@ -3,6 +3,7 @@
 import unittest,pdb,sys,os
 from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
+import adder.parser
 
 def scopesToIds(scoped):
     scopes={}
@@ -375,10 +376,91 @@ class StripTestCase(unittest.TestCase):
                               (S('pdb'),1)],
                              1))==[S('import'),S('re'),S('pdb')]
 
+class ParseAndStripTestCase(StripTestCase):
+    def clarify(self,exprStr,*,scope=None,verbose=False):
+        if isinstance(exprStr,tuple):
+            parsedExpr=exprStr
+        else:
+            parsedExpr=next(adder.parser.parse(exprStr))
+        return StripTestCase.clarify(self,
+                                     parsedExpr,
+                                     scope=scope,
+                                     verbose=verbose)
+
+    def testInt(self):
+        assert self.clarify('17')==17
+
+    def testStr(self):
+        assert self.clarify('"foo"')=='foo'
+
+    def testFloat(self):
+        assert self.clarify('1.7')==1.7
+
+    def testPredefinedConst(self):
+        assert self.clarify("true")==S('true')
+
+    def testVar(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("foo",scope=scope)==S('foo-1')
+
+    def testDefun(self):
+        assert self.clarify("""(defun foo (x y)
+  (* x y))
+""")==[S('defun'),S('foo-1'),
+       [S('x-2'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
+    def testLambda(self):
+        assert self.clarify("""(lambda (x y)
+(* x y))
+""")==[S('lambda'),
+       [S('x-2'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
+    def testDefvar(self):
+        assert self.clarify("(defvar x 17)")==[S('defvar'),S('x-1'),17]
+
+    def testScopeTrivial(self):
+        assert self.clarify("(scope 17)")==[S('scope'),17]
+
+    def testScopeOneVar(self):
+        assert self.clarify("(scope (defvar x 17))")==[
+            S('scope'),
+            [S('defvar'),S('x-2'),17]
+            ]
+
+    def testScopeNested(self):
+        assert self.clarify("""(scope (defvar x 17) (defvar y 19)
+(scope (defvar x 23)))
+""")==[S('scope'),
+       [S('defvar'),S('x-2'),17],
+       [S('defvar'),S('y-2'),19],
+       [S('scope'),
+        [S('defvar'),S('x-3'),23],
+        ]
+       ]
+
+    def testQuoteInt(self):
+        assert self.clarify("(quote 17)")==[S('quote'),17]
+
+    def testQuoteList(self):
+        assert self.clarify("""(quote (x
+19
+23))""")==[S('quote'),[S('x'),19,23]]
+
+    def testImport(self):
+        assert self.clarify("(import re pdb)")==[
+        S('import'),S('re'),S('pdb')
+        ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
       unittest.makeSuite(StripTestCase,'test'),
+      unittest.makeSuite(ParseAndStripTestCase,'test'),
      )
     )
 
