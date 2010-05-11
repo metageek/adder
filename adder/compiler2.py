@@ -108,10 +108,12 @@ class Scope:
             Scope.nextId+=1
         else:
             self.id=id
+        self.readOnly=False
 
     root=None
 
     def addDef(self,name,initExpr,line):
+        assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
@@ -159,6 +161,7 @@ for name in ['+','-','*','/','//','%',
              'defun','lambda','defvar','scope'
              ]:
     Scope.root.addDef(S(name),None,0)
+Scope.root.readOnly=True
 
 class Annotator:
     def __call__(self,parsedExpr,scope):
