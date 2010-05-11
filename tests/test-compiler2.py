@@ -139,6 +139,107 @@ class AnnotateTestCase(unittest.TestCase):
         assert scopes[0] is Scope.root
         assert sorted(scopes[1])==[S('x')]
         assert scopes[1].parent is scopes[0]
+        entry=scopes[1][S('x')]
+        assert entry.constP
+        assert entry.constValue==17
+
+    def testScopeTrivial(self):
+        (scoped,scopes)=self.annotate(([(S('scope'),1),
+                                        (17,1)],
+                                       1))
+        assert scoped==([(S('scope'),1,0),
+                         (17,1,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert len(scopes[1])==0
+        assert len(scopes[2])==0
+
+    def testScopeOneVar(self):
+        (scoped,scopes)=self.annotate(([(S('scope'),1),
+                                        ([(S('defvar'),1),
+                                          (S('x'),1),
+                                          (17,1)],
+                                         1)
+                                        ],
+                                       1))
+        assert scoped==([(S('scope'),1,0),
+                         ([(S('defvar'),1,0),
+                           (S('x'),1,2),
+                           (17,1,2)
+                           ],
+                          1,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert len(scopes[1])==0
+        assert sorted(scopes[2])==[S('x')]
+        entry=scopes[2][S('x')]
+        assert entry.constP
+        assert entry.constValue==17
+
+    def testScopeNested(self):
+        (scoped,scopes)=self.annotate(([(S('scope'),1),
+                                        ([(S('defvar'),1),
+                                          (S('x'),1),
+                                          (17,1)],
+                                         1),
+                                        ([(S('defvar'),1),
+                                          (S('y'),1),
+                                          (19,1)],
+                                         1),
+                                        ([(S('scope'),2),
+                                          ([(S('defvar'),2),
+                                            (S('x'),2),
+                                            (23,2)],
+                                           2)
+                                          ],
+                                         2)
+                                        ],
+                                       1))
+        assert scoped==([(S('scope'),1,0),
+                         ([(S('defvar'),1,0),
+                           (S('x'),1,2),
+                           (17,1,2)
+                           ],
+                          1,2),
+                         ([(S('defvar'),1,0),
+                           (S('y'),1,2),
+                           (19,1,2)
+                           ],
+                          1,2),
+                         ([(S('scope'),2,0),
+                           ([(S('defvar'),2,0),
+                             (S('x'),2,3),
+                             (23,2,3)
+                             ],
+                            2,3)
+                           ],
+                          2,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==4
+        assert scopes[0] is Scope.root
+        assert len(scopes[1])==0
+        assert sorted(scopes[2])==[S('x'),S('y')]
+        entry=scopes[2][S('x')]
+        assert entry.constP
+        assert entry.constValue==17
+        entry=scopes[2][S('y')]
+        assert entry.constP
+        assert entry.constValue==19
+        assert sorted(scopes[3])==[S('x')]
+        entry=scopes[3][S('x')]
+        assert entry.constP
+        assert entry.constValue==23
+        entry=scopes[3][S('y')]
+        assert entry.constP
+        assert entry.constValue==19
 
 suite=unittest.TestSuite(
     ( 

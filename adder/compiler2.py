@@ -3,6 +3,8 @@ from adder.common import Symbol as S, gensym
 import adder.gomer
 
 def const(expr):
+    if isinstance(expr,tuple):
+        expr=expr[0]
     if expr is None:
         return (True,expr)
     for t in [int,float,str,bool]:
@@ -137,6 +139,14 @@ class Scope:
             cur=cur.parent
         return res
 
+    def __getitem__(self,key):
+        cur=self
+        while cur is not None:
+            if key in cur.entries:
+                return cur.entries[key]
+            cur=cur.parent
+        raise Undefined(key)
+
     def requiredScope(self,sym):
         if sym in self.entries:
             return self
@@ -146,7 +156,7 @@ class Scope:
 
 Scope.root=Scope(None,isRoot=True)
 for name in ['+','-','*','/','//','%',
-             'defun','lambda','defvar'
+             'defun','lambda','defvar','scope'
              ]:
     Scope.root.addDef(S(name),None,0)
 
@@ -166,6 +176,12 @@ class Annotator:
         if isinstance(expr,S):
             return (expr,line,scope.requiredScope(expr))
         return (expr,line,scope)
+
+    def annotate_scope(self,expr,line,scope):
+        scopedScope=self(expr[0],scope)
+        childScope=Scope(scope)
+        scopedChildren=list(map(lambda e: self(e,childScope),expr[1:]))
+        return ([scopedScope]+scopedChildren,line,scope)
 
     def annotate_defvar(self,expr,line,scope):
         scopedDefvar=self(expr[0],scope)
