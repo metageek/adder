@@ -209,6 +209,22 @@ class Annotator:
         scopedChildren=list(map(lambda e: self(e,childScope),expr[1:]))
         return ([scopedScope]+scopedChildren,line,scope)
 
+    def annotate_quote(self,expr,line,scope):
+        def annotateDumbly(parsedExpr):
+            try:
+                (expr,line)=parsedExpr
+            except ValueError as ve:
+                print(ve,parsedExpr)
+                raise
+            if isinstance(expr,list):
+                return [list(map(annotateDumbly,expr)),line,scope]
+            else:
+                return (expr,line,scope)
+
+        return ([self(expr[0],scope),
+                 annotateDumbly(expr[1])],
+                line,scope)
+
     def annotate_defvar(self,expr,line,scope):
         scopedDefvar=self(expr[0],scope)
         scopedInitExpr=self(expr[2],scope)
@@ -252,10 +268,16 @@ class Annotator:
 
 annotate=Annotator()
 
-def stripAnnotations(annotated):
-    (expr,line,scope)=annotated
-    if isinstance(expr,S) and scope.id>0:
+def stripAnnotations(annotated,*,quoted=False):
+    try:
+        (expr,line,scope)=annotated
+    except ValueError as ve:
+        print(ve,annotated)
+        raise
+    if not quoted and isinstance(expr,S) and scope.id>0:
         return S('%s-%d' % (str(expr),scope.id))
-    if not isinstance(expr,list):
+    if not (expr and isinstance(expr,list)):
         return expr
-    return list(map(stripAnnotations,expr))
+    if expr[0][0]==S('quote'):
+        return [S('quote'),stripAnnotations(expr[1],quoted=True)]
+    return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))

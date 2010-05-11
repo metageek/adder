@@ -4,38 +4,44 @@ import unittest,pdb,sys,os
 from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
 
-class AnnotateTestCase(unittest.TestCase):
-    def setUp(self):
-        Scope.nextId=1
+def scopesToIds(scoped):
+    scopes={}
+    def walk(scoped):
+        try:
+            (expr,line,scope)=scoped
+        except ValueError as ve:
+            print(ve,scoped)
+            raise
 
-    def scopesToIds(self,scoped):
-        scopes={}
-        def walk(scoped):
-            try:
-                (expr,line,scope)=scoped
-            except ValueError as ve:
-                print(ve,scoped)
-                raise
+        if scope is not None:
+            if isinstance(scope,tuple):
+                print('scope tuple:',scope)
             if scope.id in scopes:
                 assert scopes[scope.id] is scope
             else:
                 scopes[scope.id]=scope
-            if isinstance(expr,list):
-                expr=list(map(walk,expr))
-            return (expr,line,scope.id)
-        withIds=walk(scoped)
-        keys=set(scopes.keys())
-        if 0 in keys:
-            assert keys==set(range(0,len(scopes)))
-        else:
-            assert keys==set(range(1,len(scopes)+1))
-        return (withIds,scopes)
+        if isinstance(expr,list):
+            expr=list(map(walk,expr))
+        return (expr,line,
+                None if scope is None else scope.id
+                )
+    withIds=walk(scoped)
+    keys=set(scopes.keys())
+    if 0 in keys:
+        assert keys==set(range(0,len(scopes)))
+    else:
+        assert keys==set(range(1,len(scopes)+1))
+    return (withIds,scopes)
+
+class AnnotateTestCase(unittest.TestCase):
+    def setUp(self):
+        Scope.nextId=1
 
     def annotate(self,exprPE,*,scope=None):
         if scope is None:
             scope=Scope(None)
         annotated=annotate(exprPE,scope)
-        return self.scopesToIds(annotated)
+        return scopesToIds(annotated)
 
     def testInt(self):
         (scoped,scopes)=self.annotate((17,1))
@@ -245,10 +251,16 @@ class StripTestCase(unittest.TestCase):
     def setUp(self):
         Scope.nextId=1
 
-    def clarify(self,parsedExpr,*,scope=None):
+    def clarify(self,parsedExpr,*,scope=None,verbose=False):
         if scope is None:
             scope=Scope(None)
-        return stripAnnotations(annotate(parsedExpr,scope))
+        annotated=annotate(parsedExpr,scope)
+        res=stripAnnotations(annotated)
+        if verbose:
+            print(annotated)
+            print(scopesToIds(annotated))
+            print(res)
+        return res
 
     def testInt(self):
         assert self.clarify((17,1))==17
@@ -341,6 +353,21 @@ class StripTestCase(unittest.TestCase):
                                     [S('defvar'),S('x-3'),23],
                                     ]
                                    ]
+
+    def testQuoteInt(self):
+        assert self.clarify(([(S('quote'),1),
+                              (17,1)
+                              ],1))==[S('quote'),17]
+
+    def testQuoteList(self):
+        assert self.clarify(([(S('quote'),1),
+                              ([(S('x'),1),
+                                (19,2),
+                                (23,3)
+                                ],
+                               1)
+                              ],1)
+                            )==[S('quote'),[S('x'),19,23]]
 
 suite=unittest.TestSuite(
     ( 
