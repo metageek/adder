@@ -148,6 +148,7 @@ class Annotator:
         scoped=[self(opPE,scope)]
         if namePE:
             scoped.append(self(namePE,scope))
+            scope.addDef(namePE[0],namePE[1],None)
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
         for parsedExpr in bodyPEs:

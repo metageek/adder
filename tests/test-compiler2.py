@@ -77,19 +77,18 @@ class AnnotateTestCase(unittest.TestCase):
                                          2)
                                         ],
                                        1))
-        print(scoped)
         assert scoped==([(S('defun'),1,1),
                          (S('foo'),1,1),
                          ([(S('x'),1,2),
                            (S('y'),1,2)
                            ],1,1),
-                         ([(S('*'),2,1),(S('x'),2,2),(S('y'),2,2)],2,2)
+                         ([(S('*'),2,2),(S('x'),2,2),(S('y'),2,2)],2,2)
                          ],
                         1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==2
-        assert list(scopes[1])==[S('defun')]
-        assert list(scopes[2])==[S('x'),S('y')]
+        assert list(scopes[1])==[S('foo')]
+        assert sorted(scopes[2])==[S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
 suite=unittest.TestSuite(

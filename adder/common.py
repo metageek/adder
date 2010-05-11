@@ -57,6 +57,12 @@ class Symbol:
     def __le__(self,other):
         return isinstance(other,Symbol) and self.s<=other.s
 
+    def __gt__(self,other):
+        return isinstance(other,Symbol) and self.s>other.s
+
+    def __lt__(self,other):
+        return isinstance(other,Symbol) and self.s<other.s
+
     def startswith(self,prefix):
         return self.s.startswith(prefix)
 
