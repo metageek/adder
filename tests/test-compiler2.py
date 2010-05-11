@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-import adder.compiler2
+from adder.compiler2 import Scope,annotate
 from adder.common import Symbol as S, gensym
 
 class AnnotateTestCase(unittest.TestCase):
     def setUp(self):
-        adder.compiler2.Scope.nextId=1
+        Scope.nextId=1
 
     def scopesToIds(self,scoped):
         scopes={}
@@ -24,12 +24,17 @@ class AnnotateTestCase(unittest.TestCase):
                 expr=list(map(walk,expr))
             return (expr,line,scope.id)
         withIds=walk(scoped)
-        assert sorted(list(scopes.keys()))==list(range(1,len(scopes)+1))
+        keys=set(scopes.keys())
+        if 0 in keys:
+            assert keys==set(range(0,len(scopes)))
+        else:
+            assert keys==set(range(1,len(scopes)+1))
         return (withIds,scopes)
 
-    def annotate(self,exprPE):
-        scope=adder.compiler2.Scope(None)
-        annotated=adder.compiler2.annotate(exprPE,scope)
+    def annotate(self,exprPE,*,scope=None):
+        if scope is None:
+            scope=Scope(None)
+        annotated=annotate(exprPE,scope)
         return self.scopesToIds(annotated)
 
     def testInt(self):
@@ -61,11 +66,15 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==0
 
     def testVar(self):
-        (scoped,scopes)=self.annotate((S('foo'),1))
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        (scoped,scopes)=self.annotate((S('foo'),1),scope=scope)
         assert scoped==(S('foo'),1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==1
-        assert len(scopes[1])==0
+        assert scopes[1] is scope
+        assert len(scopes[1])==1
+        assert list(scopes[1])==[S('foo')]
 
     def testDefun(self):
         (scoped,scopes)=self.annotate(([(S('defun'),1),
@@ -77,16 +86,17 @@ class AnnotateTestCase(unittest.TestCase):
                                          2)
                                         ],
                                        1))
-        assert scoped==([(S('defun'),1,1),
+        assert scoped==([(S('defun'),1,0),
                          (S('foo'),1,1),
                          ([(S('x'),1,2),
                            (S('y'),1,2)
                            ],1,1),
-                         ([(S('*'),2,2),(S('x'),2,2),(S('y'),2,2)],2,2)
+                         ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
                          ],
                         1,1)
         assert isinstance(scopes,dict)
-        assert len(scopes)==2
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
         assert list(scopes[1])==[S('foo')]
         assert sorted(scopes[2])==[S('x'),S('y')]
         assert scopes[2].parent is scopes[1]

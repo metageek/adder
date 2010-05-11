@@ -1,3 +1,4 @@
+import pdb
 from adder.common import Symbol as S, gensym
 import adder.gomer
 
@@ -64,6 +65,13 @@ const.knownFuncs={
     S('//'): idiv,
     }
 
+class Undefined(Exception):
+    def __init__(self,sym):
+        Exception.__init__(self,sym)
+
+    def __str__(self):
+        return 'Undefined variable: %s' % self.args
+
 class Redefined(Exception):
     def __init__(self,var,initExpr,oldEntry):
         Exception.__init__(self,var,initExpr,oldEntry)
@@ -80,11 +88,26 @@ class Scope:
 
     nextId=1
 
-    def __init__(self,parent):
-        self.parent=parent
+    def __init__(self,parent,*,isRoot=False):
         self.entries={}
-        self.id=Scope.nextId
-        Scope.nextId+=1
+        id=None
+
+        if parent is None:
+            if isRoot:
+                self.parent=None
+                id=0
+            else:
+                self.parent=Scope.root
+        else:
+            self.parent=parent
+
+        if id is None:
+            self.id=Scope.nextId
+            Scope.nextId+=1
+        else:
+            self.id=id
+
+    root=None
 
     def addDef(self,name,initExpr,line):
         if name in self.entries:
@@ -114,6 +137,19 @@ class Scope:
             cur=cur.parent
         return res
 
+    def requiredScope(self,sym):
+        if sym in self.entries:
+            return self
+        if self.parent:
+            return self.parent.requiredScope(sym)
+        raise Undefined(sym)
+
+Scope.root=Scope(None,isRoot=True)
+for name in ['+','-','*','/','//','%',
+             'defun','lambda'
+             ]:
+    Scope.root.addDef(S(name),None,0)
+
 class Annotator:
     def __call__(self,parsedExpr,scope):
         try:
@@ -127,6 +163,8 @@ class Annotator:
                 return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
+        if isinstance(expr,S):
+            return (expr,line,scope.requiredScope(expr))
         return (expr,line,scope)
 
     def annotate_defun(self,expr,line,scope):
@@ -147,8 +185,8 @@ class Annotator:
             return (argExpr,argLine,childScope)
         scoped=[self(opPE,scope)]
         if namePE:
-            scoped.append(self(namePE,scope))
             scope.addDef(namePE[0],namePE[1],None)
+            scoped.append(self(namePE,scope))
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
         for parsedExpr in bodyPEs:
