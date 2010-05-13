@@ -1019,10 +1019,12 @@ class EvalTestCase(EmptyStripTestCase):
   )""")==9
 
     def testRaise(self):
-        assert self.clarify("(defun foo (x) (raise x))")==[
-            S('defun'),S('foo-1'),[S('x-2')],
-            [S('raise'),S('x-2')],
-            ]
+        e=Exception('dummy')
+        try:
+            self.evalAdder("(raise e)",e=e)
+            assert False
+        except Exception as e2:
+            assert e2 is e
 
     def testAnd(self):
         scope=Scope(None)

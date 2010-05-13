@@ -631,8 +631,11 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
         stmtTrees.append(stmtTree)
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
     il=adder.pyle.build(pyleExpr)
-    exprTree=il.toPythonTree()
-    exprFlat=adder.pyle.flatten(exprTree)
+    if il is None:
+        exprFlat=''
+    else:
+        exprTree=il.toPythonTree()
+        exprFlat=adder.pyle.flatten(exprTree)
     if verbose:
         print(stmtFlat)
         print(exprFlat)
