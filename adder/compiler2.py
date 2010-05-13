@@ -261,11 +261,18 @@ class Annotator:
                 line,scope)
 
     def annotate_defvar(self,expr,line,scope):
-        scopedDefvar=self(expr[0],scope)
+        return self.defvarOrDefconst(expr,line,scope,False)
+
+    def annotate_defconst(self,expr,line,scope):
+        return self.defvarOrDefconst(expr,line,scope,True)
+
+    def defvarOrDefconst(self,expr,line,scope,asConst):
+        scopedDef=self((S('defvar'),expr[0][1]),scope)
         scopedInitExpr=self(expr[2],scope)
-        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1])
+        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],asConst=asConst)
         scopedVar=self(expr[1],scope)
-        return ([scopedDefvar,scopedVar,scopedInitExpr],line,scope)
+        return ([scopedDef,
+                 scopedVar,scopedInitExpr],line,scope)
 
     def annotate_defun(self,expr,line,scope):
         return self.defunOrLambda(expr[0],expr[1],expr[2],expr[3:],

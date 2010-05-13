@@ -149,6 +149,27 @@ class AnnotateTestCase(unittest.TestCase):
         entry=scopes[1][S('x')]
         assert entry.constValueValid
         assert entry.constValue==17
+        assert not entry.asConst
+
+    def testDefconst(self):
+        (scoped,scopes)=self.annotate(([(S('defconst'),1),
+                                        (S('x'),1),
+                                        (17,1)],
+                                       1))
+        assert scoped==([(S('defvar'),1,0),
+                         (S('x'),1,1),
+                         (17,1,1)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==2
+        assert scopes[0] is Scope.root
+        assert sorted(scopes[1])==[S('x')]
+        assert scopes[1].parent is scopes[0]
+        entry=scopes[1][S('x')]
+        assert entry.constValueValid
+        assert entry.constValue==17
+        assert entry.asConst
 
     def testScopeTrivial(self):
         (scoped,scopes)=self.annotate(([(S('scope'),1),
@@ -248,7 +269,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert entry.constValueValid
         assert entry.constValue==19
 
-class StripTestCase(unittest.TestCase):
+class EmptyStripTestCase(unittest.TestCase):
     def setUp(self):
         Scope.nextId=1
 
@@ -263,6 +284,7 @@ class StripTestCase(unittest.TestCase):
             print(res)
         return res
 
+class StripTestCase(EmptyStripTestCase):
     def testInt(self):
         assert self.clarify((17,1))==17
 
@@ -309,6 +331,12 @@ class StripTestCase(unittest.TestCase):
 
     def testDefvar(self):
         assert self.clarify(([(S('defvar'),1),
+                              (S('x'),1),
+                              (17,1)],
+                             1))==[S('defvar'),S('x-1'),17]
+
+    def testDefconst(self):
+        assert self.clarify(([(S('defconst'),1),
                               (S('x'),1),
                               (17,1)],
                              1))==[S('defvar'),S('x-1'),17]
@@ -376,7 +404,7 @@ class StripTestCase(unittest.TestCase):
                               (S('pdb'),1)],
                              1))==[S('import'),S('re'),S('pdb')]
 
-class ParseAndStripTestCase(StripTestCase):
+class ParseAndStripTestCase(EmptyStripTestCase):
     def clarify(self,exprStr,*,scope=None,verbose=False):
         if isinstance(exprStr,tuple):
             parsedExpr=exprStr
