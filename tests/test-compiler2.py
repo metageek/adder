@@ -867,14 +867,20 @@ class ParseAndStripTestCase(EmptyStripTestCase):
 
     def testEval1(self):
         assert self.clarify("(eval '(* 9 7))")==[
-            S('eval'),[S('quote'),[S('*'),9,7]]
+            S('eval'),
+            [S('quote'),[S('*'),9,7]],
+            [S('getScopeById'),1],
+            [S('globals')],
+            [S('locals')]
             ]
 
     def testEval2(self):
         assert self.clarify("(eval '(* 9 7) (stdenv))")==[
             S('eval'),
             [S('quote'),[S('*'),9,7]],
-            [S('stdenv')]
+            [S('getScopeById'),1],
+            [S('stdenv')],
+            [S('locals')]
             ]
 
     def testExecPy(self):
@@ -1204,7 +1210,7 @@ class EvalTestCase(EmptyStripTestCase):
 """,
                               f=lambda a,*,x,y: a*x*y)==126
 
-    def _testEval1(self):
+    def testEval1(self):
         assert self.evalAdder("(eval '(* 9 7))")==63
 
     def _testEval2(self):

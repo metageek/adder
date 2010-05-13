@@ -118,7 +118,7 @@ class Scope:
         else:
             self.id=id
 
-        self.addConst(S('current-scope'),self,0)
+        self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
 
     root=None
 
@@ -185,7 +185,7 @@ for name in ['defun','lambda','defvar','scope',
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
              'reverse','stdenv','apply','eval','exec-py','load',
-             'getScopeById',
+             'getScopeById','globals','locals',
              # All before this point are annotated.
              'defmacro',
              ]:
@@ -238,6 +238,21 @@ class Annotator:
                     expr=entry.constValue
                 return (expr,line,required)
         return (expr,line,scope)
+
+    def annotate_eval(self,expr,line,scope):
+        assert len(expr)>=2 and len(expr)<=4
+        adderArg=self(expr[1],scope)
+        scopeArg=self((S('current-scope'),line),scope)
+        if len(expr)>=3:
+            globalArg=self(expr[2],scope)
+        else:
+            globalArg=self(([(S('globals'),line)],line),scope)
+        if len(expr)>=4:
+            localArg=self(expr[3],scope)
+        else:
+            localArg=self(([(S('locals'),line)],line),scope)
+        return ([self(expr[0],scope),
+                 adderArg,scopeArg,globalArg,localArg],line,scope)
 
     def annotate_scope(self,expr,line,scope):
         scopedScope=self(expr[0],scope)
