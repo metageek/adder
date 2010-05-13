@@ -176,10 +176,10 @@ for name in ['defun','lambda','defvar','scope',
              '==','!=','<=','<','>=','>',
              '+','-','*','/','//','%','in',
              'print','gensym','[]','getattr','slice','isinstance',
-             # All before this point are annotated.
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
-             'reverse','eval','stdenv','exec-py','apply','load',
+             'reverse','stdenv','apply','eval','exec-py','load',
+             # All before this point are annotated.
              'defmacro',
              ]:
     Scope.root.addDef(S(name),None,0)
@@ -210,7 +210,10 @@ class Annotator:
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         if isinstance(expr,S):
-            return (expr,line,scope.requiredScope(expr))
+            if expr.isKeyword():
+                return (expr,line,Scope.root)
+            else:
+                return (expr,line,scope.requiredScope(expr))
         return (expr,line,scope)
 
     def annotate_scope(self,expr,line,scope):

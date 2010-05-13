@@ -674,7 +674,10 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S('print'),9,7
             ]
 
-    def testGensym(self):
+    def testGensym0(self):
+        assert self.clarify('(gensym)')==[S('gensym')]
+
+    def testGensym1(self):
         assert self.clarify('(gensym "foo")')==[
             S('gensym'),'foo'
             ]
@@ -718,6 +721,116 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         assert self.clarify('(isinstance foo str)',
                             scope=scope)==[
             S('isinstance'),S('foo-1'),S('str-1')
+            ]
+
+    def testList(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(list foo)',
+                            scope=scope)==[
+            S('list'),S('foo-1')
+            ]
+
+    def testTuple(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(tuple foo)',
+                            scope=scope)==[
+            S('tuple'),S('foo-1')
+            ]
+
+    def testSet(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(set foo)',
+                            scope=scope)==[
+            S('set'),S('foo-1')
+            ]
+
+    def testDict(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(dict foo)',
+                            scope=scope)==[
+            S('dict'),S('foo-1')
+            ]
+
+    def testMkList(self):
+        assert self.clarify('(mk-list 9 7)')==[
+            S('mk-list'),9,7
+            ]
+
+    def testMkTuple(self):
+        assert self.clarify('(mk-tuple 9 7)')==[
+            S('mk-tuple'),9,7
+            ]
+
+    def testMkSet(self):
+        assert self.clarify('(mk-set 9 7)')==[
+            S('mk-set'),9,7
+            ]
+
+    def testMkDict(self):
+        assert self.clarify('(mk-dict :foo 9 :bar 7)')==[
+            S('mk-dict'),S(':foo'),9,S(':bar'),7
+            ]
+
+    def testMkSymbol(self):
+        assert self.clarify('(mk-symbol "fred")')==[
+            S('mk-symbol'),"fred"
+            ]
+
+    def testReverse(self):
+        assert self.clarify('(reverse (quote (1 2 3)))')==[
+            S('reverse'),[S('quote'),[1,2,3]]
+            ]
+
+    def testStdenv(self):
+        assert self.clarify('(stdenv)')==[S('stdenv')]
+
+    def testApply(self):
+        scope=Scope(None)
+        scope.addDef(S('f'),lambda a: a*a,1)
+        assert self.clarify('(apply f (quote (2)))',
+                            scope=scope)==[
+            S('apply'),S('f-1'),[S('quote'),[2]]
+            ]
+
+    def testApplyWithKwArgs(self):
+        scope=Scope(None)
+        scope.addDef(S('f'),lambda a,*,x,y: a*x*y,1)
+        assert self.clarify("""
+(apply f
+       (quote (2))
+       (mk-dict :x 9 :y 7))
+""",
+                            scope=scope)==[
+            S('apply'),
+            S('f-1'),
+            [S('quote'),[2]],
+            [S('mk-dict'),S(':x'),9,S(':y'),7]
+            ]
+
+    def testEval1(self):
+        assert self.clarify("(eval '(* 9 7))")==[
+            S('eval'),[S('quote'),[S('*'),9,7]]
+            ]
+
+    def testEval2(self):
+        assert self.clarify("(eval '(* 9 7) (stdenv))")==[
+            S('eval'),
+            [S('quote'),[S('*'),9,7]],
+            [S('stdenv')]
+            ]
+
+    def testExecPy(self):
+        assert self.clarify('(exec-py "print(7)")')==[
+            S('exec-py'),"print(7)"
+            ]
+
+    def testLoad(self):
+        assert self.clarify('(load "prelude.+")')==[
+            S('load'),"prelude.+"
             ]
 
 suite=unittest.TestSuite(
