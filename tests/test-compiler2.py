@@ -207,7 +207,7 @@ class AnnotateTestCase(unittest.TestCase):
         (scoped,scopes)=self.annotate(([(S('scope'),1),
                                         (17,1)],
                                        1))
-        assert scoped==([(S('scope'),1,0),
+        assert scoped==([(S('begin'),1,0),
                          (17,1,2)
                          ],
                         1,1)
@@ -225,7 +225,7 @@ class AnnotateTestCase(unittest.TestCase):
                                          1)
                                         ],
                                        1))
-        assert scoped==([(S('scope'),1,0),
+        assert scoped==([(S('begin'),1,0),
                          ([(S(':='),1,0),
                            (S('x'),1,2),
                            (17,1,2)
@@ -261,7 +261,7 @@ class AnnotateTestCase(unittest.TestCase):
                                          2)
                                         ],
                                        1))
-        assert scoped==([(S('scope'),1,0),
+        assert scoped==([(S('begin'),1,0),
                          ([(S(':='),1,0),
                            (S('x'),1,2),
                            (17,1,2)
@@ -272,7 +272,7 @@ class AnnotateTestCase(unittest.TestCase):
                            (19,1,2)
                            ],
                           1,2),
-                         ([(S('scope'),2,0),
+                         ([(S('begin'),2,0),
                            ([(S(':='),2,0),
                              (S('x'),2,3),
                              (23,2,3)
@@ -376,7 +376,7 @@ class StripTestCase(EmptyStripTestCase):
     def testScopeTrivial(self):
         assert self.clarify(([(S('scope'),1),
                               (17,1)],
-                             1))==[S('scope'),17]
+                             1))==[S('begin'),17]
 
     def testScopeOneVar(self):
         assert self.clarify(([(S('scope'),1),
@@ -385,7 +385,7 @@ class StripTestCase(EmptyStripTestCase):
                                 (17,1)],
                                1)
                               ],
-                             1))==[S('scope'),
+                             1))==[S('begin'),
                                    [S(':='),S('x-2'),17]
                                    ]
 
@@ -407,10 +407,10 @@ class StripTestCase(EmptyStripTestCase):
                                 ],
                                2)
                               ],
-                             1))==[S('scope'),
+                             1))==[S('begin'),
                                    [S(':='),S('x-2'),17],
                                    [S(':='),S('y-2'),19],
-                                   [S('scope'),
+                                   [S('begin'),
                                     [S(':='),S('x-3'),23],
                                     ]
                                    ]
@@ -484,21 +484,21 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         assert self.clarify("(defvar x 17)")==[S(':='),S('x-1'),17]
 
     def testScopeTrivial(self):
-        assert self.clarify("(scope 17)")==[S('scope'),17]
+        assert self.clarify("(scope 17)")==[S('begin'),17]
 
     def testScopeOneVar(self):
         assert self.clarify("(scope (defvar x 17))")==[
-            S('scope'),
+            S('begin'),
             [S(':='),S('x-2'),17]
             ]
 
     def testScopeNested(self):
         assert self.clarify("""(scope (defvar x 17) (defvar y 19)
 (scope (defvar x 23)))
-""")==[S('scope'),
+""")==[S('begin'),
        [S(':='),S('x-2'),17],
        [S(':='),S('y-2'),19],
-       [S('scope'),
+       [S('begin'),
         [S(':='),S('x-3'),23],
         ]
        ]
@@ -923,21 +923,21 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(begin (defvar x 17) x)")==17
 
     def testScopeTrivial(self):
-        assert self.clarify("(scope 17)")==[S('scope'),17]
+        assert self.evalAdder("(scope 17)")==17
 
     def testScopeOneVar(self):
         assert self.clarify("(scope (defvar x 17))")==[
-            S('scope'),
+            S('begin'),
             [S(':='),S('x-2'),17]
             ]
 
     def testScopeNested(self):
         assert self.clarify("""(scope (defvar x 17) (defvar y 19)
 (scope (defvar x 23)))
-""")==[S('scope'),
+""")==[S('begin'),
        [S(':='),S('x-2'),17],
        [S(':='),S('y-2'),19],
-       [S('scope'),
+       [S('begin'),
         [S(':='),S('x-3'),23],
         ]
        ]

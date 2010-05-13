@@ -318,7 +318,7 @@ class Annotator:
 
     def annotate_scope(self,expr,line,scope):
         childScope=Scope(scope)
-        return (([self(expr[0],scope)]
+        return (([(S('begin'),expr[0][1],Scope.root)]
                  +list(map(lambda e: self(e,childScope),
                            expr[1:]))
                  ),
