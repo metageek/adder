@@ -960,58 +960,63 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(if foo 9 7)",foo=False)==7
 
     def testWhile(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(while foo (print foo))",
-                            scope=scope)==[S('while'),S('foo-1'),
-                                           [S('print'),S('foo-1')]
-                                           ]
+        assert self.evalAdder("""
+(begin
+  (defvar fact 1)
+  (defvar n 1)
+  (while (<= n 7)
+    (:= fact (* n fact))
+    (:= n (+ n 1)))
+  fact
+  )
+""")==5040
 
     def testBreak(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(while foo (print foo) (break))",
-                            scope=scope)==[S('while'),S('foo-1'),
-                                           [S('print'),S('foo-1')],
-                                           [S('break')]
-                                           ]
+        assert self.evalAdder("""
+(begin
+  (defvar fact 1)
+  (defvar n 2)
+  (while (<= n 7)
+    (:= fact (* n fact))
+    (:= n (+ n 1))
+    (break))
+  fact
+  )
+""")==2
 
     def testContinue(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(while foo (print foo) (continue))",
-                            scope=scope)==[S('while'),S('foo-1'),
-                                           [S('print'),S('foo-1')],
-                                           [S('continue')]
-                                           ]
+        assert self.evalAdder("""
+(begin
+  (defvar fact 1)
+  (defvar n 1)
+  (while (<= n 6)
+    (:= n (+ n 1))
+    (if (== n 5) (continue))
+    (:= fact (* n fact)))
+  fact
+  )
+""")==1008
 
     def testBegin(self):
-        assert self.clarify("""(begin
-  (print 7)
-  (print 9)
+        assert self.evalAdder("""(begin
   (defvar x (* 9 7))
-  (print x)
+  (:= x (* x 8))
 )
-""")==[
-            S('begin'),
-            [S('print'),7],
-            [S('print'),9],
-            [S(':='),S('x-1'),[S('*'),9,7]],
-            [S('print'),S('x-1')],
-            ]
+""")==504
 
     def testYield(self):
-        assert self.clarify("(defun foo (x) (yield x) (yield (* x x)))")==[
-            S('defun'),S('foo-1'),[S('x-2')],
-            [S('yield'),S('x-2')],
-            [S('yield'),[S('*'),S('x-2'),S('x-2')]],
-            ]
+        assert self.evalAdder("""
+(begin
+ (defun foo (x) (yield x) (yield (* x x)))
+ (list (foo 7))
+ )""")==[7,49]
 
     def testReturn(self):
-        assert self.clarify("(defun foo (x) (return x))")==[
-            S('defun'),S('foo-1'),[S('x-2')],
-            [S('return'),S('x-2')],
-            ]
+        assert self.evalAdder("""
+(begin
+  (defun foo (x) (return x))
+  (foo 9)
+  )""")==9
 
     def testRaise(self):
         assert self.clarify("(defun foo (x) (raise x))")==[

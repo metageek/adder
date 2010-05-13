@@ -155,7 +155,7 @@ class Assign(Stmt):
 
 class Return(Stmt):
     def __init__(self,value):
-        assert isinstance(value,Simple)
+        assert isinstance(value,Simple) or value is None
         self.value=value
 
     def __str__(self):

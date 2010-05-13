@@ -526,6 +526,44 @@ class ReduceTestCase(unittest.TestCase):
             [S('return'),scratch],
             ]
 
+    def testReturnInDefun(self):
+        x=self.r([S('defun'),S('f'),[S('x')],
+                  [S('return'),S('x')]
+                  ],
+                 True)
+
+        assert x is None
+        assert self.stmts==[
+            [S('def'),S('f'),[S('x')],
+             [S('begin'),
+              [S('return'),S('x')],
+              [S('return'),None]
+              ]
+             ]
+            ]
+
+    def testCallReturnInDefun(self):
+        x=self.r([S('begin'),
+                  [S('defun'),S('f'),[S('x')],
+                   [S('return'),S('x')]
+                   ],
+                  [S('f'),9]
+                  ],
+                 False)
+
+        scratch=gensym('scratch')
+
+        assert x is scratch
+        assert self.stmts==[
+            [S('def'),S('f'),[S('x')],
+             [S('begin'),
+              [S('return'),S('x')],
+              [S('return'),None]
+              ]
+             ],
+            [S(':='),scratch,[S('call'),S('f'),[9],[]]]
+            ]
+
     def testReturnExpr(self):
         x=self.r([S('return'),[S('*'),9,7]],
                  False)
@@ -3892,6 +3930,16 @@ class EvalTestCase(unittest.TestCase):
                          [S('*'),S('b'),S('b')]]])
         assert val is g['f']
         assert g['f'](3,4)==[3,4]
+
+    def testReturn2(self):
+        (val,g)=self.e([
+                S('begin'),
+                [S('defun'),S('f'),[S('x')],
+                 [S('return'),S('x')]],
+                [S('f'),9]
+                ])
+        assert val==9
+        assert g['f'](17)==17
 
     def testAnd1(self):
         (val,g)=self.e([S('and'),5,False,S('nonesuch')])
