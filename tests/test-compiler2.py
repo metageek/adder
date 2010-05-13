@@ -1038,31 +1038,30 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(and (>= foo 7) (<= foo 9))",
                               foo=12)==False
 
-    def testOr(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(or (>= foo 7) (<= foo 9))",
-                            scope=scope)==[
-            S('or'),
-            [S('>='),S('foo-1'),7],
-            [S('<='),S('foo-1'),9],
-            ]
+    def testOr1(self):
+        assert self.evalAdder("(or (>= foo 9) (<= foo 7))",
+                              foo=5)==True
+
+    def testOr2(self):
+        assert self.evalAdder("(or (>= foo 9) (<= foo 7))",
+                              foo=8)==False
+
+    def testOr3(self):
+        assert self.evalAdder("(or (>= foo 9) (<= foo 7))",
+                              foo=12)==True
 
     def testAssign(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(:= foo 9)",
-                            scope=scope)==[
-            S(':='),S('foo-1'),9
-            ]
+        assert self.evalAdder("(begin (:= foo 9) foo)",
+                              foo=12)==9
 
     def testDot(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(. foo x y)",
-                            scope=scope)==[
-            S('.'),S('foo-1'),S('x'),S('y')
-            ]
+        class O:
+            pass
+        foo=O()
+        foo.x=O()
+        foo.x.y=17
+
+        assert self.evalAdder("(. foo x y)",foo=foo)==17
 
     def testEquals(self):
         scope=Scope(None)
