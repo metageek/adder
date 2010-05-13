@@ -1027,14 +1027,8 @@ class EvalTestCase(EmptyStripTestCase):
             assert e2 is e
 
     def testAnd(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(and (>= foo 7) (<= foo 9))",
-                            scope=scope)==[
-            S('and'),
-            [S('>='),S('foo-1'),7],
-            [S('<='),S('foo-1'),9],
-            ]
+        assert self.evalAdder("(and (>= foo 7) (<= foo 9))",
+                              foo=12)==False
 
     def testOr(self):
         scope=Scope(None)
