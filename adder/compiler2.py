@@ -87,7 +87,7 @@ class Redefined(Exception):
 
 class Scope:
     class Entry:
-        def __init__(self,*,initExpr,line,asConst=False):
+        def __init__(self,*,initExpr,line,asConst=False,ignoreScopeId=False):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -95,6 +95,7 @@ class Scope:
                 (self.constValueValid,self.constValue)=const(initExpr)
             self.line=line
             self.asConst=asConst
+            self.ignoreScopeId=ignoreScopeId
 
     nextId=1
 
@@ -119,15 +120,18 @@ class Scope:
 
     root=None
 
-    def addDef(self,name,initExpr,line,*,asConst=False):
+    def addDef(self,name,initExpr,line,*,asConst=False,ignoreScopeId=False):
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
                                        line=line,
-                                       asConst=asConst)
+                                       asConst=asConst,
+                                       ignoreScopeId=ignoreScopeId)
 
-    def addConst(self,name,value,line):
-        self.addDef(name,q(value),line,asConst=True)
+    def addConst(self,name,value,line,*,ignoreScopeId=False):
+        self.addDef(name,q(value),line,
+                    asConst=True,
+                    ignoreScopeId=ignoreScopeId)
 
     def __iter__(self):
         cur=self
@@ -238,7 +242,11 @@ class Annotator:
         return self.quoteOrImport(expr,line,scope,True)
 
     def annotate_import(self,expr,line,scope):
-        return self.quoteOrImport(expr,line,scope,False)
+        res=self.quoteOrImport(expr,line,scope,False)
+        for (pkg,pkgLine) in expr[1:]:
+            scope.addDef(S(str(pkg).split('.')[0]),None,pkgLine,
+                         ignoreScopeId=True)
+        return res
 
     def quoteOrImport(self,expr,line,scope,justOneArg):
         def annotateDumbly(parsedExpr):
@@ -332,7 +340,10 @@ def stripAnnotations(annotated,*,quoted=False):
     except ValueError as ve:
         print(ve,annotated)
         raise
-    if not quoted and isinstance(expr,S) and scope.id>0:
+    if (not quoted
+        and isinstance(expr,S)
+        and scope.id>0
+        and not scope[expr].ignoreScopeId):
         return S('%s-%d' % (str(expr),scope.id))
     if not (expr and isinstance(expr,list)):
         return expr

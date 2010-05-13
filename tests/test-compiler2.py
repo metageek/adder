@@ -926,45 +926,38 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(scope 17)")==17
 
     def testScopeOneVar(self):
-        assert self.clarify("(scope (defvar x 17))")==[
-            S('begin'),
-            [S(':='),S('x-2'),17]
-            ]
+        assert self.evalAdder("(scope (defvar x 17) x)")==17
 
     def testScopeNested(self):
-        assert self.clarify("""(scope (defvar x 17) (defvar y 19)
-(scope (defvar x 23)))
-""")==[S('begin'),
-       [S(':='),S('x-2'),17],
-       [S(':='),S('y-2'),19],
-       [S('begin'),
-        [S(':='),S('x-3'),23],
-        ]
-       ]
+        assert self.evalAdder("""(scope (defvar x 17) (defvar y 19)
+(scope (defvar x 23) x))
+""")==23
 
     def testQuoteInt(self):
-        assert self.clarify("(quote 17)")==[S('quote'),17]
+        assert self.evalAdder("(quote 17)")==17
 
     def testQuoteList(self):
-        assert self.clarify("""(quote (x
+        assert self.evalAdder("""(quote (x
 19
-23))""")==[S('quote'),[S('x'),19,23]]
+23))""")==[S('x'),19,23]
 
     def testQuoteListWithApostrophe(self):
-        assert self.clarify("""'(x
+        assert self.evalAdder("""'(x
 19
-23)""")==[S('quote'),[S('x'),19,23]]
+23)""")==[S('x'),19,23]
 
     def testImport(self):
-        assert self.clarify("(import re pdb)")==[
-        S('import'),S('re'),S('pdb')
-        ]
+        assert self.evalAdder("""
+(begin
+ (import adder.common)
+ (. adder common Symbol)
+)""") is S
 
-    def testIf(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("(if foo 9 7)",
-                            scope=scope)==[S('if'),S('foo-1'),9,7]
+    def testIfTrue(self):
+        assert self.evalAdder("(if foo 9 7)",foo=True)==9
+
+    def testIfFalse(self):
+        assert self.evalAdder("(if foo 9 7)",foo=False)==7
 
     def testWhile(self):
         scope=Scope(None)
