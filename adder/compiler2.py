@@ -201,12 +201,13 @@ class Annotator:
         except ValueError as ve:
             print(ve,parsedExpr)
             raise
-        if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
-            f=expr[0][0]
-            if scope.requiredScope(f) is Scope.root:
-                m=self.methodFor(f)
-                if hasattr(self,m):
-                    return getattr(self,m)(expr,line,scope)
+        if expr and isinstance(expr,list):
+            if isinstance(expr[0][0],S):
+                f=expr[0][0]
+                if scope.requiredScope(f) is Scope.root:
+                    m=self.methodFor(f)
+                    if hasattr(self,m):
+                        return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         if isinstance(expr,S):

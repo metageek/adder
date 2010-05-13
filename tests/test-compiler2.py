@@ -39,10 +39,12 @@ class AnnotateTestCase(unittest.TestCase):
     def setUp(self):
         Scope.nextId=1
 
-    def annotate(self,exprPE,*,scope=None):
+    def annotate(self,exprPE,*,scope=None,verbose=False):
         if scope is None:
             scope=Scope(None)
         annotated=annotate(exprPE,scope)
+        if verbose:
+            print(annotated)
         return scopesToIds(annotated)
 
     def testInt(self):
@@ -125,6 +127,35 @@ class AnnotateTestCase(unittest.TestCase):
                          ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
                          ],
                         1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert len(scopes[1])==0
+        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert scopes[2].parent is scopes[1]
+
+    def testLambdaCall(self):
+        (scoped,scopes)=self.annotate(([
+                                      ([(S('lambda'),1),
+                                        ([(S('x'),1),
+                                          (S('y'),1)
+                                          ],1),
+                                        ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                                         2)
+                                        ],
+                                       1),
+                                      (9,3),(7,3)
+                                      ],1))
+        assert scoped==([
+                ([(S('lambda'),1,0),
+                  ([(S('x'),1,2),
+                    (S('y'),1,2)
+                    ],1,1),
+                  ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
+                  ],
+                 1,1),
+                (9,3,1),(7,3,1)
+                ],1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
@@ -853,11 +884,11 @@ class EvalTestCase(EmptyStripTestCase):
     def evalAdder(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
         if scope is None:
             scope=Scope(None)
-        for (k,v) in globalsToSet:
-            scope.addDef(S(k),v,0)
-        gomer=self.clarify(exprStr,scope=scope,verbose=verbose)
         g=mkGlobals()
-        g.update(globalsToSet)
+        for (k,v) in globalsToSet.items():
+            scope.addDef(S(k),v,0)
+            g[S("%s-1" % k).toPython()]=v
+        gomer=self.clarify(exprStr,scope=scope,verbose=verbose)
         return geval(gomer,globalDict=g,verbose=verbose)
 
     def testInt(self):
@@ -873,25 +904,20 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("true")==True
 
     def testVar(self):
-        scope=Scope(None)
-        scope.addDef(S('foo'),None,1)
-        assert self.clarify("foo",scope=scope)==S('foo-1')
+        assert self.evalAdder("foo",foo=17)==17
 
     def testDefun(self):
-        assert self.clarify("""(defun foo (x y)
+        assert self.evalAdder("""(begin
+(defun foo (x y)
   (* x y))
-""")==[S('defun'),S('foo-1'),
-       [S('x-2'),S('y-2')],
-       [S('*'),S('x-2'),S('y-2')]
-       ]
+(foo 9 7)
+)
+""")==63
 
     def testLambda(self):
-        assert self.clarify("""(lambda (x y)
-(* x y))
-""")==[S('lambda'),
-       [S('x-2'),S('y-2')],
-       [S('*'),S('x-2'),S('y-2')]
-       ]
+        assert self.evalAdder("""((lambda (x y)
+(* x y)) 9 7)
+""")==63
 
     def testDefvar(self):
         assert self.clarify("(defvar x 17)")==[S('defvar'),S('x-1'),17]
