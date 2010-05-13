@@ -304,6 +304,7 @@ class AnnotateTestCase(unittest.TestCase):
 class EmptyStripTestCase(unittest.TestCase):
     def setUp(self):
         Scope.nextId=1
+        gensym.nextId=1
 
     def clarify(self,parsedExpr,*,scope=None,verbose=False):
         if scope is None:
@@ -1098,6 +1099,113 @@ class EvalTestCase(EmptyStripTestCase):
 
     def testMod(self):
         assert self.evalAdder("(% 9 7)")==2
+
+    def testIn(self):
+        assert self.evalAdder("(in 9 '(1 2 3))")==False
+
+    def testPrint(self):
+        assert self.evalAdder("(print 9 7)")==7
+
+    def testGensym0(self):
+        scratch=gensym()
+        sym=gensym()
+        gensym.nextId=1
+        assert self.evalAdder('(gensym)')==sym
+
+    def testGensym1(self):
+        scratch=gensym('scratch')
+        foo=gensym('foo')
+        gensym.nextId=1
+        assert self.evalAdder('(gensym "foo")')==foo
+
+    def testIndex(self):
+        assert self.evalAdder('([] foo 3)',foo=[2,3,5,7,13])==7
+
+    def testGetattr(self):
+        class O:
+            pass
+        foo=O()
+        foo.fred=23
+        assert self.evalAdder('(getattr foo "fred")',foo=foo)==23
+
+    def testSlice1(self):
+        assert self.evalAdder('(slice foo 2)',foo=[2,3,5,7,23])==[5,7,23]
+
+    def testSlice2(self):
+        assert self.evalAdder('(slice foo 2 3)',foo=[2,3,5,7,23])==[5]
+
+    def testIsinstance(self):
+        assert self.evalAdder('(isinstance foo str)',
+                              foo='fred',
+                              str=str)==True
+
+    def testList(self):
+        assert self.evalAdder('(list foo)',foo=(2,3,5))==[2,3,5]
+
+    def testTuple(self):
+        assert self.evalAdder('(tuple foo)',foo=[2,3,5])==(2,3,5)
+
+    def testSet(self):
+        assert self.evalAdder('(set foo)',foo=[2,3,5])=={2,3,5}
+
+    def testDict(self):
+        assert self.evalAdder('(dict foo)',
+                              foo=[('x',7),('y',9)]
+                              )=={'x': 7, 'y': 9}
+
+    def testMkList(self):
+        assert self.evalAdder('(mk-list 9 7)')==[9,7]
+
+    def testMkTuple(self):
+        assert self.evalAdder('(mk-tuple 9 7)')==(9,7)
+
+    def testMkSet(self):
+        assert self.evalAdder('(mk-set 9 7)')=={9,7}
+
+    def testMkDict(self):
+        assert self.evalAdder('(mk-dict :foo 9 :bar 7)'
+                              )=={'foo': 9, 'bar': 7}
+
+    def testMkSymbol(self):
+        assert self.evalAdder('(mk-symbol "fred")')==S('fred')
+
+    def testReverse(self):
+        assert self.evalAdder("(reverse '(1 2 3))")==[3,2,1]
+
+    def _testStdenv(self):
+        assert self.evalAdder('(stdenv)')==[S('stdenv')]
+
+    def testApply(self):
+        assert self.evalAdder("(apply f '(2))",
+                              f=lambda a: a*a
+                              )==4
+
+    def testApplyWithKwArgs(self):
+        assert self.evalAdder("""
+(apply f
+       '(2)
+       (mk-dict :x 9 :y 7))
+""",
+                              f=lambda a,*,x,y: a*x*y)==126
+
+    def _testEval1(self):
+        assert self.evalAdder("(eval '(* 9 7))")==63
+
+    def _testEval2(self):
+        assert self.evalAdder("(eval '(* 9 7) (stdenv))")==63
+
+    def _testExecPy(self):
+        assert self.evalAdder("""
+(begin
+  (defvar x 9)
+  (exec-py "x=7")
+  x)
+""")==7
+
+    def _testLoad(self):
+        assert self.evalAdder('(load "prelude.+")')==[
+            S('load'),"prelude.+"
+            ]
 
 suite=unittest.TestSuite(
     ( 
