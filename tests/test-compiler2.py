@@ -479,6 +479,11 @@ class ParseAndStripTestCase(EmptyStripTestCase):
 19
 23))""")==[S('quote'),[S('x'),19,23]]
 
+    def testQuoteListWithApostrophe(self):
+        assert self.clarify("""'(x
+19
+23)""")==[S('quote'),[S('x'),19,23]]
+
     def testImport(self):
         assert self.clarify("(import re pdb)")==[
         S('import'),S('re'),S('pdb')
@@ -665,7 +670,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             ]
 
     def testIn(self):
-        assert self.clarify("(in 9 (quote (1 2 3)))")==[
+        assert self.clarify("(in 9 '(1 2 3))")==[
             S('in'),9,[S('quote'),[1,2,3]]
             ]
 
@@ -781,7 +786,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             ]
 
     def testReverse(self):
-        assert self.clarify('(reverse (quote (1 2 3)))')==[
+        assert self.clarify("(reverse '(1 2 3))")==[
             S('reverse'),[S('quote'),[1,2,3]]
             ]
 
@@ -791,7 +796,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
     def testApply(self):
         scope=Scope(None)
         scope.addDef(S('f'),lambda a: a*a,1)
-        assert self.clarify('(apply f (quote (2)))',
+        assert self.clarify("(apply f '(2))",
                             scope=scope)==[
             S('apply'),S('f-1'),[S('quote'),[2]]
             ]
@@ -801,7 +806,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         scope.addDef(S('f'),lambda a,*,x,y: a*x*y,1)
         assert self.clarify("""
 (apply f
-       (quote (2))
+       '(2)
        (mk-dict :x 9 :y 7))
 """,
                             scope=scope)==[
