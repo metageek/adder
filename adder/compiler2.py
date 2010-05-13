@@ -172,14 +172,15 @@ for name in ['defun','lambda','defvar','scope',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
              'and','or',':=','.',
-             # All before this point are annotated.
-             'defconst','defmacro',
+             'defconst',
              '==','!=','<=','<','>=','>',
              '+','-','*','/','//','%','in',
              'print','gensym','[]','getattr','slice','isinstance',
+             # All before this point are annotated.
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
-             'reverse','eval','stdenv','exec-py','apply','load'
+             'reverse','eval','stdenv','exec-py','apply','load',
+             'defmacro',
              ]:
     Scope.root.addDef(S(name),None,0)
 Scope.root.addConst(S('true'),True,0)

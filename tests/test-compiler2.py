@@ -586,6 +586,140 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S('.'),S('foo-1'),S('x'),S('y')
             ]
 
+    def testEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(== foo 17)",
+                            scope=scope)==[
+            S('=='),S('foo-1'),17
+            ]
+
+    def testNotEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(!= foo 17)",
+                            scope=scope)==[
+            S('!='),S('foo-1'),17
+            ]
+
+    def testLessThanOrEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(<= foo 17)",
+                            scope=scope)==[
+            S('<='),S('foo-1'),17
+            ]
+
+    def testGreaterThanOrEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(>= foo 17)",
+                            scope=scope)==[
+            S('>='),S('foo-1'),17
+            ]
+
+    def testLessThan(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(< foo 17)",
+                            scope=scope)==[
+            S('<'),S('foo-1'),17
+            ]
+
+    def testGreaterThan(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(> foo 17)",
+                            scope=scope)==[
+            S('>'),S('foo-1'),17
+            ]
+
+    def testPlus(self):
+        assert self.clarify("(+ 9 7)")==[
+            S('+'),9,7
+            ]
+
+    def testMinus(self):
+        assert self.clarify("(- 9 7)")==[
+            S('-'),9,7
+            ]
+
+    def testTimes(self):
+        assert self.clarify("(* 9 7)")==[
+            S('*'),9,7
+            ]
+
+    def testFDiv(self):
+        assert self.clarify("(/ 9 7)")==[
+            S('/'),9,7
+            ]
+
+    def testIDiv(self):
+        assert self.clarify("(// 9 7)")==[
+            S('//'),9,7
+            ]
+
+    def testMod(self):
+        assert self.clarify("(% 9 7)")==[
+            S('%'),9,7
+            ]
+
+    def testIn(self):
+        assert self.clarify("(in 9 (quote (1 2 3)))")==[
+            S('in'),9,[S('quote'),[1,2,3]]
+            ]
+
+    def testPrint(self):
+        assert self.clarify("(print 9 7)")==[
+            S('print'),9,7
+            ]
+
+    def testGensym(self):
+        assert self.clarify('(gensym "foo")')==[
+            S('gensym'),'foo'
+            ]
+
+    def testIndex(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('([] foo 3)',
+                            scope=scope)==[
+            S('[]'),S('foo-1'),3
+            ]
+
+    def testGetattr(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(getattr foo "fred")',
+                            scope=scope)==[
+            S('getattr'),S('foo-1'),"fred"
+            ]
+
+    def testSlice1(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(slice foo 2)',
+                            scope=scope)==[
+            S('slice'),S('foo-1'),2
+            ]
+
+    def testSlice2(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(slice foo 2 3)',
+                            scope=scope)==[
+            S('slice'),S('foo-1'),2,3
+            ]
+
+    def testIsinstance(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        scope.addDef(S('str'),str,1)
+        assert self.clarify('(isinstance foo str)',
+                            scope=scope)==[
+            S('isinstance'),S('foo-1'),S('str-1')
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
