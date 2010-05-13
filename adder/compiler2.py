@@ -118,6 +118,8 @@ class Scope:
         else:
             self.id=id
 
+        self.addConst(S('current-scope'),self,0)
+
     root=None
 
     def addDef(self,name,initExpr,line,*,asConst=False,ignoreScopeId=False):
@@ -183,6 +185,7 @@ for name in ['defun','lambda','defvar','scope',
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
              'reverse','stdenv','apply','eval','exec-py','load',
+             'getScopeById',
              # All before this point are annotated.
              'defmacro',
              ]:
@@ -218,6 +221,10 @@ class Annotator:
             if expr.isKeyword():
                 return (expr,line,Scope.root)
             else:
+                if str(expr)=='current-scope':
+                    adder.runtime.getScopeById.scopes[scope.id]=scope
+                    return self(([(S('getScopeById'),line),
+                                  (scope.id,line)],line),scope)
                 required=scope.requiredScope(expr)
                 entry=required[expr]
                 if (entry.asConst

@@ -4,7 +4,7 @@ import unittest,pdb,sys,os
 from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
-import adder.parser
+import adder.parser,adder.runtime
 
 def scopesToIds(scoped):
     scopes={}
@@ -37,6 +37,7 @@ def scopesToIds(scoped):
 
 class AnnotateTestCase(unittest.TestCase):
     def setUp(self):
+        adder.runtime.getScopeById.scopes={}
         Scope.nextId=1
 
     def annotate(self,exprPE,*,scope=None,verbose=False):
@@ -52,28 +53,32 @@ class AnnotateTestCase(unittest.TestCase):
         assert scoped==(17,1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==1
-        assert len(scopes[1])==0
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
 
     def testStr(self):
         (scoped,scopes)=self.annotate(('foo',1))
         assert scoped==('foo',1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==1
-        assert len(scopes[1])==0
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
 
     def testFloat(self):
         (scoped,scopes)=self.annotate((1.7,1))
         assert scoped==(1.7,1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==1
-        assert len(scopes[1])==0
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
 
     def testBool(self):
         (scoped,scopes)=self.annotate((True,1))
         assert scoped==(True,1,1)
         assert isinstance(scopes,dict)
         assert len(scopes)==1
-        assert len(scopes[1])==0
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
 
     def testVar(self):
         scope=Scope(None)
@@ -83,8 +88,8 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==1
         assert scopes[1] is scope
-        assert len(scopes[1])==1
-        assert list(scopes[1])==[S('foo')]
+        assert len(scopes[1])==2
+        assert sorted(scopes[1])==[S('current-scope'),S('foo')]
 
     def testDefun(self):
         (scoped,scopes)=self.annotate(([(S('defun'),1),
@@ -107,8 +112,8 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
-        assert list(scopes[1])==[S('foo')]
-        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert sorted(scopes[1])==[S('current-scope'),S('foo')]
+        assert sorted(scopes[2])==[S('current-scope'),S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
     def testLambda(self):
@@ -130,8 +135,10 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
-        assert len(scopes[1])==0
-        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
+        assert sorted(scopes[2])==[S('current-scope'),
+                                   S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
     def testLambdaCall(self):
@@ -159,8 +166,10 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
-        assert len(scopes[1])==0
-        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
+        assert sorted(scopes[2])==[S('current-scope'),
+                                   S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
     def testDefvar(self):
@@ -176,7 +185,8 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==2
         assert scopes[0] is Scope.root
-        assert sorted(scopes[1])==[S('x')]
+        assert sorted(scopes[1])==[S('current-scope'),
+                                   S('x')]
         assert scopes[1].parent is scopes[0]
         entry=scopes[1][S('x')]
         assert entry.constValueValid
@@ -196,7 +206,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==2
         assert scopes[0] is Scope.root
-        assert sorted(scopes[1])==[S('x')]
+        assert sorted(scopes[1])==[S('current-scope'),S('x')]
         assert scopes[1].parent is scopes[0]
         entry=scopes[1][S('x')]
         assert entry.constValueValid
@@ -214,8 +224,10 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
-        assert len(scopes[1])==0
-        assert len(scopes[2])==0
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
+        assert len(scopes[2])==1
+        assert sorted(scopes[2])==[S('current-scope')]
 
     def testScopeOneVar(self):
         (scoped,scopes)=self.annotate(([(S('scope'),1),
@@ -236,8 +248,9 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==3
         assert scopes[0] is Scope.root
-        assert len(scopes[1])==0
-        assert sorted(scopes[2])==[S('x')]
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
+        assert sorted(scopes[2])==[S('current-scope'),S('x')]
         entry=scopes[2][S('x')]
         assert entry.constValueValid
         assert entry.constValue==17
@@ -285,15 +298,17 @@ class AnnotateTestCase(unittest.TestCase):
         assert isinstance(scopes,dict)
         assert len(scopes)==4
         assert scopes[0] is Scope.root
-        assert len(scopes[1])==0
-        assert sorted(scopes[2])==[S('x'),S('y')]
+        assert len(scopes[1])==1
+        assert sorted(scopes[1])==[S('current-scope')]
+        assert sorted(scopes[2])==[S('current-scope'),
+                                   S('x'),S('y')]
         entry=scopes[2][S('x')]
         assert entry.constValueValid
         assert entry.constValue==17
         entry=scopes[2][S('y')]
         assert entry.constValueValid
         assert entry.constValue==19
-        assert sorted(scopes[3])==[S('x')]
+        assert sorted(scopes[3])==[S('current-scope'),S('x')]
         entry=scopes[3][S('x')]
         assert entry.constValueValid
         assert entry.constValue==23
@@ -303,6 +318,7 @@ class AnnotateTestCase(unittest.TestCase):
 
 class EmptyStripTestCase(unittest.TestCase):
     def setUp(self):
+        adder.runtime.getScopeById.scopes={}
         Scope.nextId=1
         gensym.nextId=1
 
@@ -1206,6 +1222,10 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder('(load "prelude.+")')==[
             S('load'),"prelude.+"
             ]
+
+    def testCurrentScope(self):
+        scope=Scope(None)
+        assert self.evalAdder("current-scope",scope=scope) is scope
 
 suite=unittest.TestSuite(
     ( 
