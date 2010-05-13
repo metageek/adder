@@ -426,7 +426,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         assert self.clarify('1.7')==1.7
 
     def testPredefinedConst(self):
-        assert self.clarify("true")==S('true')
+        assert self.clarify("true")==True
 
     def testVar(self):
         scope=Scope(None)
@@ -870,7 +870,7 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder('1.7')==1.7
 
     def testPredefinedConst(self):
-        assert self.clarify("true")==S('true')
+        assert self.evalAdder("true")==True
 
     def testVar(self):
         scope=Scope(None)

@@ -127,8 +127,11 @@ class DuplicateKeyError(Exception):
         return 'Duplicate variable name: '+self.key
 
 def q(value):
-    if isinstance(value,str) and not isinstance(value,Symbol):
-        value=Symbol(value)
+    if (isinstance(value,int)
+        or isinstance(value,str)
+        or isinstance(value,float)
+        or isinstance(value,bool)):
+        return value
     return [Symbol('quote'),value]
 
 def isFunc(x):

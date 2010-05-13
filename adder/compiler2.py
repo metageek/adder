@@ -213,7 +213,18 @@ class Annotator:
             if expr.isKeyword():
                 return (expr,line,Scope.root)
             else:
-                return (expr,line,scope.requiredScope(expr))
+                required=scope.requiredScope(expr)
+                entry=required[expr]
+                if (entry.asConst
+                    and entry.constValueValid
+                    and (isinstance(entry.constValue,int)
+                         or isinstance(entry.constValue,float)
+                         or isinstance(entry.constValue,str)
+                         or isinstance(entry.constValue,bool)
+                         )
+                    ):
+                    expr=entry.constValue
+                return (expr,line,required)
         return (expr,line,scope)
 
     def annotate_scope(self,expr,line,scope):
@@ -274,7 +285,7 @@ class Annotator:
         scopedDef=self((S('defvar'),expr[0][1]),scope)
         scopedInitExpr=self(expr[2],scope)
         scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],asConst=asConst)
-        scopedVar=self(expr[1],scope)
+        scopedVar=(expr[1][0],expr[1][1],scope)
         return ([scopedDef,
                  scopedVar,scopedInitExpr],line,scope)
 
