@@ -168,7 +168,7 @@ class AnnotateTestCase(unittest.TestCase):
                                         (S('x'),1),
                                         (17,1)],
                                        1))
-        assert scoped==([(S('defvar'),1,0),
+        assert scoped==([(S(':='),1,0),
                          (S('x'),1,1),
                          (17,1,1)
                          ],
@@ -188,7 +188,7 @@ class AnnotateTestCase(unittest.TestCase):
                                         (S('x'),1),
                                         (17,1)],
                                        1))
-        assert scoped==([(S('defvar'),1,0),
+        assert scoped==([(S(':='),1,0),
                          (S('x'),1,1),
                          (17,1,1)
                          ],
@@ -226,7 +226,7 @@ class AnnotateTestCase(unittest.TestCase):
                                         ],
                                        1))
         assert scoped==([(S('scope'),1,0),
-                         ([(S('defvar'),1,0),
+                         ([(S(':='),1,0),
                            (S('x'),1,2),
                            (17,1,2)
                            ],
@@ -262,18 +262,18 @@ class AnnotateTestCase(unittest.TestCase):
                                         ],
                                        1))
         assert scoped==([(S('scope'),1,0),
-                         ([(S('defvar'),1,0),
+                         ([(S(':='),1,0),
                            (S('x'),1,2),
                            (17,1,2)
                            ],
                           1,2),
-                         ([(S('defvar'),1,0),
+                         ([(S(':='),1,0),
                            (S('y'),1,2),
                            (19,1,2)
                            ],
                           1,2),
                          ([(S('scope'),2,0),
-                           ([(S('defvar'),2,0),
+                           ([(S(':='),2,0),
                              (S('x'),2,3),
                              (23,2,3)
                              ],
@@ -365,13 +365,13 @@ class StripTestCase(EmptyStripTestCase):
         assert self.clarify(([(S('defvar'),1),
                               (S('x'),1),
                               (17,1)],
-                             1))==[S('defvar'),S('x-1'),17]
+                             1))==[S(':='),S('x-1'),17]
 
     def testDefconst(self):
         assert self.clarify(([(S('defconst'),1),
                               (S('x'),1),
                               (17,1)],
-                             1))==[S('defvar'),S('x-1'),17]
+                             1))==[S(':='),S('x-1'),17]
 
     def testScopeTrivial(self):
         assert self.clarify(([(S('scope'),1),
@@ -386,7 +386,7 @@ class StripTestCase(EmptyStripTestCase):
                                1)
                               ],
                              1))==[S('scope'),
-                                   [S('defvar'),S('x-2'),17]
+                                   [S(':='),S('x-2'),17]
                                    ]
 
     def testScopeNested(self):
@@ -408,10 +408,10 @@ class StripTestCase(EmptyStripTestCase):
                                2)
                               ],
                              1))==[S('scope'),
-                                   [S('defvar'),S('x-2'),17],
-                                   [S('defvar'),S('y-2'),19],
+                                   [S(':='),S('x-2'),17],
+                                   [S(':='),S('y-2'),19],
                                    [S('scope'),
-                                    [S('defvar'),S('x-3'),23],
+                                    [S(':='),S('x-3'),23],
                                     ]
                                    ]
 
@@ -481,7 +481,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
        ]
 
     def testDefvar(self):
-        assert self.clarify("(defvar x 17)")==[S('defvar'),S('x-1'),17]
+        assert self.clarify("(defvar x 17)")==[S(':='),S('x-1'),17]
 
     def testScopeTrivial(self):
         assert self.clarify("(scope 17)")==[S('scope'),17]
@@ -489,17 +489,17 @@ class ParseAndStripTestCase(EmptyStripTestCase):
     def testScopeOneVar(self):
         assert self.clarify("(scope (defvar x 17))")==[
             S('scope'),
-            [S('defvar'),S('x-2'),17]
+            [S(':='),S('x-2'),17]
             ]
 
     def testScopeNested(self):
         assert self.clarify("""(scope (defvar x 17) (defvar y 19)
 (scope (defvar x 23)))
 """)==[S('scope'),
-       [S('defvar'),S('x-2'),17],
-       [S('defvar'),S('y-2'),19],
+       [S(':='),S('x-2'),17],
+       [S(':='),S('y-2'),19],
        [S('scope'),
-        [S('defvar'),S('x-3'),23],
+        [S(':='),S('x-3'),23],
         ]
        ]
 
@@ -564,7 +564,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S('begin'),
             [S('print'),7],
             [S('print'),9],
-            [S('defvar'),S('x-1'),[S('*'),9,7]],
+            [S(':='),S('x-1'),[S('*'),9,7]],
             [S('print'),S('x-1')],
             ]
 
@@ -920,7 +920,7 @@ class EvalTestCase(EmptyStripTestCase):
 """)==63
 
     def testDefvar(self):
-        assert self.clarify("(defvar x 17)")==[S('defvar'),S('x-1'),17]
+        assert self.evalAdder("(begin (defvar x 17) x)")==17
 
     def testScopeTrivial(self):
         assert self.clarify("(scope 17)")==[S('scope'),17]
@@ -928,17 +928,17 @@ class EvalTestCase(EmptyStripTestCase):
     def testScopeOneVar(self):
         assert self.clarify("(scope (defvar x 17))")==[
             S('scope'),
-            [S('defvar'),S('x-2'),17]
+            [S(':='),S('x-2'),17]
             ]
 
     def testScopeNested(self):
         assert self.clarify("""(scope (defvar x 17) (defvar y 19)
 (scope (defvar x 23)))
 """)==[S('scope'),
-       [S('defvar'),S('x-2'),17],
-       [S('defvar'),S('y-2'),19],
+       [S(':='),S('x-2'),17],
+       [S(':='),S('y-2'),19],
        [S('scope'),
-        [S('defvar'),S('x-3'),23],
+        [S(':='),S('x-3'),23],
         ]
        ]
 
@@ -1003,7 +1003,7 @@ class EvalTestCase(EmptyStripTestCase):
             S('begin'),
             [S('print'),7],
             [S('print'),9],
-            [S('defvar'),S('x-1'),[S('*'),9,7]],
+            [S(':='),S('x-1'),[S('*'),9,7]],
             [S('print'),S('x-1')],
             ]
 
