@@ -1026,7 +1026,15 @@ class EvalTestCase(EmptyStripTestCase):
         except Exception as e2:
             assert e2 is e
 
-    def testAnd(self):
+    def testAnd1(self):
+        assert self.evalAdder("(and (>= foo 7) (<= foo 9))",
+                              foo=5)==False
+
+    def testAnd2(self):
+        assert self.evalAdder("(and (>= foo 7) (<= foo 9))",
+                              foo=8)==True
+
+    def testAnd3(self):
         assert self.evalAdder("(and (>= foo 7) (<= foo 9))",
                               foo=12)==False
 
