@@ -3,6 +3,7 @@
 import unittest,pdb,sys,os
 from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
+from adder.gomer import mkGlobals,geval
 import adder.parser
 
 def scopesToIds(scoped):
@@ -838,11 +839,456 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S('load'),"prelude.+"
             ]
 
+class EvalTestCase(EmptyStripTestCase):
+    def clarify(self,exprStr,*,scope=None,verbose=False):
+        if isinstance(exprStr,tuple):
+            parsedExpr=exprStr
+        else:
+            parsedExpr=next(adder.parser.parse(exprStr))
+        return StripTestCase.clarify(self,
+                                     parsedExpr,
+                                     scope=scope,
+                                     verbose=verbose)
+
+    def evalAdder(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
+        if scope is None:
+            scope=Scope(None)
+        for (k,v) in globalsToSet:
+            scope.addDef(S(k),v,0)
+        gomer=self.clarify(exprStr,scope=scope,verbose=verbose)
+        g=mkGlobals()
+        g.update(globalsToSet)
+        return geval(gomer,globalDict=g,verbose=verbose)
+
+    def testInt(self):
+        assert self.evalAdder('17')==17
+
+    def testStr(self):
+        assert self.evalAdder('"foo"')=='foo'
+
+    def testFloat(self):
+        assert self.evalAdder('1.7')==1.7
+
+    def testPredefinedConst(self):
+        assert self.clarify("true")==S('true')
+
+    def testVar(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("foo",scope=scope)==S('foo-1')
+
+    def testDefun(self):
+        assert self.clarify("""(defun foo (x y)
+  (* x y))
+""")==[S('defun'),S('foo-1'),
+       [S('x-2'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
+    def testLambda(self):
+        assert self.clarify("""(lambda (x y)
+(* x y))
+""")==[S('lambda'),
+       [S('x-2'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
+    def testDefvar(self):
+        assert self.clarify("(defvar x 17)")==[S('defvar'),S('x-1'),17]
+
+    def testScopeTrivial(self):
+        assert self.clarify("(scope 17)")==[S('scope'),17]
+
+    def testScopeOneVar(self):
+        assert self.clarify("(scope (defvar x 17))")==[
+            S('scope'),
+            [S('defvar'),S('x-2'),17]
+            ]
+
+    def testScopeNested(self):
+        assert self.clarify("""(scope (defvar x 17) (defvar y 19)
+(scope (defvar x 23)))
+""")==[S('scope'),
+       [S('defvar'),S('x-2'),17],
+       [S('defvar'),S('y-2'),19],
+       [S('scope'),
+        [S('defvar'),S('x-3'),23],
+        ]
+       ]
+
+    def testQuoteInt(self):
+        assert self.clarify("(quote 17)")==[S('quote'),17]
+
+    def testQuoteList(self):
+        assert self.clarify("""(quote (x
+19
+23))""")==[S('quote'),[S('x'),19,23]]
+
+    def testQuoteListWithApostrophe(self):
+        assert self.clarify("""'(x
+19
+23)""")==[S('quote'),[S('x'),19,23]]
+
+    def testImport(self):
+        assert self.clarify("(import re pdb)")==[
+        S('import'),S('re'),S('pdb')
+        ]
+
+    def testIf(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(if foo 9 7)",
+                            scope=scope)==[S('if'),S('foo-1'),9,7]
+
+    def testWhile(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')]
+                                           ]
+
+    def testBreak(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo) (break))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')],
+                                           [S('break')]
+                                           ]
+
+    def testContinue(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(while foo (print foo) (continue))",
+                            scope=scope)==[S('while'),S('foo-1'),
+                                           [S('print'),S('foo-1')],
+                                           [S('continue')]
+                                           ]
+
+    def testBegin(self):
+        assert self.clarify("""(begin
+  (print 7)
+  (print 9)
+  (defvar x (* 9 7))
+  (print x)
+)
+""")==[
+            S('begin'),
+            [S('print'),7],
+            [S('print'),9],
+            [S('defvar'),S('x-1'),[S('*'),9,7]],
+            [S('print'),S('x-1')],
+            ]
+
+    def testYield(self):
+        assert self.clarify("(defun foo (x) (yield x) (yield (* x x)))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('yield'),S('x-2')],
+            [S('yield'),[S('*'),S('x-2'),S('x-2')]],
+            ]
+
+    def testReturn(self):
+        assert self.clarify("(defun foo (x) (return x))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('return'),S('x-2')],
+            ]
+
+    def testRaise(self):
+        assert self.clarify("(defun foo (x) (raise x))")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('raise'),S('x-2')],
+            ]
+
+    def testAnd(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(and (>= foo 7) (<= foo 9))",
+                            scope=scope)==[
+            S('and'),
+            [S('>='),S('foo-1'),7],
+            [S('<='),S('foo-1'),9],
+            ]
+
+    def testOr(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(or (>= foo 7) (<= foo 9))",
+                            scope=scope)==[
+            S('or'),
+            [S('>='),S('foo-1'),7],
+            [S('<='),S('foo-1'),9],
+            ]
+
+    def testAssign(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(:= foo 9)",
+                            scope=scope)==[
+            S(':='),S('foo-1'),9
+            ]
+
+    def testDot(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(. foo x y)",
+                            scope=scope)==[
+            S('.'),S('foo-1'),S('x'),S('y')
+            ]
+
+    def testEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(== foo 17)",
+                            scope=scope)==[
+            S('=='),S('foo-1'),17
+            ]
+
+    def testNotEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(!= foo 17)",
+                            scope=scope)==[
+            S('!='),S('foo-1'),17
+            ]
+
+    def testLessThanOrEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(<= foo 17)",
+                            scope=scope)==[
+            S('<='),S('foo-1'),17
+            ]
+
+    def testGreaterThanOrEquals(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(>= foo 17)",
+                            scope=scope)==[
+            S('>='),S('foo-1'),17
+            ]
+
+    def testLessThan(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(< foo 17)",
+                            scope=scope)==[
+            S('<'),S('foo-1'),17
+            ]
+
+    def testGreaterThan(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(> foo 17)",
+                            scope=scope)==[
+            S('>'),S('foo-1'),17
+            ]
+
+    def testPlus(self):
+        assert self.clarify("(+ 9 7)")==[
+            S('+'),9,7
+            ]
+
+    def testMinus(self):
+        assert self.clarify("(- 9 7)")==[
+            S('-'),9,7
+            ]
+
+    def testTimes(self):
+        assert self.clarify("(* 9 7)")==[
+            S('*'),9,7
+            ]
+
+    def testFDiv(self):
+        assert self.clarify("(/ 9 7)")==[
+            S('/'),9,7
+            ]
+
+    def testIDiv(self):
+        assert self.clarify("(// 9 7)")==[
+            S('//'),9,7
+            ]
+
+    def testMod(self):
+        assert self.clarify("(% 9 7)")==[
+            S('%'),9,7
+            ]
+
+    def testIn(self):
+        assert self.clarify("(in 9 '(1 2 3))")==[
+            S('in'),9,[S('quote'),[1,2,3]]
+            ]
+
+    def testPrint(self):
+        assert self.clarify("(print 9 7)")==[
+            S('print'),9,7
+            ]
+
+    def testGensym0(self):
+        assert self.clarify('(gensym)')==[S('gensym')]
+
+    def testGensym1(self):
+        assert self.clarify('(gensym "foo")')==[
+            S('gensym'),'foo'
+            ]
+
+    def testIndex(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('([] foo 3)',
+                            scope=scope)==[
+            S('[]'),S('foo-1'),3
+            ]
+
+    def testGetattr(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(getattr foo "fred")',
+                            scope=scope)==[
+            S('getattr'),S('foo-1'),"fred"
+            ]
+
+    def testSlice1(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(slice foo 2)',
+                            scope=scope)==[
+            S('slice'),S('foo-1'),2
+            ]
+
+    def testSlice2(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(slice foo 2 3)',
+                            scope=scope)==[
+            S('slice'),S('foo-1'),2,3
+            ]
+
+    def testIsinstance(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        scope.addDef(S('str'),str,1)
+        assert self.clarify('(isinstance foo str)',
+                            scope=scope)==[
+            S('isinstance'),S('foo-1'),S('str-1')
+            ]
+
+    def testList(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(list foo)',
+                            scope=scope)==[
+            S('list'),S('foo-1')
+            ]
+
+    def testTuple(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(tuple foo)',
+                            scope=scope)==[
+            S('tuple'),S('foo-1')
+            ]
+
+    def testSet(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(set foo)',
+                            scope=scope)==[
+            S('set'),S('foo-1')
+            ]
+
+    def testDict(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify('(dict foo)',
+                            scope=scope)==[
+            S('dict'),S('foo-1')
+            ]
+
+    def testMkList(self):
+        assert self.clarify('(mk-list 9 7)')==[
+            S('mk-list'),9,7
+            ]
+
+    def testMkTuple(self):
+        assert self.clarify('(mk-tuple 9 7)')==[
+            S('mk-tuple'),9,7
+            ]
+
+    def testMkSet(self):
+        assert self.clarify('(mk-set 9 7)')==[
+            S('mk-set'),9,7
+            ]
+
+    def testMkDict(self):
+        assert self.clarify('(mk-dict :foo 9 :bar 7)')==[
+            S('mk-dict'),S(':foo'),9,S(':bar'),7
+            ]
+
+    def testMkSymbol(self):
+        assert self.clarify('(mk-symbol "fred")')==[
+            S('mk-symbol'),"fred"
+            ]
+
+    def testReverse(self):
+        assert self.clarify("(reverse '(1 2 3))")==[
+            S('reverse'),[S('quote'),[1,2,3]]
+            ]
+
+    def testStdenv(self):
+        assert self.clarify('(stdenv)')==[S('stdenv')]
+
+    def testApply(self):
+        scope=Scope(None)
+        scope.addDef(S('f'),lambda a: a*a,1)
+        assert self.clarify("(apply f '(2))",
+                            scope=scope)==[
+            S('apply'),S('f-1'),[S('quote'),[2]]
+            ]
+
+    def testApplyWithKwArgs(self):
+        scope=Scope(None)
+        scope.addDef(S('f'),lambda a,*,x,y: a*x*y,1)
+        assert self.clarify("""
+(apply f
+       '(2)
+       (mk-dict :x 9 :y 7))
+""",
+                            scope=scope)==[
+            S('apply'),
+            S('f-1'),
+            [S('quote'),[2]],
+            [S('mk-dict'),S(':x'),9,S(':y'),7]
+            ]
+
+    def testEval1(self):
+        assert self.clarify("(eval '(* 9 7))")==[
+            S('eval'),[S('quote'),[S('*'),9,7]]
+            ]
+
+    def testEval2(self):
+        assert self.clarify("(eval '(* 9 7) (stdenv))")==[
+            S('eval'),
+            [S('quote'),[S('*'),9,7]],
+            [S('stdenv')]
+            ]
+
+    def testExecPy(self):
+        assert self.clarify('(exec-py "print(7)")')==[
+            S('exec-py'),"print(7)"
+            ]
+
+    def testLoad(self):
+        assert self.clarify('(load "prelude.+")')==[
+            S('load'),"prelude.+"
+            ]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
       unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
+      unittest.makeSuite(EvalTestCase,'test'),
      )
     )
 
