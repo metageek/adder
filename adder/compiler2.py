@@ -1,5 +1,5 @@
 import pdb
-from adder.common import Symbol as S, gensym
+from adder.common import Symbol as S, gensym, q
 import adder.gomer
 
 def const(expr):
@@ -13,17 +13,21 @@ def const(expr):
     if (isinstance(expr,list)
         and expr[0]
         and isinstance(expr[0],S)
-        and S in const.knownFuncs):
-        args=[]
-        for arg in expr[1:]:
-            (argConstP,argValue)=const(arg)
-            if not argConstP:
+        ):
+        if S in const.knownFuncs:
+            args=[]
+            for arg in expr[1:]:
+                (argConstP,argValue)=const(arg)
+                if not argConstP:
+                    return (False,None)
+                args.append(argValue)
+            try:
+                return (True,const.knownFuncs[arg[0]](*args))
+            except Exception:
                 return (False,None)
-            args.append(argValue)
-        try:
-            return (True,const.knownFuncs[arg[0]](*args))
-        except Exception:
-            return (False,None)
+        if S==S('quote'):
+            assert len(expr)==2
+            return (True,expr[1])
     return (False,None)
 
 def times(*args):
@@ -83,10 +87,14 @@ class Redefined(Exception):
 
 class Scope:
     class Entry:
-        def __init__(self,*,initExpr,line):
+        def __init__(self,*,initExpr,line,asConst=False):
             self.initExpr=initExpr
-            (self.constP,self.constValue)=const(initExpr)
+            if initExpr is None:
+                (self.constValueValid,self.constValue)=(False,None)
+            else:
+                (self.constValueValid,self.constValue)=const(initExpr)
             self.line=line
+            self.asConst=asConst
 
     nextId=1
 
@@ -112,12 +120,16 @@ class Scope:
 
     root=None
 
-    def addDef(self,name,initExpr,line):
+    def addDef(self,name,initExpr,line,*,asConst=False):
         assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
-                                       line=line)
+                                       line=line,
+                                       asConst=asConst)
+
+    def addConst(self,name,value,line):
+        self.addDef(name,q(value),line,asConst=True)
 
     def __iter__(self):
         cur=self
@@ -157,10 +169,23 @@ class Scope:
         raise Undefined(sym)
 
 Scope.root=Scope(None,isRoot=True)
-for name in ['+','-','*','/','//','%',
-             'defun','lambda','defvar','scope'
+for name in ['defun','lambda','defvar','scope',
+             'quote','import',
+             'if','while','break','continue','begin',
+             'yield', 'return','raise',
+             'and','or',':=','.','defconst','defmacro',
+             '==','!=','<=','<','>=','>',
+             '+','-','*','/','//','%','in',
+             'print','gensym','[]','getattr','slice','isinstance',
+             'list','tuple','set','dict',
+             'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
+             'reverse','eval','stdenv','exec-py','apply','load'
              ]:
     Scope.root.addDef(S(name),None,0)
+
+Scope.root.addConst(S('true'),True,0)
+Scope.root.addConst(S('false'),False,0)
+Scope.root.addConst(S('none'),None,0)
 Scope.root.readOnly=True
 
 class Annotator:
@@ -171,9 +196,11 @@ class Annotator:
             print(ve,parsedExpr)
             raise
         if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
-            m='annotate_%s' % str(expr[0][0])
-            if hasattr(self,m):
-                return getattr(self,m)(expr,line,scope)
+            f=expr[0][0]
+            if scope.requiredScope(f) is Scope.root:
+                m='annotate_%s' % str(f)
+                if hasattr(self,m):
+                    return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         if isinstance(expr,S):
@@ -185,6 +212,22 @@ class Annotator:
         childScope=Scope(scope)
         scopedChildren=list(map(lambda e: self(e,childScope),expr[1:]))
         return ([scopedScope]+scopedChildren,line,scope)
+
+    def annotate_quote(self,expr,line,scope):
+        def annotateDumbly(parsedExpr):
+            try:
+                (expr,line)=parsedExpr
+            except ValueError as ve:
+                print(ve,parsedExpr)
+                raise
+            if isinstance(expr,list):
+                return [list(map(annotateDumbly,expr)),line,scope]
+            else:
+                return (expr,line,scope)
+
+        return ([self(expr[0],scope),
+                 annotateDumbly(expr[1])],
+                line,scope)
 
     def annotate_defvar(self,expr,line,scope):
         scopedDefvar=self(expr[0],scope)
@@ -228,3 +271,17 @@ class Annotator:
                 line,scope)
 
 annotate=Annotator()
+
+def stripAnnotations(annotated,*,quoted=False):
+    try:
+        (expr,line,scope)=annotated
+    except ValueError as ve:
+        print(ve,annotated)
+        raise
+    if not quoted and isinstance(expr,S) and scope.id>0:
+        return S('%s-%d' % (str(expr),scope.id))
+    if not (expr and isinstance(expr,list)):
+        return expr
+    if expr[0][0]==S('quote'):
+        return [S('quote'),stripAnnotations(expr[1],quoted=True)]
+    return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))

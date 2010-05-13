@@ -1,41 +1,47 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler2 import Scope,annotate
+from adder.compiler2 import Scope,annotate,stripAnnotations
 from adder.common import Symbol as S, gensym
+
+def scopesToIds(scoped):
+    scopes={}
+    def walk(scoped):
+        try:
+            (expr,line,scope)=scoped
+        except ValueError as ve:
+            print(ve,scoped)
+            raise
+
+        if scope is not None:
+            if isinstance(scope,tuple):
+                print('scope tuple:',scope)
+            if scope.id in scopes:
+                assert scopes[scope.id] is scope
+            else:
+                scopes[scope.id]=scope
+        if isinstance(expr,list):
+            expr=list(map(walk,expr))
+        return (expr,line,
+                None if scope is None else scope.id
+                )
+    withIds=walk(scoped)
+    keys=set(scopes.keys())
+    if 0 in keys:
+        assert keys==set(range(0,len(scopes)))
+    else:
+        assert keys==set(range(1,len(scopes)+1))
+    return (withIds,scopes)
 
 class AnnotateTestCase(unittest.TestCase):
     def setUp(self):
         Scope.nextId=1
 
-    def scopesToIds(self,scoped):
-        scopes={}
-        def walk(scoped):
-            try:
-                (expr,line,scope)=scoped
-            except ValueError as ve:
-                print(ve,scoped)
-                raise
-            if scope.id in scopes:
-                assert scopes[scope.id] is scope
-            else:
-                scopes[scope.id]=scope
-            if isinstance(expr,list):
-                expr=list(map(walk,expr))
-            return (expr,line,scope.id)
-        withIds=walk(scoped)
-        keys=set(scopes.keys())
-        if 0 in keys:
-            assert keys==set(range(0,len(scopes)))
-        else:
-            assert keys==set(range(1,len(scopes)+1))
-        return (withIds,scopes)
-
     def annotate(self,exprPE,*,scope=None):
         if scope is None:
             scope=Scope(None)
         annotated=annotate(exprPE,scope)
-        return self.scopesToIds(annotated)
+        return scopesToIds(annotated)
 
     def testInt(self):
         (scoped,scopes)=self.annotate((17,1))
@@ -140,7 +146,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[1])==[S('x')]
         assert scopes[1].parent is scopes[0]
         entry=scopes[1][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
 
     def testScopeTrivial(self):
@@ -179,7 +185,7 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==0
         assert sorted(scopes[2])==[S('x')]
         entry=scopes[2][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
 
     def testScopeNested(self):
@@ -228,22 +234,145 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==0
         assert sorted(scopes[2])==[S('x'),S('y')]
         entry=scopes[2][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==17
         entry=scopes[2][S('y')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==19
         assert sorted(scopes[3])==[S('x')]
         entry=scopes[3][S('x')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==23
         entry=scopes[3][S('y')]
-        assert entry.constP
+        assert entry.constValueValid
         assert entry.constValue==19
+
+class StripTestCase(unittest.TestCase):
+    def setUp(self):
+        Scope.nextId=1
+
+    def clarify(self,parsedExpr,*,scope=None,verbose=False):
+        if scope is None:
+            scope=Scope(None)
+        annotated=annotate(parsedExpr,scope)
+        res=stripAnnotations(annotated)
+        if verbose:
+            print(annotated)
+            print(scopesToIds(annotated))
+            print(res)
+        return res
+
+    def testInt(self):
+        assert self.clarify((17,1))==17
+
+    def testStr(self):
+        assert self.clarify(('foo',1))=='foo'
+
+    def testFloat(self):
+        assert self.clarify((1.7,1))==1.7
+
+    def testBool(self):
+        assert self.clarify((True,1))==True
+
+    def testVar(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify((S('foo'),1),scope=scope)==S('foo-1')
+
+    def testDefun(self):
+        assert self.clarify(([(S('defun'),1),
+                              (S('foo'),1),
+                              ([(S('x'),1),
+                                (S('y'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))==[S('defun'),S('foo-1'),
+                                   [S('x-2'),S('y-2')],
+                                   [S('*'),S('x-2'),S('y-2')]
+                                   ]
+
+    def testLambda(self):
+        assert self.clarify(([(S('lambda'),1),
+                              ([(S('x'),1),
+                                (S('y'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))==[S('lambda'),
+                                   [S('x-2'),S('y-2')],
+                                   [S('*'),S('x-2'),S('y-2')]
+                                   ]
+
+    def testDefvar(self):
+        assert self.clarify(([(S('defvar'),1),
+                              (S('x'),1),
+                              (17,1)],
+                             1))==[S('defvar'),S('x-1'),17]
+
+    def testScopeTrivial(self):
+        assert self.clarify(([(S('scope'),1),
+                              (17,1)],
+                             1))==[S('scope'),17]
+
+    def testScopeOneVar(self):
+        assert self.clarify(([(S('scope'),1),
+                              ([(S('defvar'),1),
+                                (S('x'),1),
+                                (17,1)],
+                               1)
+                              ],
+                             1))==[S('scope'),
+                                   [S('defvar'),S('x-2'),17]
+                                   ]
+
+    def testScopeNested(self):
+        assert self.clarify(([(S('scope'),1),
+                              ([(S('defvar'),1),
+                                (S('x'),1),
+                                (17,1)],
+                               1),
+                              ([(S('defvar'),1),
+                                (S('y'),1),
+                                (19,1)],
+                               1),
+                              ([(S('scope'),2),
+                                ([(S('defvar'),2),
+                                  (S('x'),2),
+                                  (23,2)],
+                                 2)
+                                ],
+                               2)
+                              ],
+                             1))==[S('scope'),
+                                   [S('defvar'),S('x-2'),17],
+                                   [S('defvar'),S('y-2'),19],
+                                   [S('scope'),
+                                    [S('defvar'),S('x-3'),23],
+                                    ]
+                                   ]
+
+    def testQuoteInt(self):
+        assert self.clarify(([(S('quote'),1),
+                              (17,1)
+                              ],1))==[S('quote'),17]
+
+    def testQuoteList(self):
+        assert self.clarify(([(S('quote'),1),
+                              ([(S('x'),1),
+                                (19,2),
+                                (23,3)
+                                ],
+                               1)
+                              ],1)
+                            )==[S('quote'),[S('x'),19,23]]
 
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
+      unittest.makeSuite(StripTestCase,'test'),
      )
     )
 
