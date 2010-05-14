@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler2 import Scope,annotate,stripAnnotations
+from adder.compiler2 import Scope,annotate,stripAnnotations,AssignedToConst,Redefined
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
@@ -948,6 +948,25 @@ class EvalTestCase(EmptyStripTestCase):
     def testDefvar(self):
         assert self.evalAdder("(begin (defvar x 17) x)")==17
 
+    def testDefvarRedefinitionFails(self):
+        try:
+            self.evalAdder("(begin (defvar x 17) (defvar x 12))")
+            assert False
+        except Redefined as red:
+            assert red.args[0]==S('x')
+            assert red.args[1][:2]==(12,1)
+            assert red.args[2].initExpr[:2]==(17,1)
+
+    def testDefconst(self):
+        assert self.evalAdder("(begin (defconst x 17) x)")==17
+
+    def testDefconstModificationFails(self):
+        try:
+            self.evalAdder("(begin (defconst x 17) (:= x 9))")
+            assert False
+        except AssignedToConst as ass:
+            assert ass.args==(S('x'),)
+
     def testScopeTrivial(self):
         assert self.evalAdder("(scope 17)")==17
 
@@ -971,6 +990,12 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("""'(x
 19
 23)""")==[S('x'),19,23]
+
+    def testQuoteSymbol(self):
+        assert self.evalAdder("(quote x)")==S('x')
+
+    def testQuoteSymbolWithApostrophe(self):
+        assert self.evalAdder("'x")==S('x')
 
     def testImport(self):
         assert self.evalAdder("""

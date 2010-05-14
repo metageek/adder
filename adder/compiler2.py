@@ -85,6 +85,13 @@ class Redefined(Exception):
     def __str__(self):
         return 'Variable redefined: %s defined as %s after being defined at %s' % self.args
 
+class AssignedToConst(Exception):
+    def __init__(self,var):
+        Exception.__init__(self,var)
+
+    def __str__(self):
+        return 'Assigning to constant: %s' % self.args
+
 class Scope:
     class Entry:
         def __init__(self,*,initExpr,line,asConst=False,ignoreScopeId=False):
@@ -199,7 +206,7 @@ Scope.root.addConst(S('none'),None,0)
 Scope.root.readOnly=True
 
 class Annotator:
-    pynamesForSymbols={'.': 'dot'}
+    pynamesForSymbols={'.': 'dot', ':=': 'assign'}
     def methodFor(self,f):
         s=str(f)
         if s in Annotator.pynamesForSymbols:
@@ -243,6 +250,15 @@ class Annotator:
                 return (expr,line,required)
         return (expr,line,scope)
 
+    def annotate_assign(self,expr,line,scope):
+        assert len(expr)==3
+        (lhs,lhsLine)=expr[1]
+        if isinstance(lhs,S):
+            entry=scope[lhs]
+            if entry.asConst:
+                raise AssignedToConst(lhs)
+        return (list(map(lambda e: self(e,scope),expr)),line,scope)
+    
     def annotate_eval(self,expr,line,scope):
         assert len(expr)>=2 and len(expr)<=4
         adderArg=self(expr[1],scope)
