@@ -144,7 +144,13 @@ legal Adder.
 <dt>stdenv</dt>
 <dd>TODO</dd>
 <dt>exec-py</dt>
-<dd>TODO</dd>
+<dd>Somewhat limited, because the Adder compiler renames vars to keep
+  them unambiguous (so that we can have multiple lexical scopes within
+  the same function).  As a result, something like <code>(begin
+  (defvar x 9) (exec-py "x=7") x)</code> will return 9, not 7, since
+  the <code>x</code> in Adder is actually <code>x-1</code>, which gets
+  translated into <code>__adder__x_002d1</code>.
+</dd>
 <dt>apply</dt>
 <dd>TODO</dd>
 <dt>load</dt>

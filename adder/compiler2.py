@@ -189,7 +189,7 @@ for name in ['defun','lambda','defvar','scope',
              'reverse','stdenv','apply','eval','exec-py','load',
              'getScopeById','globals','locals',
              # All before this point are annotated.
-             'defmacro',
+             'defmacro','python',
              ]:
     Scope.root.addDef(S(name),None,0)
 
@@ -204,7 +204,7 @@ class Annotator:
         s=str(f)
         if s in Annotator.pynamesForSymbols:
             s=Annotator.pynamesForSymbols[s]
-        return 'annotate_%s' % s
+        return 'annotate_%s' % s.replace('-','_')
 
     def __call__(self,parsedExpr,scope):
         try:
@@ -257,6 +257,23 @@ class Annotator:
             localArg=self(([(S('locals'),line)],line),scope)
         return ([self(expr[0],scope),
                  adderArg,scopeArg,globalArg,localArg],line,scope)
+
+    def annotate_exec_py(self,expr,line,scope):
+        assert len(expr)>=2 and len(expr)<=4
+        pyArg=self(expr[1],scope)
+        if len(expr)>=3:
+            globalArg=self(expr[2],scope)
+        else:
+            globalArg=self(([(S('globals'),line)],line),scope)
+        if len(expr)>=4:
+            localArg=self(expr[3],scope)
+        else:
+            localArg=self(([(S('locals'),line)],line),scope)
+        return ([self(([(S('.'),line),
+                        (S('python'),line),
+                        (S('exec'),line)],
+                       line),scope),
+                 pyArg,globalArg,localArg],line,scope)
 
     def annotate_scope(self,expr,line,scope):
         scopedScope=self(expr[0],scope)

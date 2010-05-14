@@ -885,7 +885,10 @@ class ParseAndStripTestCase(EmptyStripTestCase):
 
     def testExecPy(self):
         assert self.clarify('(exec-py "print(7)")')==[
-            S('exec-py'),"print(7)"
+            [S('.'),S('python'),S('exec')],
+            "print(7)",
+            [S('globals')],
+            [S('locals')]
             ]
 
     def testLoad(self):
@@ -1216,12 +1219,12 @@ class EvalTestCase(EmptyStripTestCase):
     def _testEval2(self):
         assert self.evalAdder("(eval '(* 9 7) (stdenv))")==63
 
-    def _testExecPy(self):
+    def testExecPy(self):
         assert self.evalAdder("""
 (begin
-  (defvar x 9)
-  (exec-py "x=7")
-  x)
+  (defvar g (mk-dict :x 12))
+  (exec-py "global x\nx=7" g)
+  ([] g "x"))
 """)==7
 
     def _testLoad(self):
