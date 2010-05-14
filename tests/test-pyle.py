@@ -61,9 +61,19 @@ class StrTestCase(unittest.TestCase):
                          (Var(S('pebbles')),Literal(3))]
                         ))=='barney(dino,9,wilma=betty,pebbles=3)'
 
-    def testAssign(self):
+    def testAssignVar(self):
         assert str(Assign(Var(S('fred')),Var(S('barney'))))=='fred=barney'
         assert str(Assign(Var(S('fred')),Literal(7)))=='fred=7'
+
+    def testAssignDot(self):
+        assert str(Assign(Dot(Var(S('fred')),
+                              [Var(S('x')),Var(S('y'))]),
+                          Var(S('barney'))))=='fred.x.y=barney'
+
+    def testAssignSubscript(self):
+        assert str(Assign(Subscript(Var(S('fred')),
+                                    Literal(3)),
+                          Var(S('barney'))))=='fred[3]=barney'
 
     def testReturn(self):
         assert str(Return(Var(S('fred'))))=='return fred'
@@ -244,15 +254,24 @@ class ToPythonTestCase(unittest.TestCase):
                               ]
                              ))==("fred(3,5,x=9,y=7)","fred(3,5,x=9,y=7)\n")
 
-    def testAssignLiteral(self):
+    def testAssignRLiteral(self):
         assert self.toP(Assign(Var(S('fred')),
                                Literal(7)))==("fred=7","fred=7\n")
 
-    def testAssignVar(self):
+    def testAssignLDotRLiteral(self):
+        assert self.toP(Assign(Dot(Var(S('fred')),
+                                   [Var(S('x')),Var(S('y'))]),
+                               Literal(7)))==("fred.x.y=7","fred.x.y=7\n")
+
+    def testAssignLSubscriptRLiteral(self):
+        assert self.toP(Assign(Subscript(Var(S('fred')),Literal(3)),
+                               Literal(7)))==("fred[3]=7","fred[3]=7\n")
+
+    def testAssignRVar(self):
         assert self.toP(Assign(Var(S('fred')),
                                Var(S('x'))))==("fred=x","fred=x\n")
 
-    def testAssignCall(self):
+    def testAssignRCall(self):
         assert self.toP(Assign(Var(S('fred')),
                                Call(Var(S('barney')),
                                     [Literal(3)],[])))==("fred=barney(3)",
@@ -688,13 +707,23 @@ class BuildToPythonTestCase(unittest.TestCase):
                          [[S('x'),9],[S('y'),7]]
                          ])==("fred(3,5,x=9,y=7)","fred(3,5,x=9,y=7)\n")
 
-    def testAssignLiteral(self):
+    def testAssignRLiteral(self):
         assert self.toP([S(':='),S('fred'),7])==("fred=7","fred=7\n")
 
-    def testAssignVar(self):
+    def testAssignLDotRLiteral(self):
+        assert self.toP([S(':='),
+                         [S('.'),S('fred'),S('x'),S('y')],
+                         7])==("fred.x.y=7","fred.x.y=7\n")
+
+    def testAssignLSubscriptRLiteral(self):
+        assert self.toP([S(':='),
+                         [S('[]'),S('fred'),3],
+                         7])==("fred[3]=7","fred[3]=7\n")
+
+    def testAssignRVar(self):
         assert self.toP([S(':='),S('fred'),S('x')])==("fred=x","fred=x\n")
 
-    def testAssignCall(self):
+    def testAssignRCall(self):
         assert self.toP([S(':='),S('fred'),
                          [S('call'),S('barney'),[3],[]]
                          ])==("fred=barney(3)",

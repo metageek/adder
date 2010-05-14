@@ -6,6 +6,9 @@ from adder.pyle import toPythonTree,toPythonFlat,flatten
 from adder.common import Symbol as S,gensym
 import adder.common
 
+class O:
+    pass
+
 class ReduceTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
@@ -444,6 +447,86 @@ class ReduceTestCase(unittest.TestCase):
 
         assert self.stmts==[
              [S(':='),S('z'),[S('binop'),S('*'),9,7]],
+            ]
+
+    def testAssignDotStmt(self):
+        x=self.r([S(':='),
+                  [S('.'),S('z'),S('x'),S('y')],
+                  [S('*'),9,7]],
+                 True)
+
+        assert x is None
+
+        assert self.stmts==[
+             [S(':='),
+              [S('.'),S('z'),S('x'),S('y')],
+              [S('binop'),S('*'),9,7]],
+            ]
+
+    def testAssignSubscriptStmt(self):
+        x=self.r([S(':='),
+                  [S('[]'),S('z'),3],
+                  [S('*'),9,7]],
+                 True)
+
+        assert x is None
+
+        assert self.stmts==[
+             [S(':='),
+              [S('[]'),S('z'),3],
+              [S('binop'),S('*'),9,7]]
+            ]
+
+    def testAssignExpr(self):
+        x=self.r([S(':='),S('z'),[S('*'),9,7]],
+                 False)
+
+        assert x==S('z')
+
+        assert self.stmts==[
+             [S(':='),S('z'),[S('binop'),S('*'),9,7]],
+            ]
+
+    def testAssignDotExpr(self):
+        x=self.r([S(':='),
+                  [S('.'),S('z'),S('x'),S('y')],
+                  [S('*'),9,7]],
+                 False)
+
+        gensym.nextId=1
+        scratch=gensym('scratch')
+
+        assert x==scratch
+
+        assert self.stmts==[
+             [S(':='),
+              [S('.'),S('z'),S('x'),S('y')],
+              [S('binop'),S('*'),9,7]],
+             [S(':='),
+              scratch,
+              [S('.'),S('z'),S('x'),S('y')]
+              ]
+            ]
+
+    def testAssignSubscriptExpr(self):
+        x=self.r([S(':='),
+                  [S('[]'),S('z'),3],
+                  [S('*'),9,7]],
+                 False)
+
+        gensym.nextId=1
+        scratch=gensym('scratch')
+
+        assert x==scratch
+
+        assert self.stmts==[
+             [S(':='),
+              [S('[]'),S('z'),3],
+              [S('binop'),S('*'),9,7]],
+             [S(':='),
+              scratch,
+              [S('[]'),S('z'),3]
+              ]
             ]
 
     def testImportStmt(self):
@@ -1758,7 +1841,7 @@ class ToPythonTestCase(unittest.TestCase):
         gensym.nextId=1
         return res
 
-    def toP(self,gomer,isStmt):
+    def toP(self,gomer,isStmt,*,verbose=False):
         pyleExpr=self.r(gomer,isStmt)
         stmtTrees=[]
         flat=""
@@ -1774,7 +1857,7 @@ class ToPythonTestCase(unittest.TestCase):
         else:
             (exprTree,exprFlat)=(None,None)
 
-        if self.verbose:
+        if verbose:
             print()
             print(stmtTrees)
             print(stmtFlat)
@@ -1806,38 +1889,30 @@ class ToPythonTestCase(unittest.TestCase):
 
     def testSimpleFuncExprKw(self):
         scratch=gensym('scratch')
+        scratchP=scratch.toPython()
         gensym.nextId=1
-        assert self.r([S('fred'),7,8,
-                       S(':barney'),17,
-                       S(':wilma'),19,
-                       ],False)==scratch
-        assert self.stmts==[[S(':='),scratch,[S('call'),
-                                              S('fred'),
-                                              [7,8],
-                                              [[S('barney'),17],
-                                               [S('wilma'),19],
-                                               ]
-                                              ]
-                             ]
-                            ]
+        assert self.toP([S('fred'),7,8,
+                         S(':barney'),17,
+                         S(':wilma'),19,
+                         ],False)==(
+            ["%s=fred(7,8,barney=17,wilma=19)" % scratchP],
+            "%s=fred(7,8,barney=17,wilma=19)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
 
     def testSimpleFuncExprKw2(self):
         scratch=gensym('scratch')
+        scratchP=scratch.toPython()
         gensym.nextId=1
-        assert self.r([S('fred'),7,8,
-                       S(':barney'),17,
-                       12,
-                       S(':wilma'),19,
-                       ],False)==scratch
-        assert self.stmts==[[S(':='),scratch,[S('call'),
-                                              S('fred'),
-                                              [7,8,12],
-                                              [[S('barney'),17],
-                                               [S('wilma'),19],
-                                               ]
-                                              ]
-                             ]
-                            ]
+        assert self.toP([S('fred'),7,8,
+                         S(':barney'),17,
+                         12,
+                         S(':wilma'),19,
+                         ],False)==(
+            ["%s=fred(7,8,12,barney=17,wilma=19)" % scratchP],
+            "%s=fred(7,8,12,barney=17,wilma=19)\n" % scratchP,
+            scratchP,"%s\n" % scratchP
+            )
 
     def testNestedFuncExpr(self):
         scratch1=gensym('scratch')
@@ -2179,24 +2254,67 @@ class ToPythonTestCase(unittest.TestCase):
             ]
 
     def testAssignStmt(self):
-        x=self.r([S(':='),S('z'),[S('*'),9,7]],
-                 True)
-
-        assert x is None
-
-        assert self.stmts==[
-             [S(':='),S('z'),[S('binop'),S('*'),9,7]],
-            ]
+        assert self.toP([S(':='),S('z'),[S('*'),9,7]],
+                        True)==(
+            ["z=9*7"],"z=9*7\n",
+            None,None
+            )
 
     def testAssignExpr(self):
-        x=self.r([S(':='),S('z'),[S('*'),9,7]],
-                 False)
+        assert self.toP([S(':='),S('z'),[S('*'),9,7]],
+                        False)==(
+            ["z=9*7"],"z=9*7\n",
+            "z","z\n"
+            )
 
-        assert x==S('z')
+    def testAssignDotStmt(self):
+        assert self.toP([S(':='),
+                         [S('.'),S('z'),S('x'),S('y')],
+                         [S('*'),9,7]],
+                        True)==(
+            ["z.x.y=9*7"],"z.x.y=9*7\n",
+            None,None
+            )
 
-        assert self.stmts==[
-             [S(':='),S('z'),[S('binop'),S('*'),9,7]],
-            ]
+    def testAssignDotExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+        assert self.toP([S(':='),
+                         [S('.'),S('z'),S('x'),S('y')],
+                         [S('*'),9,7]],
+                        False)==(
+            ["z.x.y=9*7","%s=z.x.y" % scratchP],
+            """z.x.y=9*7
+%s=z.x.y
+""" % scratchP,
+            scratchP, "%s\n" % scratchP
+            )
+
+
+    def testAssignSubscriptStmt(self):
+        assert self.toP([S(':='),
+                         [S('[]'),S('z'),3],
+                         [S('*'),9,7]],
+                        True)==(
+            ["z[3]=9*7"],"z[3]=9*7\n",
+            None,None
+            )
+
+    def testAssignSubscriptExpr(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        gensym.nextId=1
+        assert self.toP([S(':='),
+                         [S('[]'),S('z'),3],
+                         [S('*'),9,7]],
+                        False)==(
+            ["z[3]=9*7","%s=z[3]" % scratchP],
+            """z[3]=9*7
+%s=z[3]
+""" % scratchP,
+            scratchP, "%s\n" % scratchP
+            )
 
     def testImportStmt(self):
         x=self.r([S('import'),S('re'),S('adder.runtime')],
@@ -3588,8 +3706,6 @@ class EvalTestCase(unittest.TestCase):
         assert geval([S('[]'),[S('quote'),[17,3,9]],1])==3
 
     def testGetattr(self):
-        class O:
-            pass
         o=O()
         o.x=17
         g=mkGlobals()
@@ -3674,6 +3790,22 @@ class EvalTestCase(unittest.TestCase):
         g['x']=0
         assert geval([S(':='),S('x'),9],globalDict=g)==9
         assert g['x']==9
+
+    def testAssignDot(self):
+        g=mkGlobals()
+        g['x']=O()
+        assert geval([S(':='),
+                      [S('.'),S('x'),S('z')],
+                      9],globalDict=g)==9
+        assert g['x'].z==9
+
+    def testAssignSubscript(self):
+        g=mkGlobals()
+        g['x']=[1,2,3]
+        assert geval([S(':='),
+                      [S('[]'),S('x'),1],
+                      9],globalDict=g)==9
+        assert g['x']==[1,9,3]
 
     def testBegin(self):
         g=mkGlobals()
@@ -3970,8 +4102,6 @@ class EvalTestCase(unittest.TestCase):
         assert val is gensym
 
     def testDot1(self):
-        class O:
-            pass
         o1=O()
         o2=O()
         o1.x=o2
@@ -3980,8 +4110,6 @@ class EvalTestCase(unittest.TestCase):
         assert val is o2
 
     def testDot2(self):
-        class O:
-            pass
         o1=O()
         o2=O()
         o1.x=o2

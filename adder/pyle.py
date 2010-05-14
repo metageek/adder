@@ -38,7 +38,10 @@ class Any(IL):
 class Simple(Any):
     pass
 
-class Var(Simple):
+class LValue:
+    pass
+
+class Var(Simple,LValue):
     def __init__(self,varSym):
         assert isinstance(varSym,S)
         self.varSym=varSym
@@ -128,7 +131,7 @@ class Call(Stmt):
 
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
-        assert isinstance(lhs,Var)
+        assert isinstance(lhs,LValue)
         assert (rhs is None
                 or isinstance(rhs,Simple)
                 or isinstance(rhs,Call)
@@ -237,7 +240,7 @@ class Binop(IL):
                            self.opStr,
                            str(self.right))
 
-class Dot(IL):
+class Dot(IL,LValue):
     def __init__(self,obj,members):
         assert isinstance(obj,Simple)
         assert isinstance(members,list)
@@ -250,7 +253,7 @@ class Dot(IL):
     def __str__(self):
         return '.'.join(map(str,[self.obj]+self.members))
 
-class Subscript(IL):
+class Subscript(IL,LValue):
     def __init__(self,obj,key):
         assert isinstance(obj,Simple)
         assert isinstance(key,Simple)

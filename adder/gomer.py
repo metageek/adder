@@ -270,7 +270,11 @@ class ReduceAssign(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector):
         lhs=gomer[1]
         rhs=gomer[2]
-        assert isinstance(lhs,S) # Have to deal with members later
+        assert (isinstance(lhs,S)
+                or (isinstance(lhs,list)
+                    and isinstance(lhs[0],S)
+                    and (lhs[0]==S('.') or lhs[0]==S('[]'))
+                    ))
         if self.isSimple(rhs):
             stmtCollector(gomer)
         else:

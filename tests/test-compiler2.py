@@ -6,6 +6,9 @@ from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
 
+class O:
+    pass
+
 def scopesToIds(scoped):
     scopes={}
     def walk(scoped):
@@ -632,6 +635,22 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S(':='),S('foo-1'),9
             ]
 
+    def testAssignDot(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(:= (. foo x) 9)",
+                            scope=scope)==[
+            S(':='),[S('.'),S('foo-1'),S('x')],9
+            ]
+
+    def testAssignSubscript(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("(:= ([] foo 3) 9)",
+                            scope=scope)==[
+            S(':='),[S('[]'),S('foo-1'),3],9
+            ]
+
     def testDot(self):
         scope=Scope(None)
         scope.addDef(S('foo'),None,1)
@@ -1111,9 +1130,19 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(begin (:= foo 9) foo)",
                               foo=12)==9
 
+    def testAssignDot(self):
+        o=O()
+        assert self.evalAdder("(begin (:= (. foo x) 9) foo)",
+                              foo=o) is o
+        assert o.x==9
+
+    def testAssignSubscript(self):
+        o=[1,2,3]
+        assert self.evalAdder("(begin (:= ([] foo 1) 9) foo)",
+                              foo=o) is o
+        assert o==[1,9,3]
+
     def testDot(self):
-        class O:
-            pass
         foo=O()
         foo.x=O()
         foo.x.y=17
@@ -1178,8 +1207,6 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder('([] foo 3)',foo=[2,3,5,7,13])==7
 
     def testGetattr(self):
-        class O:
-            pass
         foo=O()
         foo.fred=23
         assert self.evalAdder('(getattr foo "fred")',foo=foo)==23
