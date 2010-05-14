@@ -1916,30 +1916,41 @@ class ToPythonTestCase(unittest.TestCase):
 
     def testNestedFuncExpr(self):
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
+
         gensym.nextId=1
-        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
-                      False)==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('barney'),[9,S('pebbles')],[]]],
-            [S(':='),scratch2,[S('call'),S('fred'),[7,scratch1],[]]]
-            ]
+        assert self.toP([S('fred'),7,[S('barney'),9,S('pebbles')]],
+                        False)==(
+            ["%s=barney(9,pebbles)" % scratch1P,
+             "%s=fred(7,%s)" % (scratch2P,scratch1P)],
+            """%s=barney(9,pebbles)
+%s=fred(7,%s)
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P,"%s\n" % scratch2P
+            )
 
     def testSimpleFuncStmt(self):
-        scratch=gensym('scratch')
-        gensym.nextId=1
-        assert self.r([S('fred'),7,8],True) is None
-        assert self.stmts==[[S('call'),S('fred'),[7,8],[]]]
+        assert self.toP([S('fred'),7,8],True)==(
+            ["fred(7,8)"],"fred(7,8)\n",
+            None,None
+            )
 
     def testNestedFuncStmt(self):
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+
         gensym.nextId=1
-        assert self.r([S('fred'),7,[S('barney'),9,S('pebbles')]],
-                      True) is None
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('barney'),[9,S('pebbles')],[]]],
-            [S('call'),S('fred'),[7,scratch1],[]]
-            ]
+        assert self.toP([S('fred'),7,[S('barney'),9,S('pebbles')]],
+                        True)==(
+            ["%s=barney(9,pebbles)" % scratch1P,
+             "fred(7,%s)" % scratch1P],
+            """%s=barney(9,pebbles)
+fred(7,%s)
+""" % (scratch1P,scratch1P),
+            None,None
+            )
 
     def testIfWithElseExpr(self):
         scratch1=gensym('scratch')
