@@ -14,7 +14,7 @@ def const(expr):
         and expr[0]
         and isinstance(expr[0],S)
         ):
-        if S in const.knownFuncs:
+        if expr[0] in const.knownFuncs:
             args=[]
             for arg in expr[1:]:
                 (argConstP,argValue)=const(arg)
@@ -25,7 +25,7 @@ def const(expr):
                 return (True,const.knownFuncs[arg[0]](*args))
             except Exception:
                 return (False,None)
-        if S==S('quote'):
+        if expr[0]==S('quote'):
             assert len(expr)==2
             return (True,expr[1])
     return (False,None)

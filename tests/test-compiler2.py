@@ -926,8 +926,14 @@ class EvalTestCase(EmptyStripTestCase):
     def testFloat(self):
         assert self.evalAdder('1.7')==1.7
 
-    def testPredefinedConst(self):
+    def testTrue(self):
         assert self.evalAdder("true")==True
+
+    def testFalse(self):
+        assert self.evalAdder("false")==False
+
+    def testNone(self):
+        assert self.evalAdder("none")==None
 
     def testVar(self):
         assert self.evalAdder("foo",foo=17)==17

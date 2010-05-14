@@ -612,6 +612,7 @@ def mkGlobals():
     a=O()
     a.common=adder.common
     g['adder']=a
+    g['none']=None
     return g
 
 def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
