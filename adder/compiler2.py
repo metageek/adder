@@ -87,7 +87,7 @@ class Redefined(Exception):
 
 class Scope:
     class Entry:
-        def __init__(self,*,initExpr,line,asConst=False):
+        def __init__(self,*,initExpr,line,asConst=False,ignoreScopeId=False):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -95,6 +95,7 @@ class Scope:
                 (self.constValueValid,self.constValue)=const(initExpr)
             self.line=line
             self.asConst=asConst
+            self.ignoreScopeId=ignoreScopeId
 
     nextId=1
 
@@ -118,18 +119,23 @@ class Scope:
             self.id=id
         self.readOnly=False
 
+        self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
+
     root=None
 
-    def addDef(self,name,initExpr,line,*,asConst=False):
+    def addDef(self,name,initExpr,line,*,asConst=False,ignoreScopeId=False):
         assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
                                        line=line,
-                                       asConst=asConst)
+                                       asConst=asConst,
+                                       ignoreScopeId=ignoreScopeId)
 
-    def addConst(self,name,value,line):
-        self.addDef(name,q(value),line,asConst=True)
+    def addConst(self,name,value,line,*,ignoreScopeId=False):
+        self.addDef(name,q(value),line,
+                    asConst=True,
+                    ignoreScopeId=ignoreScopeId)
 
     def __iter__(self):
         cur=self
@@ -173,13 +179,17 @@ for name in ['defun','lambda','defvar','scope',
              'quote','import',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
-             'and','or',':=','.','defconst','defmacro',
+             'and','or',':=','.',
+             'defconst',
              '==','!=','<=','<','>=','>',
              '+','-','*','/','//','%','in',
              'print','gensym','[]','getattr','slice','isinstance',
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
-             'reverse','eval','stdenv','exec-py','apply','load'
+             'reverse','stdenv','apply','eval','exec-py','load',
+             'getScopeById','globals','locals',
+             # All before this point are annotated.
+             'defmacro',
              ]:
     Scope.root.addDef(S(name),None,0)
 
@@ -189,23 +199,64 @@ Scope.root.addConst(S('none'),None,0)
 Scope.root.readOnly=True
 
 class Annotator:
+    pynamesForSymbols={'.': 'dot'}
+    def methodFor(self,f):
+        s=str(f)
+        if s in Annotator.pynamesForSymbols:
+            s=Annotator.pynamesForSymbols[s]
+        return 'annotate_%s' % s
+
     def __call__(self,parsedExpr,scope):
         try:
             (expr,line)=parsedExpr
         except ValueError as ve:
             print(ve,parsedExpr)
             raise
-        if expr and isinstance(expr,list) and isinstance(expr[0][0],S):
-            f=expr[0][0]
-            if scope.requiredScope(f) is Scope.root:
-                m='annotate_%s' % str(f)
-                if hasattr(self,m):
-                    return getattr(self,m)(expr,line,scope)
+        if expr and isinstance(expr,list):
+            if isinstance(expr[0][0],S):
+                f=expr[0][0]
+                if scope.requiredScope(f) is Scope.root:
+                    m=self.methodFor(f)
+                    if hasattr(self,m):
+                        return getattr(self,m)(expr,line,scope)
             scoped=list(map(lambda e: self(e,scope),expr))
             return (scoped,line,scope)
         if isinstance(expr,S):
-            return (expr,line,scope.requiredScope(expr))
+            if expr.isKeyword():
+                return (expr,line,Scope.root)
+            else:
+                if str(expr)=='current-scope':
+                    adder.runtime.getScopeById.scopes[scope.id]=scope
+                    return self(([(S('getScopeById'),line),
+                                  (scope.id,line)],line),scope)
+                required=scope.requiredScope(expr)
+                entry=required[expr]
+                if (entry.asConst
+                    and entry.constValueValid
+                    and (isinstance(entry.constValue,int)
+                         or isinstance(entry.constValue,float)
+                         or isinstance(entry.constValue,str)
+                         or isinstance(entry.constValue,bool)
+                         )
+                    ):
+                    expr=entry.constValue
+                return (expr,line,required)
         return (expr,line,scope)
+
+    def annotate_eval(self,expr,line,scope):
+        assert len(expr)>=2 and len(expr)<=4
+        adderArg=self(expr[1],scope)
+        scopeArg=self((S('current-scope'),line),scope)
+        if len(expr)>=3:
+            globalArg=self(expr[2],scope)
+        else:
+            globalArg=self(([(S('globals'),line)],line),scope)
+        if len(expr)>=4:
+            localArg=self(expr[3],scope)
+        else:
+            localArg=self(([(S('locals'),line)],line),scope)
+        return ([self(expr[0],scope),
+                 adderArg,scopeArg,globalArg,localArg],line,scope)
 
     def annotate_scope(self,expr,line,scope):
         scopedScope=self(expr[0],scope)
@@ -214,6 +265,16 @@ class Annotator:
         return ([scopedScope]+scopedChildren,line,scope)
 
     def annotate_quote(self,expr,line,scope):
+        return self.quoteOrImport(expr,line,scope,True)
+
+    def annotate_import(self,expr,line,scope):
+        res=self.quoteOrImport(expr,line,scope,False)
+        for (pkg,pkgLine) in expr[1:]:
+            scope.addDef(S(str(pkg).split('.')[0]),None,pkgLine,
+                         ignoreScopeId=True)
+        return res
+
+    def quoteOrImport(self,expr,line,scope,justOneArg):
         def annotateDumbly(parsedExpr):
             try:
                 (expr,line)=parsedExpr
@@ -225,16 +286,43 @@ class Annotator:
             else:
                 return (expr,line,scope)
 
-        return ([self(expr[0],scope),
-                 annotateDumbly(expr[1])],
+        if justOneArg:
+            assert len(expr)==2
+            args=[expr[1]]
+        else:
+            args=expr[1:]
+            
+        return (([self(expr[0],scope)]
+                 +list(map(annotateDumbly,args))
+                 ),
+                line,scope)
+
+    def annotate_dot(self,expr,line,scope):
+        def annotateDumbly(parsedExpr):
+            (expr,line)=parsedExpr
+            assert isinstance(expr,S)
+            return (expr,line,scope)
+
+        return (([self(expr[0],scope),
+                  self(expr[1],scope)
+                  ]
+                 +list(map(annotateDumbly,expr[2:]))
+                 ),
                 line,scope)
 
     def annotate_defvar(self,expr,line,scope):
-        scopedDefvar=self(expr[0],scope)
+        return self.defvarOrDefconst(expr,line,scope,False)
+
+    def annotate_defconst(self,expr,line,scope):
+        return self.defvarOrDefconst(expr,line,scope,True)
+
+    def defvarOrDefconst(self,expr,line,scope,asConst):
+        scopedDef=self((S(':='),expr[0][1]),scope)
         scopedInitExpr=self(expr[2],scope)
-        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1])
-        scopedVar=self(expr[1],scope)
-        return ([scopedDefvar,scopedVar,scopedInitExpr],line,scope)
+        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],asConst=asConst)
+        scopedVar=(expr[1][0],expr[1][1],scope)
+        return ([scopedDef,
+                 scopedVar,scopedInitExpr],line,scope)
 
     def annotate_defun(self,expr,line,scope):
         return self.defunOrLambda(expr[0],expr[1],expr[2],expr[3:],
@@ -264,7 +352,7 @@ class Annotator:
 
     def annotate_scope(self,expr,line,scope):
         childScope=Scope(scope)
-        return (([self(expr[0],scope)]
+        return (([(S('begin'),expr[0][1],Scope.root)]
                  +list(map(lambda e: self(e,childScope),
                            expr[1:]))
                  ),
@@ -278,10 +366,21 @@ def stripAnnotations(annotated,*,quoted=False):
     except ValueError as ve:
         print(ve,annotated)
         raise
-    if not quoted and isinstance(expr,S) and scope.id>0:
+    if (not quoted
+        and isinstance(expr,S)
+        and scope.id>0
+        and not scope[expr].ignoreScopeId):
         return S('%s-%d' % (str(expr),scope.id))
     if not (expr and isinstance(expr,list)):
         return expr
-    if expr[0][0]==S('quote'):
-        return [S('quote'),stripAnnotations(expr[1],quoted=True)]
+    if not quoted and expr[0][0] in [S('quote'),S('import')]:
+        return ([expr[0][0]]
+                +list(map(lambda e: stripAnnotations(e,quoted=True),expr[1:]))
+                )
+    if not quoted and expr[0][0]==S('.'):
+        return ([expr[0][0],
+                 stripAnnotations(expr[1])]
+                 +list(map(lambda e: stripAnnotations(e,quoted=True),
+                           expr[2:]))
+                )
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
