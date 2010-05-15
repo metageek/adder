@@ -1916,8 +1916,8 @@ class ToPythonTestCase(unittest.TestCase):
 
     def testNestedFuncExpr(self):
         scratch1=gensym('scratch')
-        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2P=scratch2.toPython()
 
         gensym.nextId=1
@@ -1957,26 +1957,31 @@ fred(7,%s)
         scratch2=gensym('scratch')
         ifScratch=gensym('if')
         scratch4=gensym('scratch')
+
+        scratch1P=scratch1.toPython()
+        scratch2P=scratch2.toPython()
+        scratch4P=scratch4.toPython()
+        ifScratchP=ifScratchP.toPython()
+
         gensym.nextId=1
-        x=self.r([S('if'),
-                       [S('<'),S('n'),10],
-                       [S('barney'),9,S('bam-bam')],
-                       [S('fred'),7,S('pebbles')],
-                       ],
-                      False)
-        assert x==ifScratch
-        assert self.stmts==[
-            [S(':='),scratch1,[S('binop'),S('<'),S('n'),10]],
-            [S('if'),
-             scratch1,
-             [S('begin'),
-              [S(':='),scratch2,[S('call'),S('barney'),[9,S('bam-bam')],[]]],
-              [S(':='),ifScratch,scratch2]],
-             [S('begin'),
-              [S(':='),scratch4,[S('call'),S('fred'),[7,S('pebbles')],[]]],
-              [S(':='),ifScratch,scratch4]],
-             ],
-            ]
+        assert self.toP([S('if'),
+                         [S('<'),S('n'),10],
+                         [S('barney'),9,S('bam-bam')],
+                         [S('fred'),7,S('pebbles')],
+                         ],
+                        False)[0]==(
+            ["%s=(n<10)" % scratch1P,
+             "if %s:" % scratch1P,
+             [("%s=barney(9,%s)" % (scratch2P,S('bam-bam').toPython())
+               "%s=%s" % (ifScratchP,scratch2P)
+               )],
+             "else:",
+             [("%s=fred(7,pebbles)" % scratch4P,
+               "%s=%s" % (ifScratchP,scratch4P)
+               )]
+             ]
+            )
+        #assert x==ifScratch
 
     def testIfWithElseStmt(self):
         ifScratch=gensym('scratch')
