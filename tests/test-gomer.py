@@ -1961,7 +1961,7 @@ fred(7,%s)
         scratch1P=scratch1.toPython()
         scratch2P=scratch2.toPython()
         scratch4P=scratch4.toPython()
-        ifScratchP=ifScratchP.toPython()
+        ifScratchP=ifScratch.toPython()
 
         gensym.nextId=1
         assert self.toP([S('if'),
@@ -1969,19 +1969,32 @@ fred(7,%s)
                          [S('barney'),9,S('bam-bam')],
                          [S('fred'),7,S('pebbles')],
                          ],
-                        False)[0]==(
-            ["%s=(n<10)" % scratch1P,
-             "if %s:" % scratch1P,
-             [("%s=barney(9,%s)" % (scratch2P,S('bam-bam').toPython())
-               "%s=%s" % (ifScratchP,scratch2P)
-               )],
-             "else:",
-             [("%s=fred(7,pebbles)" % scratch4P,
-               "%s=%s" % (ifScratchP,scratch4P)
-               )]
-             ]
+                        False)==(
+            ["%s=n<10" % scratch1P,
+             ("if %s:" % scratch1P,
+              [("%s=barney(9,%s)" % (scratch2P,S('bam-bam').toPython()),
+                "%s=%s" % (ifScratchP,scratch2P)
+                )],
+              "else:",
+              [("%s=fred(7,pebbles)" % scratch4P,
+                "%s=%s" % (ifScratchP,scratch4P)
+                )]
+              )],
+            """%s=n<10
+if %s:
+    %s=barney(9,%s)
+    %s=%s
+else:
+    %s=fred(7,pebbles)
+    %s=%s
+""" % (scratch1P,
+       scratch1P,
+       scratch2P,S('bam-bam').toPython(),
+       ifScratchP,scratch2P,
+       scratch4P,
+       ifScratchP,scratch4P),
+            ifScratchP,"%s\n" % ifScratchP
             )
-        #assert x==ifScratch
 
     def testIfWithElseStmt(self):
         ifScratch=gensym('scratch')
