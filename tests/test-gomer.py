@@ -1997,23 +1997,32 @@ else:
             )
 
     def testIfWithElseStmt(self):
-        ifScratch=gensym('scratch')
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+
         gensym.nextId=1
-        x=self.r([S('if'),
-                  [S('<'),S('n'),10],
-                  [S('barney'),9,S('bam-bam')],
-                  [S('fred'),7,S('pebbles')],
-                  ],
-                 True)
-        assert x is None
-        assert self.stmts==[
-            [S(':='),ifScratch,[S('binop'),S('<'),S('n'),10]],
-            [S('if'),
-             ifScratch,
-             [S('call'),S('barney'),[9,S('bam-bam')],[]],
-             [S('call'),S('fred'),[7,S('pebbles')],[]]
-             ]
-            ]
+        assert self.toP([S('if'),
+                         [S('<'),S('n'),10],
+                         [S('barney'),9,S('bam-bam')],
+                         [S('fred'),7,S('pebbles')],
+                         ],
+                        True)==(
+            ["%s=n<10" % scratch1P,
+             ("if %s:" % scratch1P,
+              ["barney(9,%s)" % S('bam-bam').toPython()],
+              "else:",
+              ["fred(7,pebbles)"]
+              )],
+            """%s=n<10
+if %s:
+    barney(9,%s)
+else:
+    fred(7,pebbles)
+""" % (scratch1P,
+       scratch1P,
+       S('bam-bam').toPython()),
+            None,None
+            )
 
     def testWhileExpr(self):
         whileScratch=gensym('while')
