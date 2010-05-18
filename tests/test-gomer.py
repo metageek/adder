@@ -2620,65 +2620,85 @@ else:
             )
 
     def testOr0Expr(self):
-        x=self.r([S('or')],
-                 False)
-
-        assert x is False
+        assert self.toP([S('or')],
+                        False)==([],"","False")
 
     def testOr1Expr(self):
-        x=self.r([S('or'),S('x')],
-                 False)
-
-        assert x==S('x')
+        assert self.toP([S('or'),S('x')],
+                        False)==([],"","x")
 
     def testOr2Expr(self):
-        x=self.r([S('or'),S('x'),S('y')],
-                 False)
-
         ifScratch=gensym('if')
-        assert x==ifScratch
-        assert self.stmts==[
-            [S('if'),S('x'),
-             [S(':='),ifScratch,S('x')],
-             [S(':='),ifScratch,S('y')],
-             ]
-            ]
+        ifScratchP=ifScratch.toPython()
+
+        assert self.toP([S('or'),S('x'),S('y')],
+                        False)==(
+            [("if x:",
+              ["%s=x" % ifScratchP],
+              "else:",
+              ["%s=y" % ifScratchP]
+              )],
+            """if x:
+    %s=x
+else:
+    %s=y
+""" % (ifScratchP,ifScratchP),
+            ifScratchP
+            )
 
     def testOr2Stmt(self):
-        x=self.r([S('or'),[S('f'),1],[S('f'),2]],
-                 True)
-
         scratch=gensym('scratch')
+        scratchP=scratch.toPython()
 
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[1],[]]],
-            [S('if'),scratch,
-             [S('begin')],
-             [S('call'),S('f'),[2],[]],
-             ]
-            ]
+        assert self.toP([S('or'),[S('f'),1],[S('f'),2]],
+                        True)==(
+            ["%s=f(1)" % scratchP,
+             ("if %s:" % scratchP,
+              ["pass"],
+              "else:",
+              ["f(2)"])
+             ],"""%s=f(1)
+if %s:
+    pass
+else:
+    f(2)
+""" % (scratchP,scratchP),
+            None
+            )
 
     def testOr3Expr(self):
-        x=self.r([S('or'),S('x'),S('y'),S('z')],
-                 False)
-
         ifScratch1=gensym('if')
+        ifScratch1P=ifScratch1.toPython()
         ifScratch2=gensym('if')
-        expected=[
-            [S('if'),S('x'),
-             [S(':='),ifScratch1,S('x')],
-             [S('begin'),
-              [S('if'),S('y'),
-               [S(':='),ifScratch2,S('y')],
-               [S(':='),ifScratch2,S('z')]
-               ],
-              [S(':='),ifScratch1,ifScratch2]
-              ]
-             ]
-            ]
-        assert x==ifScratch1
-        assert self.stmts==expected
+        ifScratch2P=ifScratch2.toPython()
+
+        assert self.toP([S('or'),S('x'),S('y'),S('z')],
+                        False)==(
+            [("if x:",
+              ["%s=x" % ifScratch1P],
+              "else:",
+              [(("if y:",
+                 ["%s=y" % ifScratch2P],
+                 "else:",
+                 ["%s=z" % ifScratch2P]
+                 ),
+               "%s=%s" % (ifScratch1P,ifScratch2P))
+               ])],
+            """if x:
+    %s=x
+else:
+    if y:
+        %s=y
+    else:
+        %s=z
+    %s=%s
+""" % (ifScratch1P,
+       ifScratch2P,
+       ifScratch2P,
+       ifScratch1P,
+       ifScratch2P),
+            ifScratch1P
+            )
 
     def testVarDot0Expr(self):
         x=self.r([S('.'),S('x')],
