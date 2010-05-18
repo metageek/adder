@@ -2326,36 +2326,38 @@ while %s:
                         True)==([],"",None)
 
     def testBeginStmt(self):
-        x=self.r([S('begin'),
-                  [S(':='),S('x'),9],
-                  [S(':='),S('y'),7],
-                  [S(':='),S('z'),[S('*'),S('x'),S('y')]],
-                  ],
-                 True)
-
-        assert x is None
-
-        assert self.stmts==[
-             [S(':='),S('x'),9],
-             [S(':='),S('y'),7],
-             [S(':='),S('z'),[S('binop'),S('*'),S('x'),S('y')]],
-            ]
+        assert self.toP([S('begin'),
+                         [S(':='),S('x'),9],
+                         [S(':='),S('y'),7],
+                         [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+                         ],
+                        True)==(
+            ["x=9",
+             "y=7",
+             "z=x*y"
+             ],"""x=9
+y=7
+z=x*y
+""",
+            None
+            )
 
     def testBeginExpr(self):
-        x=self.r([S('begin'),
-                  [S(':='),S('x'),9],
-                  [S(':='),S('y'),7],
-                  [S(':='),S('z'),[S('*'),S('x'),S('y')]],
-                  ],
-                 False)
-
-        assert x==S('z')
-
-        assert self.stmts==[
-             [S(':='),S('x'),9],
-             [S(':='),S('y'),7],
-             [S(':='),S('z'),[S('binop'),S('*'),S('x'),S('y')]],
-            ]
+        assert self.toP([S('begin'),
+                         [S(':='),S('x'),9],
+                         [S(':='),S('y'),7],
+                         [S(':='),S('z'),[S('*'),S('x'),S('y')]],
+                         ],
+                        False)==(
+            ["x=9",
+             "y=7",
+             "z=x*y"
+             ],"""x=9
+y=7
+z=x*y
+""",
+            'z'
+            )
 
     def testAssignStmt(self):
         assert self.toP([S(':='),S('z'),[S('*'),9,7]],
