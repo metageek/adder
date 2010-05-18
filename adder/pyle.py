@@ -56,6 +56,7 @@ class Literal(Simple):
                 or isinstance(value,float)
                 or isinstance(value,bool)
                 or isinstance(value,S)
+                or value is None
                 )
         self.value=value
 
@@ -271,8 +272,14 @@ class Slice(IL):
         assert right is None or isinstance(right,Simple)
 
         self.obj=obj
-        self.left=left
-        self.right=right
+        if isinstance(left,Literal) and left.value is None:
+            self.left=None
+        else:
+            self.left=left
+        if isinstance(right,Literal) and right.value is None:
+            self.right=None
+        else:
+            self.right=right
 
     def __str__(self):
         return '%s[%s:%s]' % (str(self.obj),
@@ -463,7 +470,7 @@ def build(reg):
     if isinstance(reg,S):
         return Var(reg)
     if reg is None:
-        return None
+        return Literal(None)
     for t in [int,str,float,bool]:
         if isinstance(reg,t):
             return Literal(reg)

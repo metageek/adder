@@ -2443,16 +2443,12 @@ import adder.runtime
             )
 
     def testQuoteIntExpr(self):
-        x=self.r([S('quote'),9],
-                 False)
-
-        assert x==9
+        assert self.toP([S('quote'),9],
+                        False)==([],"","9")
 
     def testQuoteNoneExpr(self):
-        x=self.r([S('quote'),None],
-                 False)
-
-        assert x is None
+        assert self.toP([S('quote'),None],
+                        False)==([],"","None")
 
     def testQuoteListExpr(self):
         actual=self.toP([S('quote'),[1,2,3]],
