@@ -2025,106 +2025,130 @@ else:
     def testWhileExpr(self):
         whileScratch=gensym('while')
         condScratch=gensym('scratch')
+        whileScratchP=whileScratch.toPython()
+        condScratchP=condScratch.toPython()
+
         gensym.nextId=1
-        x=self.r([S('while'),
-                       [S('<'),S('n'),10],
-                       [S(':='),S('n'),[S('+'),S('n'),1]]
-                  ],
-                 False)
-        assert x==whileScratch
-        assert self.stmts==[
-            [S(':='),whileScratch,None],
-            [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]],
-            [S('while'),
-             condScratch,
-             [S('begin'),
-              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
-              [S(':='),whileScratch,S('n')],
-              [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]]
-              ]
-             ]
-            ]
+        assert self.toP([S('while'),
+                         [S('<'),S('n'),10],
+                         [S(':='),S('n'),[S('+'),S('n'),1]]
+                         ],
+                        False)==(
+            ["%s=None" % whileScratchP,
+             "%s=n<10" % condScratchP,
+             ("while %s:" % condScratchP,
+              [("n=n+1",
+               "%s=n" % whileScratchP,
+               "%s=n<10" % condScratchP)
+               ])],"""%s=None
+%s=n<10
+while %s:
+    n=n+1
+    %s=n
+    %s=n<10
+""" % (whileScratchP,
+       condScratchP,
+       condScratchP,
+       whileScratchP,
+       condScratchP),
+            whileScratchP)
 
     def testWhileStmt(self):
         condScratch=gensym('scratch')
+        condScratchP=condScratch.toPython()
         gensym.nextId=1
-        x=self.r([S('while'),
-                  [S('<'),S('n'),10],
-                  [S(':='),S('n'),[S('+'),S('n'),1]]
-                  ],
-                 True)
-        assert x is None
-        assert self.stmts==[
-            [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]],
-            [S('while'),
-             condScratch,
-             [S('begin'),
-              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
-              [S(':='),condScratch,[S('binop'),S('<'),S('n'),10]]
-              ]
-             ]
-            ]
+
+        assert self.toP([S('while'),
+                         [S('<'),S('n'),10],
+                         [S(':='),S('n'),[S('+'),S('n'),1]]
+                         ],
+                        True)==(
+            ["%s=n<10" % condScratchP,
+             ("while %s:" % condScratchP,
+              [("n=n+1",
+               "%s=n<10" % condScratchP)
+               ])],"""%s=n<10
+while %s:
+    n=n+1
+    %s=n<10
+""" % (condScratchP,
+       condScratchP,
+       condScratchP),
+            None)
 
     def testWhileStmtWithBreak(self):
         whileCondScratch=gensym('scratch')
         ifCondScratch=gensym('scratch')
+        whileCondScratchP=whileCondScratch.toPython()
+        ifCondScratchP=ifCondScratch.toPython()
         gensym.nextId=1
-        src=[S('while'),
-                  [S('<'),S('n'),10],
-                  [S(':='),S('n'),[S('+'),S('n'),1]],
-                  [S('if'),[S('=='),S('n'),7],
-                   [S('break')]
-                   ]
-                  ]
-        x=self.r(src,
-                 True)
-        assert x is None
-        expected=[
-            [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
-            [S('while'),
-             whileCondScratch,
-             [S('begin'),
-              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
-              [S(':='),ifCondScratch,[S('binop'),S('=='),S('n'),7]],
-              [S('if'),
-               ifCondScratch,
-               [S('break')]
-               ],
-              [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
-              ]
-             ]
-            ]
-        assert self.stmts==expected
+
+        assert self.toP([S('while'),
+                         [S('<'),S('n'),10],
+                         [S(':='),S('n'),[S('+'),S('n'),1]],
+                         [S('if'),[S('=='),S('n'),7],
+                          [S('break')]
+                          ]
+                         ],
+                        True)==(
+            ["%s=n<10" % whileCondScratchP,
+             ("while %s:" % whileCondScratchP,
+              [("n=n+1",
+                "%s=n==7" % ifCondScratchP,
+                ("if %s:" % ifCondScratchP,
+                 ["break"]),
+                "%s=n<10" % whileCondScratchP
+                )])],"""%s=n<10
+while %s:
+    n=n+1
+    %s=n==7
+    if %s:
+        break
+    %s=n<10
+""" % (whileCondScratchP,
+       whileCondScratchP,
+       ifCondScratchP,
+       ifCondScratchP,
+       whileCondScratchP),
+            None
+            )
 
     def testWhileStmtWithContinue(self):
         whileCondScratch=gensym('scratch')
         ifCondScratch=gensym('scratch')
+        whileCondScratchP=whileCondScratch.toPython()
+        ifCondScratchP=ifCondScratch.toPython()
         gensym.nextId=1
-        src=[S('while'),
-                  [S('<'),S('n'),10],
-                  [S(':='),S('n'),[S('+'),S('n'),1]],
-                  [S('if'),[S('=='),S('n'),7],
-                   [S('continue')]
-                   ]
-                  ]
-        x=self.r(src,
-                 True)
-        assert x is None
-        assert self.stmts==[
-            [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
-            [S('while'),
-             whileCondScratch,
-             [S('begin'),
-              [S(':='),S('n'),[S('binop'),S('+'),S('n'),1]],
-              [S(':='),ifCondScratch,[S('binop'),S('=='),S('n'),7]],
-              [S('if'),
-               ifCondScratch,
-               [S('continue')]
-               ],
-              [S(':='),whileCondScratch,[S('binop'),S('<'),S('n'),10]],
-              ]
-             ]
-            ]
+
+        assert self.toP([S('while'),
+                         [S('<'),S('n'),10],
+                         [S(':='),S('n'),[S('+'),S('n'),1]],
+                         [S('if'),[S('=='),S('n'),7],
+                          [S('continue')]
+                          ]
+                         ],
+                        True)==(
+            ["%s=n<10" % whileCondScratchP,
+             ("while %s:" % whileCondScratchP,
+              [("n=n+1",
+                "%s=n==7" % ifCondScratchP,
+                ("if %s:" % ifCondScratchP,
+                 ["continue"]),
+                "%s=n<10" % whileCondScratchP
+                )])],"""%s=n<10
+while %s:
+    n=n+1
+    %s=n==7
+    if %s:
+        continue
+    %s=n<10
+""" % (whileCondScratchP,
+       whileCondScratchP,
+       ifCondScratchP,
+       ifCondScratchP,
+       whileCondScratchP),
+            None
+            )
 
     def testDefunStmt(self):
         x=self.r([S('defun'),S('fact'),[S('n')],
