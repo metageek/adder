@@ -2789,82 +2789,58 @@ else:
                                  None)
 
     def testRaise(self):
-        x=self.r([S('raise'),[S('f'),7]],
-                 True)
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[7],[]]],
-            [S('raise'),scratch]
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('raise'),[S('f'),7]],
+                        True)==(
+            ["%s=f(7)" % scratchP,
+             "raise %s" % scratchP
+             ],
+            """%s=f(7)
+raise %s
+"""  % (scratchP,scratchP),
+            None
+            )
 
     def testReraise(self):
-        x=self.r([S('raise')],
-                 True)
-
-        assert x is None
-        assert self.stmts==[
-            [S('reraise')]
-            ]
+        assert self.toP([S('raise')],
+                        True)==(["raise"],"raise\n",None)
 
     def testPrint0Stmt(self):
-        x=self.r([S('print')],
-                 True)
-
-        assert x is None
-        assert self.stmts==[
-            [S('call'),S('print'),[],[]]
-            ]
+        assert self.toP([S('print')],
+                        True)==(["print()"],"print()\n",None)
 
     def testPrint1Stmt(self):
-        x=self.r([S('print'),5],
-                 True)
-
-        assert x is None
-        assert self.stmts==[
-            [S('call'),S('print'),[5],[]]
-            ]
+        assert self.toP([S('print'),5],
+                        True)==(["print(5)"],"print(5)\n",None)
 
     def testPrint2Stmt(self):
-        x=self.r([S('print'),5,[S('x'),12]],
-                 True)
-
         scratch=gensym('scratch')
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('call'),S('print'),[5,scratch],[]]
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('print'),5,[S('x'),12]],
+                        True)==(
+            ["%s=x(12)" % scratchP,
+             "print(5,%s)" % scratchP,],
+            "%s=x(12)\nprint(5,%s)\n" % (scratchP,scratchP),
+            None)
 
     def testPrint0Expr(self):
-        x=self.r([S('print')],
-                 False)
-
-        assert x is None
-        assert self.stmts==[
-            [S('call'),S('print'),[],[]]
-            ]
+        assert self.toP([S('print')],
+                        False)==(["print()"],"print()\n","None")
 
     def testPrint1Expr(self):
-        x=self.r([S('print'),5],
-                 False)
-
-        assert x==5
-        assert self.stmts==[
-            [S('call'),S('print'),[5],[]]
-            ]
+        assert self.toP([S('print'),5],
+                        False)==(["print(5)"],"print(5)\n","5")
 
     def testPrint2Expr(self):
-        x=self.r([S('print'),5,[S('x'),12]],
-                 False)
-
         scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('x'),[12],[]]],
-            [S('call'),S('print'),[5,scratch],[]]
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('print'),5,[S('x'),12]],
+                        False)==(
+            ["%s=x(12)" % scratchP,
+             "print(5,%s)" % scratchP,],
+            "%s=x(12)\nprint(5,%s)\n" % (scratchP,scratchP),
+            scratchP)
 
     def testPlus0Expr(self):
         x=self.r([S('+')],
