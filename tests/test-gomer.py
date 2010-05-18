@@ -1848,7 +1848,7 @@ class ToPythonTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
         self.stmts=[]
-        self.verbose=False
+        self.v=False
 
     def tearDown(self):
         self.stmts=None
@@ -1859,7 +1859,7 @@ class ToPythonTestCase(unittest.TestCase):
         gensym.nextId=1
         return res
 
-    def toP(self,gomer,isStmt,*,verbose=False):
+    def toP(self,gomer,isStmt,*,v=False):
         pyleExpr=self.r(gomer,isStmt)
         stmtTrees=[]
         flat=""
@@ -1874,7 +1874,7 @@ class ToPythonTestCase(unittest.TestCase):
         else:
             exprTree=None
 
-        if verbose:
+        if v:
             print()
             print(stmtTrees)
             print(stmtFlat)
@@ -2586,25 +2586,38 @@ if %s:
             )
 
     def testAnd3Expr(self):
-        x=self.r([S('and'),S('x'),S('y'),S('z')],
-                 False)
-
         ifScratch1=gensym('if')
+        ifScratch1P=ifScratch1.toPython()
         ifScratch2=gensym('if')
-        expected=[
-            [S('if'),S('x'),
-             [S('begin'),
-              [S('if'),S('y'),
-               [S(':='),ifScratch1,S('z')],
-               [S(':='),ifScratch1,S('y')]
+        ifScratch2P=ifScratch2.toPython()
+
+        assert self.toP([S('and'),S('x'),S('y'),S('z')],
+                        False)==(
+            [("if x:",
+              [(("if y:",
+                 ["%s=z" % ifScratch1P],
+                 "else:",
+                 ["%s=y" % ifScratch1P]
+                 ),
+                "%s=%s" % (ifScratch2P,ifScratch1P)
+                )
                ],
-              [S(':='),ifScratch2,ifScratch1]
-              ],
-             [S(':='),ifScratch2,S('x')]
-             ]
-            ]
-        assert x==ifScratch2
-        assert self.stmts==expected
+              "else:",
+              [("%s=x" % ifScratch2P)]
+              )],"""if x:
+    if y:
+        %s=z
+    else:
+        %s=y
+    %s=%s
+else:
+    %s=x
+""" % (ifScratch1P,
+       ifScratch1P,
+       ifScratch2P,ifScratch1P,
+       ifScratch2P),
+            ifScratch2P
+            )
 
     def testOr0Expr(self):
         x=self.r([S('or')],
@@ -3710,10 +3723,10 @@ class EvalTestCase(unittest.TestCase):
     def setUp(self):
         gensym.nextId=1
 
-    def e(self,expr,verbose=False,**globalsToSet):
+    def e(self,expr,v=False,**globalsToSet):
         g=mkGlobals()
         g.update(globalsToSet)
-        return (geval(expr,globalDict=g,verbose=verbose),g)
+        return (geval(expr,globalDict=g,verbose=v),g)
 
     def testConstInt(self):
         assert geval(1)==1
