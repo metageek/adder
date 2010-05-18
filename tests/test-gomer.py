@@ -2423,26 +2423,24 @@ z=x*y
             )
 
     def testImportStmt(self):
-        x=self.r([S('import'),S('re'),S('adder.runtime')],
-                 True)
-
-        assert x is None
-
-        assert self.stmts==[
-            [S('import'),S('re')],
-            [S('import'),S('adder.runtime')],
-            ]
+        assert self.toP([S('import'),S('re'),S('adder.runtime')],
+                        True)==(
+            ["import re","import adder.runtime"],
+            """import re
+import adder.runtime
+""",
+            None
+            )
 
     def testImportExpr(self):
-        x=self.r([S('import'),S('re'),S('adder.runtime')],
-                 False)
-
-        assert x==S('adder.runtime')
-
-        assert self.stmts==[
-            [S('import'),S('re')],
-            [S('import'),S('adder.runtime')],
-            ]
+        assert self.toP([S('import'),S('re'),S('adder.runtime')],
+                        False)==(
+            ["import re","import adder.runtime"],
+            """import re
+import adder.runtime
+""",
+            "adder.runtime"
+            )
 
     def testQuoteIntExpr(self):
         x=self.r([S('quote'),9],
