@@ -2701,121 +2701,92 @@ else:
             )
 
     def testVarDot0Expr(self):
-        x=self.r([S('.'),S('x')],
-                 False)
-
-        assert x==S('x')
+        assert self.toP([S('.'),S('x')],
+                        False)==([],"","x")
 
     def testVarDot1Expr(self):
-        x=self.r([S('.'),S('x'),S('y')],
-                 False)
-
-        scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('.'),S('x'),S('y')]]
-            ]
+        x=self.toP([S('.'),S('x'),S('y')],
+                   False)==([],"","x.y")
 
     def testVarDot2Expr(self):
-        x=self.r([S('.'),S('x'),S('y'),S('z')],
-                 False)
-
-        scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('.'),S('x'),S('y'),S('z')]]
-            ]
+        x=self.toP([S('.'),S('x'),S('y'),S('z')],
+                   False)==([],"","x.y.z")
 
     # F. Dot Fitzgerald
     def testFDot0Expr(self):
-        x=self.r([S('.'),[S('f'),7]],
-                 False)
         scratch=gensym('scratch')
-
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,
-             [S('call'),S('f'),[7],[]]],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('.'),[S('f'),7]],
+                        False)==(["%s=f(7)" % scratchP],
+                                 "%s=f(7)\n" % scratchP,
+                                 scratchP)
 
     def testFDot1Expr(self):
-        x=self.r([S('.'),[S('f'),7],S('y')],
-                 False)
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
 
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,
-             [S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,
-             [S('.'),scratch1,S('y')]]
-            ]
+        assert self.toP([S('.'),[S('f'),7],S('y')],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=%s.y"% (scratch2P,scratch1P)
+             ],
+            """%s=f(7)
+%s=%s.y
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P)
 
     def testFDot2Expr(self):
-        x=self.r([S('.'),[S('f'),7],S('y'),S('z')],
-                 False)
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
 
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,
-             [S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,
-             [S('.'),scratch1,S('y'),S('z')]]
-            ]
+        assert self.toP([S('.'),[S('f'),7],S('y'),S('z')],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=%s.y.z"% (scratch2P,scratch1P)
+             ],
+            """%s=f(7)
+%s=%s.y.z
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P)
 
     def testVarDot0Stmt(self):
-        x=self.r([S('.'),S('x')],
-                 True)
-
-        assert x is None
+        assert self.toP([S('.'),S('x')],
+                        True)==([],"",None)
 
     def testVarDot1Stmt(self):
-        x=self.r([S('.'),S('x'),S('y')],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
+        assert self.toP([S('.'),S('x'),S('y')],
+                        True)==([],"",None)
 
     def testVarDot2Stmt(self):
-        x=self.r([S('.'),S('x'),S('y'),S('z')],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
+        assert self.toP([S('.'),S('x'),S('y'),S('z')],
+                        True)==([],"",None)
 
     # F. Dot Fitzgerald
     def testFDot0Stmt(self):
-        x=self.r([S('.'),[S('f'),7]],
-                 True)
-        scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S('call'),S('f'),[7],[]]
-            ]
+        assert self.toP([S('.'),[S('f'),7]],
+                        True)==(["f(7)"],
+                                 "f(7)\n",
+                                 None)
 
     def testFDot1Stmt(self):
-        x=self.r([S('.'),[S('f'),7],S('y')],
-                 True)
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[7],[]]]
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('.'),[S('f'),7],S('y')],
+                        True)==(["%s=f(7)" % scratchP],
+                                 "%s=f(7)\n" % scratchP,
+                                 None)
 
     def testFDot2Stmt(self):
-        x=self.r([S('.'),[S('f'),7],S('y'),S('z')],
-                 True)
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[7],[]]]
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('.'),[S('f'),7],S('y'),S('z')],
+                        True)==(["%s=f(7)" % scratchP],
+                                 "%s=f(7)\n" % scratchP,
+                                 None)
 
     def testRaise(self):
         x=self.r([S('raise'),[S('f'),7]],
