@@ -1853,29 +1853,27 @@ class ToPythonTestCase(unittest.TestCase):
         if not isStmt:
             il=adder.pyle.build(pyleExpr)
             exprTree=il.toPythonTree()
-            exprFlat=flatten(exprTree)
         else:
-            (exprTree,exprFlat)=(None,None)
+            exprTree=None
 
         if verbose:
             print()
             print(stmtTrees)
             print(stmtFlat)
             print(exprTree)
-            print(exprFlat)
-        return (stmtTrees,stmtFlat,exprTree,exprFlat)
+        return (stmtTrees,stmtFlat,exprTree)
 
     def testIntExpr(self):
-        assert self.toP(7,False)==([],"","7","7\n")
+        assert self.toP(7,False)==([],"","7")
 
     def testIntStmt(self):
-        assert self.toP(7,True)==([],"",None,None)
+        assert self.toP(7,True)==([],"",None)
 
     def testSymbolExpr(self):
-        assert self.toP(S('fred'),False)==([],"","fred","fred\n")
+        assert self.toP(S('fred'),False)==([],"","fred")
 
     def testSymbolStmt(self):
-        assert self.toP(S('fred'),True)==([],"",None,None)
+        assert self.toP(S('fred'),True)==([],"",None)
 
     def testSimpleFuncExpr(self):
         scratch=gensym('scratch')
@@ -1884,7 +1882,7 @@ class ToPythonTestCase(unittest.TestCase):
         assert self.toP([S('fred'),7,8],False)==(
             ["%s=fred(7,8)" % scratchP],
             "%s=fred(7,8)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testSimpleFuncExprKw(self):
@@ -1897,7 +1895,7 @@ class ToPythonTestCase(unittest.TestCase):
                          ],False)==(
             ["%s=fred(7,8,barney=17,wilma=19)" % scratchP],
             "%s=fred(7,8,barney=17,wilma=19)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testSimpleFuncExprKw2(self):
@@ -1911,7 +1909,7 @@ class ToPythonTestCase(unittest.TestCase):
                          ],False)==(
             ["%s=fred(7,8,12,barney=17,wilma=19)" % scratchP],
             "%s=fred(7,8,12,barney=17,wilma=19)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testNestedFuncExpr(self):
@@ -1928,13 +1926,13 @@ class ToPythonTestCase(unittest.TestCase):
             """%s=barney(9,pebbles)
 %s=fred(7,%s)
 """ % (scratch1P,scratch2P,scratch1P),
-            scratch2P,"%s\n" % scratch2P
+            scratch2P
             )
 
     def testSimpleFuncStmt(self):
         assert self.toP([S('fred'),7,8],True)==(
             ["fred(7,8)"],"fred(7,8)\n",
-            None,None
+            None
             )
 
     def testNestedFuncStmt(self):
@@ -1949,7 +1947,7 @@ class ToPythonTestCase(unittest.TestCase):
             """%s=barney(9,pebbles)
 fred(7,%s)
 """ % (scratch1P,scratch1P),
-            None,None
+            None
             )
 
     def testIfWithElseExpr(self):
@@ -1993,7 +1991,7 @@ else:
        ifScratchP,scratch2P,
        scratch4P,
        ifScratchP,scratch4P),
-            ifScratchP,"%s\n" % ifScratchP
+            ifScratchP
             )
 
     def testIfWithElseStmt(self):
@@ -2021,7 +2019,7 @@ else:
 """ % (scratch1P,
        scratch1P,
        S('bam-bam').toPython()),
-            None,None
+            None
             )
 
     def testWhileExpr(self):
@@ -2295,14 +2293,14 @@ else:
         assert self.toP([S(':='),S('z'),[S('*'),9,7]],
                         True)==(
             ["z=9*7"],"z=9*7\n",
-            None,None
+            None
             )
 
     def testAssignExpr(self):
         assert self.toP([S(':='),S('z'),[S('*'),9,7]],
                         False)==(
             ["z=9*7"],"z=9*7\n",
-            "z","z\n"
+            "z"
             )
 
     def testAssignDotStmt(self):
@@ -2311,7 +2309,7 @@ else:
                          [S('*'),9,7]],
                         True)==(
             ["z.x.y=9*7"],"z.x.y=9*7\n",
-            None,None
+            None
             )
 
     def testAssignDotExpr(self):
@@ -2326,7 +2324,7 @@ else:
             """z.x.y=9*7
 %s=z.x.y
 """ % scratchP,
-            scratchP, "%s\n" % scratchP
+            scratchP
             )
 
 
@@ -2336,7 +2334,7 @@ else:
                          [S('*'),9,7]],
                         True)==(
             ["z[3]=9*7"],"z[3]=9*7\n",
-            None,None
+            None
             )
 
     def testAssignSubscriptExpr(self):
@@ -2351,7 +2349,7 @@ else:
             """z[3]=9*7
 %s=z[3]
 """ % scratchP,
-            scratchP, "%s\n" % scratchP
+            scratchP
             )
 
     def testImportStmt(self):
@@ -2396,7 +2394,7 @@ else:
         scratchP=scratch.toPython()
         expected=(["%s=[1, 2, 3]" % scratchP],
                   "%s=[1, 2, 3]\n" % scratchP,
-                  scratchP,"%s\n" % scratchP)
+                  scratchP)
         assert actual==expected
 
     def testQuoteIntStmt(self):
@@ -3128,7 +3126,7 @@ else:
         expected=(
             ["%s=l[5:]" % scratchP],
             "%s=l[5:]\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
         assert actual==expected
 
@@ -3141,7 +3139,7 @@ else:
         expected=(
             ["%s=l[5:7]" % scratchP],
             "%s=l[5:7]\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
         assert actual==expected
 
@@ -3163,7 +3161,7 @@ else:
         assert self.toP([S('to-list'),S('l')],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testToListExpr(self):
@@ -3175,14 +3173,14 @@ else:
                         False)==(
             ["%s=python.list(l)" % scratchP],
             "%s=python.list(l)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testToTupleStmt(self):
         assert self.toP([S('to-tuple'),S('l')],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testToTupleExpr(self):
@@ -3194,14 +3192,14 @@ else:
                         False)==(
             ["%s=python.tuple(l)" % scratchP],
             "%s=python.tuple(l)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testToSetStmt(self):
         assert self.toP([S('to-set'),S('l')],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testToSetExpr(self):
@@ -3213,14 +3211,14 @@ else:
                         False)==(
             ["%s=python.set(l)" % scratchP],
             "%s=python.set(l)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testToDictStmt(self):
         assert self.toP([S('to-dict'),S('l')],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testToDictExpr(self):
@@ -3232,14 +3230,14 @@ else:
                         False)==(
             ["%s=python.dict(l)" % scratchP],
             "%s=python.dict(l)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testIsinstanceStmt(self):
         assert self.toP([S('isinstance'),S('l'),S('list')],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testIsinstanceExpr(self):
@@ -3251,14 +3249,14 @@ else:
                         False)==(
             ["%s=python.isinstance(l,list)" % scratchP],
             "%s=python.isinstance(l,list)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testMkListStmt(self):
         assert self.toP([S('mk-list'),S('l'),9,7],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testMkListExpr(self):
@@ -3270,14 +3268,14 @@ else:
                         False)==(
             ["%s=[l, 9, 7]" % scratchP],
             "%s=[l, 9, 7]\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testMkTupleStmt(self):
         assert self.toP([S('mk-tuple'),S('l'),9,7],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testMkTupleExpr(self):
@@ -3289,14 +3287,14 @@ else:
                         False)==(
             ["%s=(l, 9, 7)" % scratchP],
             "%s=(l, 9, 7)\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testMkSetStmt(self):
         assert self.toP([S('mk-set'),S('l'),9,7],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testMkSetExpr(self):
@@ -3308,14 +3306,14 @@ else:
                         False)==(
             ["%s={l, 9, 7}" % scratchP],
             "%s={l, 9, 7}\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testMkDictStmt(self):
         assert self.toP([S('mk-dict'),S(':x'),9,S(':y'),7],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testMkDictExpr(self):
@@ -3327,14 +3325,14 @@ else:
                         False)==(
             ["%s={'x': 9, 'y': 7}" % scratchP],
             "%s={'x': 9, 'y': 7}\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testMkSymbolStmt(self):
         assert self.toP([S('mk-symbol'),'l'],
                         True)==(
             [],"",
-            None,None
+            None
             )
 
     def testMkSymbolExpr(self):
@@ -3346,7 +3344,7 @@ else:
                         False)==(
             ["%s=adder.common.Symbol('l')" % scratchP],
             "%s=adder.common.Symbol('l')\n" % scratchP,
-            scratchP,"%s\n" % scratchP
+            scratchP
             )
 
     def testReverseExpr(self):
@@ -3366,7 +3364,7 @@ else:
 %s=%s.reverse
 %s()
 """ % (scratch1P,scratch2P,scratch1P,scratch2P),
-            scratch1P,"%s\n" % scratch1P
+            scratch1P
             )
 
     def testTry1ExnStmt(self):
@@ -3393,7 +3391,7 @@ except Exception as e:
     print(e)
     y(e)
 """,
-            None,None)
+            None)
 
     def testTry1ExnExpr(self):
         scratch1=gensym('scratch')
@@ -3432,7 +3430,7 @@ except Exception as e:
     %s=y(e)
     %s=%s
 """ % (scratch3P,scratch1P,scratch3P,scratch2P,scratch1P,scratch2P),
-            scratch1P,"%s\n" % scratch1P)
+            scratch1P)
         assert actual==expected
 
     def testTry2ExnStmt(self):
@@ -3468,7 +3466,7 @@ except Exception as e:
     print(e)
     y(e)
 """,
-            None,None)
+            None)
 
     def testTry2ExnExpr(self):
         scratch1=gensym('scratch')
@@ -3523,7 +3521,7 @@ except Exception as e:
 """ % (scratch4P,scratch1P,scratch4P,
        scratch2P,scratch1P,scratch2P,
        scratch3P,scratch1P,scratch3P),
-            scratch1P,"%s\n" % scratch1P)
+            scratch1P)
         assert actual==expected
 
     def testTry2ExnFinallyStmt(self):
@@ -3566,7 +3564,7 @@ except Exception as e:
 finally:
     print('gibbon')
 """,
-            None,None)
+            None)
         assert actual==expected
 
     def testTry2ExnFinallyExpr(self):
@@ -3629,7 +3627,7 @@ finally:
 """ % (scratch4P,scratch1P,scratch4P,
        scratch2P,scratch1P,scratch2P,
        scratch3P,scratch1P,scratch3P),
-            scratch1P,"%s\n" % scratch1P)
+            scratch1P)
         assert actual==expected
 
 class EvalTestCase(unittest.TestCase):
