@@ -2899,52 +2899,60 @@ raise %s
             )[0]
 
     def testTimes0Expr(self):
-        x=self.r([S('*')],
-                 False)
-
-        assert x==1
+        assert self.toP([S('*')],
+                        False)==([],"","1")
 
     def testTimes1VarExpr(self):
-        x=self.r([S('*'),5],
-                 False)
-
-        assert x==5
+        assert self.toP([S('*'),5],
+                        False)==([],"","5")
 
     def testTimes1FExpr(self):
-        x=self.r([S('*'),[S('f'),7]],
-                 False)
-
         scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[7],[]]],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('*'),[S('f'),7]],
+                        False)==(
+            ["%s=f(7)" % scratchP],
+            "%s=f(7)\n" % scratchP,
+            scratchP
+            )
 
     def testTimes2Expr(self):
-        x=self.r([S('*'),5,[S('f'),7]],
-                 False)
-
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,[S('binop'),S('*'),5,scratch1]],
-            ]
+        scratch2P=scratch2.toPython()
+
+        assert self.toP([S('*'),5,[S('f'),7]],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=5*%s" % (scratch2P,scratch1P)
+             ],"""%s=f(7)
+%s=5*%s
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P
+            )
 
     def testTimes3Expr(self):
-        x=self.r([S('*'),5,[S('f'),7],9],
-                 False)
-
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
         scratch3=gensym('scratch')
-        assert x==scratch3
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,[S('binop'),S('*'),scratch1,9]],
-            [S(':='),scratch3,[S('binop'),S('*'),5,scratch2]],
-            ]
+        scratch3P=scratch3.toPython()
+
+        assert self.toP([S('*'),5,[S('f'),7],9],
+                        False)[0]==(
+            ["%s=f(7)" % scratch1P,
+             "%s=%s*9" % (scratch2P,scratch1P),
+             "%s=5*%s" % (scratch3P,scratch2P),
+             ],"""%s=f(7)
+%s=5*%s
+%s=%s*9
+""" % (scratch1P,
+       scratch2P,scratch1P,
+       scratch3P,scratch2P),
+            scratch3P
+            )[0]
 
     def testMinus0Expr(self):
         x=self.r([S('-')],
