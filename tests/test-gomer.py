@@ -161,6 +161,24 @@ class ReduceTestCase(unittest.TestCase):
              ]
             ]
 
+    def testIfWithEmptyElse(self):
+        ifScratch=gensym('scratch')
+        gensym.nextId=1
+        x=self.r([S('if'),
+                  [S('<'),S('n'),10],
+                  [S('barney'),9,S('bam-bam')],
+                  [S('begin')],
+                  ],
+                 True)
+        assert x is None
+        assert self.stmts==[
+            [S(':='),ifScratch,[S('binop'),S('<'),S('n'),10]],
+            [S('if'),
+             ifScratch,
+             [S('call'),S('barney'),[9,S('bam-bam')],[]]
+             ]
+            ]
+
     def testWhileExpr(self):
         whileScratch=gensym('while')
         condScratch=gensym('scratch')
@@ -720,8 +738,7 @@ class ReduceTestCase(unittest.TestCase):
         assert self.stmts==[
             [S(':='),scratch,[S('call'),S('f'),[1],[]]],
             [S('if'),scratch,
-             [S('call'),S('f'),[2],[]],
-             [S('begin')],
+             [S('call'),S('f'),[2],[]]
              ]
             ]
 
@@ -1837,6 +1854,7 @@ class ToPythonTestCase(unittest.TestCase):
         self.stmts=None
 
     def r(self,gomer,isStmt):
+        gensym.nextId=1
         res=reduce(gomer,isStmt,self.stmts.append)
         gensym.nextId=1
         return res
@@ -2462,110 +2480,110 @@ import adder.runtime
         assert actual==expected
 
     def testQuoteIntStmt(self):
-        x=self.r([S('quote'),9],
-                 True)
-
-        assert x is None
+        assert self.toP([S('quote'),9],
+                        True)==([],"",None)
 
     def testQuoteNoneStmt(self):
-        x=self.r([S('quote'),None],
-                 True)
-
-        assert x is None
+        assert self.toP([S('quote'),None],
+                        True)==([],"",None)
 
     def testQuoteListStmt(self):
-        x=self.r([S('quote'),[1,2,3]],
-                 True)
-
-        assert x is None
+        assert self.toP([S('quote'),[1,2,3]],
+                        True)==([],"",None)
 
     def testReturnStmt(self):
-        x=self.r([S('return'),[S('*'),9,7]],
-                 True)
-
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('*'),9,7]],
-            [S('return'),scratch],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('return'),[S('*'),9,7]],
+                        True)==(
+            ["%s=9*7" % scratchP,
+             "return %s" % scratchP],
+            """%s=9*7
+return %s
+""" % (scratchP,scratchP),
+            None
+            )
 
     def testReturnExpr(self):
-        x=self.r([S('return'),[S('*'),9,7]],
-                 False)
-
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('*'),9,7]],
-            [S('return'),scratch],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('return'),[S('*'),9,7]],
+                        False)==(
+            ["%s=9*7" % scratchP,
+             "return %s" % scratchP],
+            """%s=9*7
+return %s
+""" % (scratchP,scratchP),
+            "None"
+            )
 
     def testYieldStmt(self):
-        x=self.r([S('yield'),[S('*'),9,7]],
-                 True)
-
         scratch=gensym('scratch')
-
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('*'),9,7]],
-            [S('yield'),scratch],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('yield'),[S('*'),9,7]],
+                        True)==(
+            ["%s=9*7" % scratchP,
+             "yield %s" % scratchP],
+            """%s=9*7
+yield %s
+""" % (scratchP,scratchP),
+            None)
 
     def testYieldExpr(self):
-        x=self.r([S('yield'),[S('*'),9,7]],
-                 False)
-
         scratch=gensym('scratch')
-
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('*'),9,7]],
-            [S('yield'),scratch],
-            ]
+        scratchP=scratch.toPython()
+        assert self.toP([S('yield'),[S('*'),9,7]],
+                        False)==(
+            ["%s=9*7" % scratchP,
+             "yield %s" % scratchP],
+            """%s=9*7
+yield %s
+""" % (scratchP,scratchP),
+            scratchP)
 
     def testAnd0Expr(self):
-        x=self.r([S('and')],
-                 False)
-
-        assert x is True
+        assert self.toP([S('and')],
+                        False)==([],"","True")
 
     def testAnd1Expr(self):
-        x=self.r([S('and'),S('x')],
-                 False)
-
-        assert x==S('x')
+        assert self.toP([S('and'),S('x')],
+                        False)==([],"","x")
 
     def testAnd2Expr(self):
-        x=self.r([S('and'),S('x'),S('y')],
-                 False)
-
         ifScratch=gensym('if')
-        assert x==ifScratch
-        assert self.stmts==[
-            [S('if'),S('x'),
-             [S(':='),ifScratch,S('y')],
-             [S(':='),ifScratch,S('x')],
-             ]
-            ]
+        ifScratchP=ifScratch.toPython()
+
+        assert self.toP([S('and'),S('x'),S('y')],
+                        False)==(
+            [("if x:",
+              ["%s=y" % ifScratchP],
+              "else:",
+              ["%s=x" % ifScratchP]
+              )],
+            """if x:
+    %s=y
+else:
+    %s=x
+""" % (ifScratchP,ifScratchP),
+            ifScratchP
+            )
 
     def testAnd2Stmt(self):
-        x=self.r([S('and'),[S('f'),1],[S('f'),2]],
-                 True)
-
         scratch=gensym('scratch')
+        scratchP=scratch.toPython()
 
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('call'),S('f'),[1],[]]],
-            [S('if'),scratch,
-             [S('call'),S('f'),[2],[]],
-             [S('begin')],
-             ]
-            ]
+        assert self.toP([S('and'),[S('f'),1],[S('f'),2]],
+                        True)==(
+            ["%s=f(1)" % scratchP,
+             ("if %s:" % scratchP,
+              ["f(2)"]
+              )
+             ],"""%s=f(1)
+if %s:
+    f(2)
+""" % (scratchP,scratchP),
+            None
+            )
 
     def testAnd3Expr(self):
         x=self.r([S('and'),S('x'),S('y'),S('z')],
@@ -3208,18 +3226,12 @@ import adder.runtime
         assert actual==expected
 
     def testSliceLStmt(self):
-        x=self.r([S('slice'),S('l'),5],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
+        assert self.toP([S('slice'),S('l'),5],
+                        True)==([],"",None)
 
     def testSliceLRStmt(self):
-        x=self.r([S('slice'),S('l'),5,7],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
+        assert self.toP([S('slice'),S('l'),5,7],
+                        True)==([],"",None)
 
     def testToListStmt(self):
         assert self.toP([S('to-list'),S('l')],

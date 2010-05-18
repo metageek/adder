@@ -186,9 +186,13 @@ class ReduceIf(Reducer):
             elseExpr=reduce(gomer[3],isStmt,elseBody.append)
             if not isStmt:
                 elseBody.append([S(':='),scratch,elseExpr])
-            stmtCollector([S('if'),condExpr,
-                           maybeBegin(thenBody),
-                           maybeBegin(elseBody)])
+            if not elseBody:
+                stmtCollector([S('if'),condExpr,
+                               maybeBegin(thenBody)])
+            else:
+                stmtCollector([S('if'),condExpr,
+                               maybeBegin(thenBody),
+                               maybeBegin(elseBody)])
         else:
             pyle=[S('if'),condExpr,maybeBegin(thenBody)]
             if not isStmt:
