@@ -3080,55 +3080,68 @@ raise %s
             scratch3P
             )
 
-    def testIdiv0Expr(self):
-        x=self.r([S('//')],
-                 False)
+    def testIDiv0Expr(self):
+        assert self.toP([S('//')],
+                        False)==([],"","1")
 
-        assert x==1
+    def testIDiv1VarExpr(self):
+        assert self.toP([S('//'),5],
+                        False)==([],"","0")
 
-    def testIdiv1VarExpr(self):
-        x=self.r([S('//'),5],
-                 False)
-
-        assert x==0
-
-    def testIdiv1FExpr(self):
-        x=self.r([S('//'),[S('f'),7]],
-                 False)
-
+    def testIDiv1FExpr(self):
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,[S('binop'),S('//'),1,scratch1]],
-            ]
+        scratch2P=scratch2.toPython()
 
-    def testIdiv2Expr(self):
-        x=self.r([S('//'),5,[S('f'),7]],
-                 False)
+        assert self.toP([S('//'),[S('f'),7]],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=1//%s" % (scratch2P,scratch1P)
+             ],
+            """%s=f(7)
+%s=1//%s
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P
+            )
 
+    def testIDiv2Expr(self):
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
-            ]
+        scratch2P=scratch2.toPython()
 
-    def testIdiv3Expr(self):
-        x=self.r([S('//'),5,[S('f'),7],9],
-                 False)
+        assert self.toP([S('//'),5,[S('f'),7]],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=5//%s" % (scratch2P,scratch1P)
+             ],
+            """%s=f(7)
+%s=5//%s
+""" % (scratch1P,scratch2P,scratch1P),
+            scratch2P
+            )
 
+    def testIDiv3Expr(self):
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
+        scratch2P=scratch2.toPython()
         scratch3=gensym('scratch')
-        assert x==scratch3
-        assert self.stmts==[
-            [S(':='),scratch1,[S('call'),S('f'),[7],[]]],
-            [S(':='),scratch2,[S('binop'),S('//'),5,scratch1]],
-            [S(':='),scratch3,[S('binop'),S('//'),scratch2,9]],
-            ]
+        scratch3P=scratch3.toPython()
+
+        assert self.toP([S('//'),5,[S('f'),7],9],
+                        False)==(
+            ["%s=f(7)" % scratch1P,
+             "%s=5//%s" % (scratch2P,scratch1P),
+             "%s=%s//9" % (scratch3P,scratch2P)
+             ],
+            """%s=f(7)
+%s=5//%s
+%s=%s//9
+""" % (scratch1P,scratch2P,scratch1P,scratch3P,scratch2P),
+            scratch3P
+            )
 
     def testEquals0Expr(self):
         x=self.r([S('==')],
