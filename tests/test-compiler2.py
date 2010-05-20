@@ -46,7 +46,7 @@ class AnnotateTestCase(unittest.TestCase):
     def annotate(self,exprPE,*,scope=None,verbose=False):
         if scope is None:
             scope=Scope(None)
-        annotated=annotate(exprPE,scope)
+        annotated=annotate(exprPE,scope,None,None)
         if verbose:
             print(annotated)
         return scopesToIds(annotated)
@@ -325,10 +325,10 @@ class EmptyStripTestCase(unittest.TestCase):
         Scope.nextId=1
         gensym.nextId=1
 
-    def clarify(self,parsedExpr,*,scope=None,verbose=False):
+    def clarify(self,parsedExpr,*,scope=None,verbose=False,globalDict=None):
         if scope is None:
             scope=Scope(None)
-        annotated=annotate(parsedExpr,scope)
+        annotated=annotate(parsedExpr,scope,globalDict,None)
         res=stripAnnotations(annotated)
         if verbose:
             print(annotated)
@@ -457,7 +457,7 @@ class StripTestCase(EmptyStripTestCase):
                              1))==[S('import'),S('re'),S('pdb')]
 
 class ParseAndStripTestCase(EmptyStripTestCase):
-    def clarify(self,exprStr,*,scope=None,verbose=False):
+    def clarify(self,exprStr,*,scope=None,verbose=False,globalDict=None):
         if isinstance(exprStr,tuple):
             parsedExpr=exprStr
         else:
@@ -465,7 +465,8 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         return StripTestCase.clarify(self,
                                      parsedExpr,
                                      scope=scope,
-                                     verbose=verbose)
+                                     verbose=verbose,
+                                     globalDict=globalDict)
 
     def testInt(self):
         assert self.clarify('17')==17
@@ -916,7 +917,7 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             ]
 
 class EvalTestCase(EmptyStripTestCase):
-    def clarify(self,exprStr,*,scope=None,verbose=False):
+    def clarify(self,exprStr,*,scope=None,verbose=False,globalDict=None):
         if isinstance(exprStr,tuple):
             parsedExpr=exprStr
         else:
@@ -924,7 +925,8 @@ class EvalTestCase(EmptyStripTestCase):
         return StripTestCase.clarify(self,
                                      parsedExpr,
                                      scope=scope,
-                                     verbose=verbose)
+                                     verbose=verbose,
+                                     globalDict=globalDict)
 
     def evalAdder(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
         if scope is None:

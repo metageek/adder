@@ -213,7 +213,12 @@ class Annotator:
             s=Annotator.pynamesForSymbols[s]
         return 'annotate_%s' % s.replace('-','_')
 
-    def __call__(self,parsedExpr,scope):
+    def __call__(self,parsedExpr,scope,globalDict,localDict):
+        if globalDict is None:
+            globalDict=adder.gomer.mkGlobals()
+        if localDict is None:
+            localDict=globalDict
+
         try:
             (expr,line)=parsedExpr
         except ValueError as ve:
@@ -225,8 +230,10 @@ class Annotator:
                 if scope.requiredScope(f) is Scope.root:
                     m=self.methodFor(f)
                     if hasattr(self,m):
-                        return getattr(self,m)(expr,line,scope)
-            scoped=list(map(lambda e: self(e,scope),expr))
+                        return getattr(self,m)(expr,line,scope,
+                                               globalDict,localDict)
+            scoped=list(map(lambda e: self(e,scope,globalDict,localDict),
+                            expr))
             return (scoped,line,scope)
         if isinstance(expr,S):
             if expr.isKeyword():
@@ -235,7 +242,8 @@ class Annotator:
                 if str(expr)=='current-scope':
                     adder.runtime.getScopeById.scopes[scope.id]=scope
                     return self(([(S('getScopeById'),line),
-                                  (scope.id,line)],line),scope)
+                                  (scope.id,line)],line),scope,
+                                globalDict,localDict)
                 required=scope.requiredScope(expr)
                 entry=required[expr]
                 if (entry.asConst
@@ -250,64 +258,73 @@ class Annotator:
                 return (expr,line,required)
         return (expr,line,scope)
 
-    def annotate_assign(self,expr,line,scope):
+    def annotate_assign(self,expr,line,scope,globalDict,localDict):
         assert len(expr)==3
         (lhs,lhsLine)=expr[1]
         if isinstance(lhs,S):
             entry=scope[lhs]
             if entry.asConst:
                 raise AssignedToConst(lhs)
-        return (list(map(lambda e: self(e,scope),expr)),line,scope)
+        return (list(map(lambda e: self(e,scope,globalDict,localDict),
+                         expr)),line,scope)
     
-    def annotate_eval(self,expr,line,scope):
+    def annotate_eval(self,expr,line,scope,globalDict,localDict):
         assert len(expr)>=2 and len(expr)<=4
-        adderArg=self(expr[1],scope)
-        scopeArg=self((S('current-scope'),line),scope)
+        adderArg=self(expr[1],scope,globalDict,localDict)
+        scopeArg=self((S('current-scope'),line),scope,globalDict,localDict)
         if len(expr)>=3:
-            globalArg=self(expr[2],scope)
+            globalArg=self(expr[2],scope,globalDict,localDict)
         else:
-            globalArg=self(([(S('globals'),line)],line),scope)
+            globalArg=self(([(S('globals'),line)],line),scope,
+                           globalDict,localDict)
         if len(expr)>=4:
-            localArg=self(expr[3],scope)
+            localArg=self(expr[3],scope,globalDict,localDict)
         else:
-            localArg=self(([(S('locals'),line)],line),scope)
-        return ([self(expr[0],scope),
+            localArg=self(([(S('locals'),line)],line),scope,
+                          globalDict,localDict)
+        return ([self(expr[0],scope,globalDict,localDict),
                  adderArg,scopeArg,globalArg,localArg],line,scope)
 
-    def annotate_exec_py(self,expr,line,scope):
+    def annotate_exec_py(self,expr,line,scope,globalDict,localDict):
         assert len(expr)>=2 and len(expr)<=4
-        pyArg=self(expr[1],scope)
+        pyArg=self(expr[1],scope,globalDict,localDict)
         if len(expr)>=3:
-            globalArg=self(expr[2],scope)
+            globalArg=self(expr[2],scope,globalDict,localDict)
         else:
-            globalArg=self(([(S('globals'),line)],line),scope)
+            globalArg=self(([(S('globals'),line)],line),scope,
+                           globalDict,localDict)
         if len(expr)>=4:
-            localArg=self(expr[3],scope)
+            localArg=self(expr[3],scope,globalDict,localDict)
         else:
-            localArg=self(([(S('locals'),line)],line),scope)
+            localArg=self(([(S('locals'),line)],line),scope,
+                          globalDict,localDict)
         return ([self(([(S('.'),line),
                         (S('python'),line),
                         (S('exec'),line)],
-                       line),scope),
+                       line),scope,globalDict,localDict),
                  pyArg,globalArg,localArg],line,scope)
 
-    def annotate_scope(self,expr,line,scope):
-        scopedScope=self(expr[0],scope)
+    def annotate_scope(self,expr,line,scope,globalDict,localDict):
+        scopedScope=self(expr[0],scope,globalDict,localDict)
         childScope=Scope(scope)
-        scopedChildren=list(map(lambda e: self(e,childScope),expr[1:]))
+        scopedChildren=list(map(lambda e: self(e,childScope,
+                                               globalDict,localDict),
+                                expr[1:]))
         return ([scopedScope]+scopedChildren,line,scope)
 
-    def annotate_quote(self,expr,line,scope):
-        return self.quoteOrImport(expr,line,scope,True)
+    def annotate_quote(self,expr,line,scope,globalDict,localDict):
+        return self.quoteOrImport(expr,line,scope,True,
+                                  globalDict,localDict)
 
-    def annotate_import(self,expr,line,scope):
-        res=self.quoteOrImport(expr,line,scope,False)
+    def annotate_import(self,expr,line,scope,globalDict,localDict):
+        res=self.quoteOrImport(expr,line,scope,False,
+                               globalDict,localDict)
         for (pkg,pkgLine) in expr[1:]:
             scope.addDef(S(str(pkg).split('.')[0]),None,pkgLine,
                          ignoreScopeId=True)
         return res
 
-    def quoteOrImport(self,expr,line,scope,justOneArg):
+    def quoteOrImport(self,expr,line,scope,justOneArg,globalDict,localDict):
         def annotateDumbly(parsedExpr):
             try:
                 (expr,line)=parsedExpr
@@ -325,47 +342,50 @@ class Annotator:
         else:
             args=expr[1:]
             
-        return (([self(expr[0],scope)]
+        return (([self(expr[0],scope,globalDict,localDict)]
                  +list(map(annotateDumbly,args))
                  ),
                 line,scope)
 
-    def annotate_dot(self,expr,line,scope):
+    def annotate_dot(self,expr,line,scope,globalDict,localDict):
         def annotateDumbly(parsedExpr):
             (expr,line)=parsedExpr
             assert isinstance(expr,S)
             return (expr,line,scope)
 
-        return (([self(expr[0],scope),
-                  self(expr[1],scope)
+        return (([self(expr[0],scope,globalDict,localDict),
+                  self(expr[1],scope,globalDict,localDict)
                   ]
                  +list(map(annotateDumbly,expr[2:]))
                  ),
                 line,scope)
 
-    def annotate_defvar(self,expr,line,scope):
-        return self.defvarOrDefconst(expr,line,scope,False)
+    def annotate_defvar(self,expr,line,scope,globalDict,localDict):
+        return self.defvarOrDefconst(expr,line,scope,False,
+                                     globalDict,localDict)
 
-    def annotate_defconst(self,expr,line,scope):
-        return self.defvarOrDefconst(expr,line,scope,True)
+    def annotate_defconst(self,expr,line,scope,globalDict,localDict):
+        return self.defvarOrDefconst(expr,line,scope,True,
+                                     globalDict,localDict)
 
-    def defvarOrDefconst(self,expr,line,scope,asConst):
-        scopedDef=self((S(':='),expr[0][1]),scope)
-        scopedInitExpr=self(expr[2],scope)
+    def defvarOrDefconst(self,expr,line,scope,asConst,globalDict,localDict):
+        scopedDef=self((S(':='),expr[0][1]),scope,globalDict,localDict)
+        scopedInitExpr=self(expr[2],scope,globalDict,localDict)
         scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],asConst=asConst)
         scopedVar=(expr[1][0],expr[1][1],scope)
         return ([scopedDef,
                  scopedVar,scopedInitExpr],line,scope)
 
-    def annotate_defun(self,expr,line,scope):
+    def annotate_defun(self,expr,line,scope,globalDict,localDict):
         return self.defunOrLambda(expr[0],expr[1],expr[2],expr[3:],
-                                  line,scope)
+                                  line,scope,globalDict,localDict)
 
-    def annotate_lambda(self,expr,line,scope):
+    def annotate_lambda(self,expr,line,scope,globalDict,localDict):
         return self.defunOrLambda(expr[0],None,expr[1],expr[2:],
-                                  line,scope)
+                                  line,scope,globalDict,localDict)
 
-    def defunOrLambda(self,opPE,namePE,argsPE,bodyPEs,line,scope):
+    def defunOrLambda(self,opPE,namePE,argsPE,bodyPEs,
+                      line,scope,globalDict,localDict):
         childScope=Scope(scope)
         def doArg(arg):
             (argExpr,argLine)=arg
@@ -373,20 +393,20 @@ class Annotator:
                 return (argExpr,argLine,scope)
             childScope.addDef(argExpr,argLine,None)
             return (argExpr,argLine,childScope)
-        scoped=[self(opPE,scope)]
+        scoped=[self(opPE,scope,globalDict,localDict)]
         if namePE:
             scope.addDef(namePE[0],namePE[1],None)
-            scoped.append(self(namePE,scope))
+            scoped.append(self(namePE,scope,globalDict,localDict))
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
         for parsedExpr in bodyPEs:
-            scoped.append(self(parsedExpr,childScope))
+            scoped.append(self(parsedExpr,childScope,globalDict,localDict))
         return (scoped,line,scope)
 
-    def annotate_scope(self,expr,line,scope):
+    def annotate_scope(self,expr,line,scope,globalDict,localDict):
         childScope=Scope(scope)
         return (([(S('begin'),expr[0][1],Scope.root)]
-                 +list(map(lambda e: self(e,childScope),
+                 +list(map(lambda e: self(e,childScope,globalDict,localDict),
                            expr[1:]))
                  ),
                 line,scope)

@@ -14,5 +14,5 @@ def eval(adder,scope,globalDict,localDict):
         return (expr,0)
 
     parsedExpr=withLines(adder)
-    gomer=stripAnnotations(annotate(parsedExpr,scope))
+    gomer=stripAnnotations(annotate(parsedExpr,scope,globalDict,localDict))
     return geval(gomer,globalDict=globalDict,localDict=localDict)
