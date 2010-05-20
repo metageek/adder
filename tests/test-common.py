@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.common import Symbol as S
+from adder.common import Symbol as S, gensym, mkScratch
 import adder.common
 
 class SymbolTestCase(unittest.TestCase):
@@ -20,6 +20,10 @@ class SymbolTestCase(unittest.TestCase):
         bar=S('bar')
         assert foo!=bar
         assert foo is not bar
+
+    def testScratch(self):
+        gensym.nextId=1
+        assert mkScratch('foo').isScratch
 
 suite=unittest.TestSuite(
     ( 

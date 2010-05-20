@@ -32,6 +32,7 @@ class Symbol:
 
     def __init__(self,s):
         self.s=s
+        self.isScratch=False
 
     def __getitem__(self,i):
         return self.s[i]
@@ -108,6 +109,11 @@ def gensym(base=None):
         name+='-'+str(base)
     name+=' #'+str(id)+'>'
     return Symbol(name)
+
+def mkScratch(base='scratch'):
+    res=gensym(base)
+    res.isScratch=True
+    return res
 
 def parseGensym(sym):
     if not (sym.startswith('#<gensym') and sym.endswith('>')):

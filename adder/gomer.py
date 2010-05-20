@@ -3,7 +3,7 @@
 #  Includes a basic interpreter, for use in macro expansion.
 
 import itertools,functools,re,pdb,adder.pyle,sys
-from adder.common import Symbol as S, gensym
+from adder.common import Symbol as S, gensym, mkScratch
 import adder.runtime
 
 def maybeBegin(body):
@@ -100,7 +100,7 @@ class ReduceReverse(Reducer):
             return reduce([[S('.'),gomer[1],S('reverse')]],
                           isStmt,stmtCollector)
         else:
-            scratch=gensym('scratch')
+            scratch=mkScratch()
             return reduce([S('begin'),
                            [S(':='),scratch,[S('to-list'),gomer[1]]],
                            [[S('.'),scratch,S('reverse')]],
@@ -132,7 +132,7 @@ class ReduceTry(Reducer):
                         clauseBody.append)
             return (maybeBegin(clauseBody),expr)
 
-        scratch=gensym('scratch') if not isStmt else None
+        scratch=mkScratch() if not isStmt else None
         last=None
         gomerBody=[]
         exnClauses=[]
@@ -179,7 +179,7 @@ class ReduceIf(Reducer):
         if isStmt:
             scratch=None
         else:
-            scratch=gensym('if')
+            scratch=mkScratch('if')
             thenBody.append([S(':='),scratch,thenExpr])
         if len(gomer)==4:
             elseBody=[]
@@ -208,7 +208,7 @@ class ReduceWhile(Reducer):
         if isStmt:
             scratch=None
         else:
-            scratch=gensym('while')
+            scratch=mkScratch('while')
             stmtCollector([S(':='),scratch,None])
         ReduceWhile.scratchStack.append(scratch)
         condBody=[]
@@ -472,7 +472,7 @@ class ReduceSubtractiveBinop(Reducer):
             op2=reduce(gomer[2],False,stmtCollector)
             if len(gomer)==3:
                 return [S('binop'),self.op,op1,op2]
-            scratch=gensym('scratch')
+            scratch=mkScratch()
             stmtCollector([S(':='),scratch,[S('binop'),self.op,op1,op2]])
             return reduce([S('binop'),self.op,
                            scratch
@@ -604,7 +604,7 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False):
             and isinstance(gomer,list)
             and gomer[0]!=S(':=')
             ):
-            scratch=gensym('scratch')
+            scratch=mkScratch()
             stmtCollector([S(':='),scratch,gomer])
             gomer=scratch
         return gomer
