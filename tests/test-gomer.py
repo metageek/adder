@@ -3022,8 +3022,10 @@ raise %s
                         False)==([],"","1")
 
     def testFDiv1VarExpr(self):
-        assert self.toP([S('/'),5],
-                        False)==([],"","0.2")
+        (tree,flat,expr)=self.toP([S('/'),5],
+                                  False)
+        assert (tree,flat)==([],"")
+        assert float(expr)==1/5
 
     def testFDiv1FExpr(self):
         scratch1=gensym('scratch')
@@ -3144,95 +3146,93 @@ raise %s
             )
 
     def testEquals0Expr(self):
-        x=self.r([S('==')],
-                 False)
-
-        assert x is True
+        assert self.toP([S('==')],
+                        False)==([],"","True")
 
     def testEquals1Expr(self):
-        x=self.r([S('=='),5],
-                 False)
+        assert self.toP([S('=='),5],
+                        False)==([],"","True")
 
-        assert x is True
-
-    def testEquals2Expr(self):
-        x=self.r([S('=='),5,7],
-                 False)
-
-        scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('=='),5,7]]
-            ]
+    def testEquals2ConstExpr(self):
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        assert self.toP([S('=='),5,7],
+                        False)==(
+            ["%s=5==7" % scratch1P],"%s=5==7\n" % scratch1P,
+            scratch1P
+            )
 
     def testEquals3Expr(self):
-        x=self.r([S('=='),5,7,9],
-                 False)
-
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
-        scratchIf=gensym('if')
-        assert x==scratchIf
-        assert self.stmts==[
-            [S(':='),scratch1,[S('binop'),S('=='),5,7]],
-            [S('if'),
-             scratch1,
-             [S('begin'),
-              [S(':='),scratch2,[S('binop'),S('=='),7,9]],
-              [S(':='),scratchIf,scratch2]
-              ],
-             [S(':='),scratchIf,scratch1],
-             ]
-            ]
+        scratch2P=scratch2.toPython()
+        ifScratch3=gensym('if')
+        ifScratch3P=ifScratch3.toPython()
+        assert self.toP([S('=='),5,7,9],
+                        False)==(
+            ["%s=5==7" % scratch1P,
+             ("if %s:" % scratch1P,
+              [("%s=7==9" % scratch2P,
+                "%s=%s" % (ifScratch3P,scratch2P))],
+              "else:",
+               ["%s=%s" % (ifScratch3P,scratch1P)]
+              )
+             ],"""%s=5==7
+if %s:
+    %s=7==9
+    %s=%s
+else:
+    %s=%s
+""" % (scratch1P,
+     scratch1P,
+     scratch2P,
+     ifScratch3P,scratch2P,
+     ifScratch3P,scratch1P),
+            ifScratch3P
+            )
 
     def testInExpr(self):
-        x=self.r([S('in'),5,S('l')],
-                 False)
-
-        scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('in'),5,S('l')]]
-            ]
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        assert self.toP([S('in'),5,S('l')],
+                        False)==(["%s=5 in l" % scratch1P],
+                                 "%s=5 in l\n" % scratch1P,
+                                 scratch1P)
 
     def testInExpr2(self):
-        x=self.r([S('in'),[S('+'),5,7],S('l')],
-                 False)
-
         scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
         scratch2=gensym('scratch')
-        assert x==scratch2
-        assert self.stmts==[
-            [S(':='),scratch1,[S('binop'),S('+'),5,7]],
-            [S(':='),scratch2,[S('binop'),S('in'),scratch1,S('l')]]
-            ]
+        scratch2P=scratch2.toPython()
+        assert self.toP([S('in'),[S('+'),5,7],S('l')],
+                        False)==(["%s=5+7" % scratch1P,
+                                  "%s=%s in l" % (scratch2P,scratch1P)
+                                  ],
+                                 """%s=5+7
+%s=%s in l
+""" % (scratch1P,scratch2P,scratch1P),
+                                 scratch2P)
 
     def testSubscriptExpr(self):
-        x=self.r([S('[]'),S('l'),5],
-                 False)
-
-        scratch=gensym('scratch')
-        assert x==scratch
-        assert self.stmts==[
-            [S(':='),scratch,[S('[]'),S('l'),5]]
-            ]
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        assert self.toP([S('[]'),S('l'),5],
+                        False)==(["%s=l[5]" % scratch1P],
+                                 "%s=l[5]\n" % scratch1P,
+                                 scratch1P)
 
     def testSubscriptStmt(self):
-        x=self.r([S('[]'),S('l'),5],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
+        assert self.toP([S('[]'),S('l'),5],
+                        True)==([],"",None)
 
     def testSubscriptNestingStmt(self):
-        x=self.r([S('[]'),S('l'),[S('+'),5,7]],
-                 True)
-
-        scratch=gensym('scratch')
-        assert x is None
-        assert self.stmts==[
-            [S(':='),scratch,[S('binop'),S('+'),5,7]]
-            ]
+        scratch1=gensym('scratch')
+        scratch1P=scratch1.toPython()
+        assert self.toP([S('[]'),S('l'),[S('+'),5,7]],
+                        True)==(["%s=5+7" % scratch1P],
+                                "%s=5+7\n" % scratch1P,
+                                None)
 
     def testSliceLExpr(self):
         actual=self.toP([S('slice'),S('l'),5],
