@@ -94,7 +94,10 @@ class AssignedToConst(Exception):
 
 class Scope:
     class Entry:
-        def __init__(self,*,initExpr,line,asConst=False,ignoreScopeId=False):
+        def __init__(self,*,initExpr,line,
+                     asConst=False,ignoreScopeId=False,
+                     macroExpander=None,
+                     evalFuncArgs=True):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -103,6 +106,8 @@ class Scope:
             self.line=line
             self.asConst=asConst
             self.ignoreScopeId=ignoreScopeId
+            self.macroExpander=macroExpander
+            self.evalFuncArgs=evalFuncArgs
 
     nextId=1
 
@@ -130,14 +135,19 @@ class Scope:
 
     root=None
 
-    def addDef(self,name,initExpr,line,*,asConst=False,ignoreScopeId=False):
+    def addDef(self,name,initExpr,line,*,
+               asConst=False,
+               ignoreScopeId=False,
+               macroExpander=None,evalFuncArgs=True):
         assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
                                        line=line,
                                        asConst=asConst,
-                                       ignoreScopeId=ignoreScopeId)
+                                       ignoreScopeId=ignoreScopeId,
+                                       macroExpander=macroExpander,
+                                       evalFuncArgs=evalFuncArgs)
 
     def addConst(self,name,value,line,*,ignoreScopeId=False):
         self.addDef(name,q(value),line,
@@ -222,11 +232,23 @@ class Annotator:
         if expr and isinstance(expr,list):
             if isinstance(expr[0][0],S):
                 f=expr[0][0]
-                if scope.requiredScope(f) is Scope.root:
+                required=scope.requiredScope(f)
+                if required is Scope.root:
                     m=self.methodFor(f)
                     if hasattr(self,m):
                         return getattr(self,m)(expr,line,scope,
                                                globalDict,localDict)
+                if required[f].macroExpander:
+                    xArgs=stripLines((expr[1:],expr[1][1]))
+                    expanded=required[f].macroExpander(xArgs,
+                                                       scope,
+                                                       globalDict,
+                                                       localDict)
+                    return self(addLines(expanded,line),
+                                scope,globalDict,localDict)
+                if not required[f].evalFuncArgs:
+                    args=stripLines((expr[1:],expr[1][1]))
+                    return [self(expr[0])]+args ## wrong; args must be annotated.
             scoped=list(map(lambda e: self(e,scope,globalDict,localDict),
                             expr))
             return (scoped,line,scope)
@@ -263,6 +285,19 @@ class Annotator:
                     expr=entry.constValue
                 return (expr,line,required)
         return (expr,line,scope)
+
+    def annotate_defmacro(self,expr,line,scope,globalDict,localDict):
+        (name,nameLine)=expr[1]
+        expanderName=gensym('macro-'+str(name))
+        def expand(xArgs,xScope,xGlobalDict,xLocalDict):
+            xCall=[expanderName]+xArgs
+            return adder.runtime.eval(xCall,xScope,xGlobalDict,xLocalDict)
+        scope.addDef(name,None,line,macroExpander=expand)
+        res=self(([(S('defun'),line),(expanderName,line)]+expr[2:],
+                  line),
+                 scope,globalDict,localDict)
+        scope[expanderName].evalFuncArgs=False
+        return res
 
     def annotate_assign(self,expr,line,scope,globalDict,localDict):
         assert len(expr)==3
@@ -462,17 +497,22 @@ def stripAnnotations(annotated,*,quoted=False):
                 )
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
 
+def addLines(expr,defLine):
+    if literable(expr) or isinstance(expr,S):
+        return (expr,defLine)
+    assert isinstance(expr,list)
+    return (list(map(lambda e: addLines(e,defLine),expr)),defLine)
+
+def stripLines(parsedExpr):
+    (expr,line)=parsedExpr
+    if literable(expr) or isinstance(expr,S):
+        return expr
+    assert isinstance(expr,list)
+    return list(map(stripLines,expr))
+
 def compileAndEval(expr,scope,globalDict,localDict,*,
                    hasLines=False,defLine=0,
                    verbose=False):
-    def addLines(e):
-        if hasLines:
-            return e
-        if literable(e):
-            return (e,defLine)
-        assert isinstance(e,list)
-        return (list(map(addLines,e)),defLine)
-
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
@@ -480,7 +520,9 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
     if localDict is None:
         localDict=globalDict
 
-    annotated=annotate(addLines(expr),scope,globalDict,localDict)
+    if not hasLines:
+        expr=addLines(expr)
+    annotated=annotate(expr,scope,globalDict,localDict)
     gomer=stripAnnotations(annotated)
     return adder.gomer.geval(gomer,
                              globalDict=globalDict,

@@ -5,15 +5,10 @@ def getScopeById(id):
 getScopeById.scopes={}
 
 def eval(adder,scope,globalDict,localDict):
-    from adder.compiler2 import annotate,stripAnnotations
+    from adder.compiler2 import annotate,stripAnnotations,addLines
     from adder.gomer import geval
 
-    def withLines(expr):
-        if isinstance(expr,list):
-            expr=list(map(withLines,expr))
-        return (expr,0)
-
-    parsedExpr=withLines(adder)
+    parsedExpr=addLines(adder,0)
     gomer=stripAnnotations(annotate(parsedExpr,scope,globalDict,localDict))
     return geval(gomer,globalDict=globalDict,localDict=localDict)
 

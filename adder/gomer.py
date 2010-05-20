@@ -648,7 +648,13 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     if verbose:
         print(stmtFlat)
         print(exprFlat)
-    exec(stmtFlat,globalDict,localDict)
+    try:
+        exec(stmtFlat,globalDict,localDict)
+    except TypeError as te:
+        print(gomer)
+        print(stmtFlat)
+        pdb.set_trace()
+        raise
     res=eval(exprFlat,globalDict,localDict)
     if verbose:
         pdb.set_trace()

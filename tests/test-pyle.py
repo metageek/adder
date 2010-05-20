@@ -132,34 +132,34 @@ class StrTestCase(unittest.TestCase):
 
     def testDef0(self):
         assert str(Def(Var(S('g')),[],[],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g() return 9}'
 
     def testDef1Pos(self):
         assert str(Def(Var(S('g')),[Var(S('x'))],[],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g(x) return 9}'
 
     def testDef1Kw(self):
         assert str(Def(Var(S('g')),[],[Var(S('x'))],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g(*,x) return 9}'
 
     def testDef1Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g(x,*,y) return 9}'
 
     def testDef2Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('z'))],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g(x,y,*,z) return 9}'
 
     def testDef2Pos2Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('a')),Var(S('b'))],
-                       [],[],
+                       [],[],[],
                        Return(Literal(9))))=='{def g(x,y,*,a,b) return 9}'
 
     def testBreak(self):
@@ -476,7 +476,7 @@ else:
     def testDef0(self):
         assert self.toP(Def(Var(S('f')),
                             [],
-                            [],[],[],
+                            [],[],[],[],
                             Return(Literal(9))))==(("def f():",["return 9"]),
                                                     """def f():
     return 9
@@ -485,7 +485,7 @@ else:
     def testDef1Pos(self):
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
-                            [],[],[],
+                            [],[],[],[],
                             Return(Var(S('x')))))==(("def f(x):",["return x"]),
                                                     """def f(x):
     return x
@@ -494,7 +494,7 @@ else:
     def testDef2Pos(self):
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x')),Var(S('y'))],
-                            [],[],[],
+                            [],[],[],[],
                             Return(Var(S('x')))))==(("def f(x,y):",["return x"]),
                                                     """def f(x,y):
     return x
@@ -503,7 +503,7 @@ else:
     def testDef2Pos1Kw(self):
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x')),Var(S('y'))],
-                            [Var(S('z'))],[],[],
+                            [Var(S('z'))],[],[],[],
                             Return(Var(S('x')))))==(("def f(x,y,*,z):",["return x"]),
                                                     """def f(x,y,*,z):
     return x
@@ -512,7 +512,7 @@ else:
     def testDef2Pos2Kw(self):
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x')),Var(S('y'))],
-                            [Var(S('z')),Var(S('a'))],[],[],
+                            [Var(S('z')),Var(S('a'))],[],[],[],
                             Return(Var(S('x')))))==(("def f(x,y,*,z,a):",["return x"]),
                                                     """def f(x,y,*,z,a):
     return x
@@ -521,7 +521,7 @@ else:
     def testDef0Pos2Kw(self):
         assert self.toP(Def(Var(S('f')),
                             [],
-                            [Var(S('z')),Var(S('a'))],[],[],
+                            [Var(S('z')),Var(S('a'))],[],[],[],
                             Return(Var(S('z')))))==(("def f(*,z,a):",["return z"]),
                                                     """def f(*,z,a):
     return z
@@ -530,7 +530,7 @@ else:
     def testDef1Pos2Kw(self):
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
-                            [Var(S('z')),Var(S('a'))],[],[],
+                            [Var(S('z')),Var(S('a'))],[],[],[],
                             Return(Var(S('x')))))==(("def f(x,*,z,a):",["return x"]),
                                                     """def f(x,*,z,a):
     return x
@@ -540,6 +540,7 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
                             [Var(S('z')),Var(S('a'))],
+                            [],
                             [Var(S('g1')),Var(S('g2'))],
                             [],
                             Return(Var(S('x')))))==(("def f(x,*,z,a):",
@@ -555,7 +556,7 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
                             [Var(S('z')),Var(S('a'))],
-                            [],
+                            [],[],
                             [Var(S('nl1')),Var(S('nl2'))],
                             Return(Var(S('x')))))==(("def f(x,*,z,a):",
                                                      ["nonlocal nl1,nl2",
@@ -570,6 +571,7 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
                             [Var(S('z')),Var(S('a'))],
+                            [],
                             [Var(S('g1')),Var(S('g2'))],
                             [Var(S('nl1')),Var(S('nl2'))],
                             Return(Var(S('x')))))==(("def f(x,*,z,a):",

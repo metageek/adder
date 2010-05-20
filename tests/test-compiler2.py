@@ -1347,6 +1347,16 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         assert self.e('(load "%s")' % codeFile)==13
         assert self['x7-1']==5040
 
+    def testDefmacro(self):
+        assert self.e("""(defmacro when (x body)
+(+ '(if) (list x) body)
+)
+(defvar y 12)
+(when (< 5 9)
+(:= y (* y 7)))
+y
+""")==84
+
 class LoadTestCase(unittest.TestCase):
     def testLoad(self):
         thisFile=self.__class__.testLoad.__code__.co_filename

@@ -338,9 +338,10 @@ class While(Stmt):
                 [self.body.toPythonTree()])
 
 class Def(Stmt):
-    def __init__(self,f,posArgs,kwArgs,globals,nonlocals,body):
+    def __init__(self,f,posArgs,kwArgs,restArgs,globals,nonlocals,body):
         assert isinstance(f,Var)
-        for varList in [posArgs,kwArgs,globals,nonlocals]:
+        assert len(restArgs)<=1
+        for varList in [posArgs,kwArgs,restArgs,globals,nonlocals]:
             for arg in varList:
                 assert isinstance(arg,Var)
         assert isinstance(body,Stmt)
@@ -549,10 +550,12 @@ def build(reg):
 
         posArgs=[]
         kwArgs=[]
+        restArgs=[]
         globals=[]
         nonlocals=[]
 
         states={'&key': kwArgs,
+                '&rest': restArgs,
                 '&global': globals,
                 '&nonlocal': nonlocals}
         cur=posArgs
@@ -563,7 +566,7 @@ def build(reg):
             else:
                 cur.append(build(arg))
 
-        return Def(name,posArgs,kwArgs,globals,nonlocals,body)
+        return Def(name,posArgs,kwArgs,restArgs,globals,nonlocals,body)
     if f==S('break'):
         assert len(reg)==1
         return Break()
