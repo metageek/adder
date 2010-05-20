@@ -1,7 +1,10 @@
-# And intermediate form for use in compiling Gomer to Pyle.  Inspired
-#  by 3-address form.  The main characteristic is that there are no
-#  function arguments which include function calls.  See
-#  doc/compiler.html for the syntax.
+# Pyle (Python Lisplike Encoding) encodes a subset of Python into
+# Lispy data structures.  As an IL, it's loosely based on
+# register-based instruction sets.  The main characteristic is that
+# there are no function arguments which include function calls, to
+# avoid the problems that arose when I was less careful about
+# statements which appeared inside expressions.  See doc/compiler.html
+# for the syntax.
 
 from adder.common import Symbol as S, literable
 import re,pdb
