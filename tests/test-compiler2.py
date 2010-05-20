@@ -1349,11 +1349,11 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 
     def testDefmacro(self):
         assert self.e("""(defmacro when (x body)
-(+ '(if) (list x) body)
+(+ '(if) (mk-list x) body)
 )
 (defvar y 12)
 (when (< 5 9)
-(:= y (* y 7)))
+((:= y (* y 7))))
 y
 """)==84
 

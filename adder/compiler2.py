@@ -96,8 +96,7 @@ class Scope:
     class Entry:
         def __init__(self,*,initExpr,line,
                      asConst=False,ignoreScopeId=False,
-                     macroExpander=None,
-                     evalFuncArgs=True):
+                     macroExpander=None):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -107,7 +106,6 @@ class Scope:
             self.asConst=asConst
             self.ignoreScopeId=ignoreScopeId
             self.macroExpander=macroExpander
-            self.evalFuncArgs=evalFuncArgs
 
     nextId=1
 
@@ -138,7 +136,7 @@ class Scope:
     def addDef(self,name,initExpr,line,*,
                asConst=False,
                ignoreScopeId=False,
-               macroExpander=None,evalFuncArgs=True):
+               macroExpander=None):
         assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
@@ -146,8 +144,7 @@ class Scope:
                                        line=line,
                                        asConst=asConst,
                                        ignoreScopeId=ignoreScopeId,
-                                       macroExpander=macroExpander,
-                                       evalFuncArgs=evalFuncArgs)
+                                       macroExpander=macroExpander)
 
     def addConst(self,name,value,line,*,ignoreScopeId=False):
         self.addDef(name,q(value),line,
@@ -246,9 +243,6 @@ class Annotator:
                                                        localDict)
                     return self(addLines(expanded,line),
                                 scope,globalDict,localDict)
-                if not required[f].evalFuncArgs:
-                    args=stripLines((expr[1:],expr[1][1]))
-                    return [self(expr[0])]+args ## wrong; args must be annotated.
             scoped=list(map(lambda e: self(e,scope,globalDict,localDict),
                             expr))
             return (scoped,line,scope)
@@ -290,14 +284,12 @@ class Annotator:
         (name,nameLine)=expr[1]
         expanderName=gensym('macro-'+str(name))
         def expand(xArgs,xScope,xGlobalDict,xLocalDict):
-            xCall=[expanderName]+xArgs
+            xCall=[expanderName]+list(map(q,xArgs))
             return adder.runtime.eval(xCall,xScope,xGlobalDict,xLocalDict)
         scope.addDef(name,None,line,macroExpander=expand)
-        res=self(([(S('defun'),line),(expanderName,line)]+expr[2:],
-                  line),
-                 scope,globalDict,localDict)
-        scope[expanderName].evalFuncArgs=False
-        return res
+        return self(([(S('defun'),line),(expanderName,line)]+expr[2:],
+                     line),
+                    scope,globalDict,localDict)
 
     def annotate_assign(self,expr,line,scope,globalDict,localDict):
         assert len(expr)==3
