@@ -16,3 +16,8 @@ def eval(adder,scope,globalDict,localDict):
     parsedExpr=withLines(adder)
     gomer=stripAnnotations(annotate(parsedExpr,scope,globalDict,localDict))
     return geval(gomer,globalDict=globalDict,localDict=localDict)
+
+def load(f,scope,globalDict):
+    from adder.compiler2 import loadFile
+    (lastValue,globalDict)=loadFile(f,scope,globalDict)
+    return lastValue

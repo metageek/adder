@@ -193,10 +193,10 @@ for name in ['defun','lambda','defvar','scope',
              'print','gensym','[]','getattr','slice','isinstance',
              'list','tuple','set','dict',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
-             'reverse','stdenv','apply','eval','exec-py','load',
+             'reverse','stdenv','apply','eval','exec-py',
              'getScopeById','globals','locals',
              # All before this point are annotated.
-             'defmacro','python',
+             'defmacro','python','load',
              ]:
     Scope.root.addDef(S(name),None,0)
 
@@ -290,6 +290,18 @@ class Annotator:
                           globalDict,localDict)
         return ([self(expr[0],scope,globalDict,localDict),
                  adderArg,scopeArg,globalArg,localArg],line,scope)
+    
+    def annotate_load(self,expr,line,scope,globalDict,localDict):
+        assert len(expr)>=2 and len(expr)<=3
+        fileArg=self(expr[1],scope,globalDict,localDict)
+        scopeArg=self((S('current-scope'),line),scope,globalDict,localDict)
+        if len(expr)==3:
+            globalArg=self(expr[2],scope,globalDict,localDict)
+        else:
+            globalArg=self(([(S('globals'),line)],line),scope,
+                           globalDict,localDict)
+        return ([self(expr[0],scope,globalDict,localDict),
+                 fileArg,scopeArg,globalArg],line,scope)
 
     def annotate_exec_py(self,expr,line,scope,globalDict,localDict):
         assert len(expr)>=2 and len(expr)<=4
@@ -475,9 +487,11 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
                              localDict=localDict,
                              verbose=verbose)
 
-def loadFile(f):
-    scope=Scope(None)
-    globalDict=adder.gomer.mkGlobals()
+def loadFile(f,scope,globalDict):
+    if scope is None:
+        scope=Scope(None)
+    if globalDict is None:
+        globalDict=adder.gomer.mkGlobals()
     res=None
     for parsedExpr in adder.parser.parseFile(f):
         res=compileAndEval(parsedExpr,scope,

@@ -913,7 +913,10 @@ class ParseAndStripTestCase(EmptyStripTestCase):
 
     def testLoad(self):
         assert self.clarify('(load "prelude.+")')==[
-            S('load'),"prelude.+"
+            S('load'),
+            "prelude.+",
+            [S('getScopeById'),1],
+            [S('globals')]
             ]
 
 class EvalTestCase(EmptyStripTestCase):
@@ -1337,14 +1340,21 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 """)==63
         assert self['f-1'](12)==84
 
+    def testLoad(self):
+        thisFile=self.__class__.testLoad.__code__.co_filename
+        thisDir=os.path.split(thisFile)[0]
+        codeFile=os.path.join(thisDir,'test-load.+')
+        assert self.e('(load "%s")' % codeFile)==13
+        assert self['x7-1']==5040
+
 class LoadTestCase(unittest.TestCase):
     def testLoad(self):
         thisFile=self.__class__.testLoad.__code__.co_filename
         thisDir=os.path.split(thisFile)[0]
         codeFile=os.path.join(thisDir,'test-load.+')
-        (lastValue,globalDict)=loadFile(codeFile)
+        (lastValue,globalDict)=loadFile(codeFile,None,None)
         assert lastValue==13
-        assert lookup(globalDict,'x')==5040
+        assert lookup(globalDict,'x7-2')==5040
 
 suite=unittest.TestSuite(
     ( 
@@ -1353,6 +1363,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      unittest.makeSuite(LoadTestCase,'test'),
      )
     )
 
