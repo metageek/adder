@@ -2,7 +2,7 @@
 
 import unittest,pdb,sys,os
 from adder.pyle import *
-from adder.common import Symbol as S
+from adder.common import Symbol as S, mkScratch
 import adder.common
 
 class StrTestCase(unittest.TestCase):
@@ -1101,11 +1101,60 @@ print(z)
     def testImport(self):
         assert self.toP([S('import'),S('re')])==("import re","import re\n")
 
+class ScratchLifetimesTestCase(unittest.TestCase):
+    def lt(self,pyle,expected):
+        actual=sorted(scratchLifetimes(pyle).items())
+        if actual!=expected:
+            print(pyle)
+            print(actual)
+            print(expected)
+        assert actual==expected
+
+    def testPathCompare(self):
+        assert pathCompare([],[])==0
+        assert pathCompare([],[1])==-1
+        assert pathCompare([1],[])==1
+        assert pathCompare([1],[1])==0
+        assert pathCompare([1,2],[1])==1
+        assert pathCompare([1],[1,2])==-1
+        assert pathCompare([1,2],[1,2])==0
+        assert pathCompare([1,2],[1,2,3])==-1
+        assert pathCompare([1,2,3],[1,2])==1
+
+    def testLifetimesRealVar(self):
+        assert not scratchLifetimes(S('foo'))
+
+    def testLifetimesScratchVar(self):
+        s=mkScratch()
+        self.lt(s,[(s,([],[]))])
+
+    def testLifetimesList1(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('if')
+        self.lt([S('call'),S('f'),s1,s2],
+                [(s1,([2],[2])),(s2,([3],[3]))])
+
+    def testLifetimesList2(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('if')
+        self.lt([S('call'),S('f'),s2,s1],
+                [(s1,([3],[3])),(s2,([2],[2]))])
+
+    def testLifetimesListNested(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('if')
+        s3=mkScratch('bar')
+        self.lt([S('call'),S('f'),[s2,s3,s1],'fred',s3],
+                [(s3,([2,1],[4])),
+                 (s1,([2,2],[2,2])),
+                 (s2,([2,0],[2,0]))])
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
       unittest.makeSuite(ToPythonTestCase,'test'),
       unittest.makeSuite(BuildToPythonTestCase,'test'),
+      unittest.makeSuite(ScratchLifetimesTestCase,'test'),
      )
     )
 

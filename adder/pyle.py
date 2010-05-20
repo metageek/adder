@@ -616,3 +616,45 @@ def build(pyle):
 
     print(pyle)
     assert False
+
+def findScratchVars(p,path):
+    if isinstance(p,S):
+        if p.isScratch:
+            yield (p,path)
+        return
+    if literable(p):
+        return
+    assert isinstance(p,list)
+    for (i,x) in enumerate(p):
+        for scratch in findScratchVars(x,path+[i]):
+            yield scratch
+
+# Remember to convert to iteration
+def pathCompare(path1,path2):
+    if not path1:
+        if path2:
+            return -1
+        else:
+            return 0
+    if not path2:
+        return 1
+    if path1[0]<path2[0]:
+        return -1
+    if path1[0]>path2[0]:
+        return 1
+    return pathCompare(path1[1:],path2[1:])
+
+def scratchLifetimes(pyle):
+    scratchToLifetime={}
+    for (scratch,path) in findScratchVars(pyle,[]):
+        if scratch not in scratchToLifetime:
+            scratchToLifetime[scratch]=(path,path)
+        else:
+            (start,end)=scratchToLifetime[scratch]
+            if pathCompare(path,start)<0:
+                start=path
+            else:
+                if pathCompare(path,end)>0:
+                    end=path
+            scratchToLifetime[scratch]=(start,end)
+    return scratchToLifetime
