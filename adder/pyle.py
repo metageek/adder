@@ -464,41 +464,41 @@ class MkDict(Stmt):
             return '%s: %s' % (repr(str(var)),str(val))
         return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
 
-def build(reg):
+def build(pyle):
     def buildPair(varAndVal):
         (var,val)=varAndVal
         return (build(var),build(val))
-    if isinstance(reg,S):
-        return Var(reg)
-    if literable(reg):
-        return Literal(reg)
-    assert isinstance(reg,list)
-    assert reg
-    f=reg[0]
+    if isinstance(pyle,S):
+        return Var(pyle)
+    if literable(pyle):
+        return Literal(pyle)
+    assert isinstance(pyle,list)
+    assert pyle
+    f=pyle[0]
     if f==S(':='):
-        assert len(reg)==3
-        return Assign(build(reg[1]),build(reg[2]))
+        assert len(pyle)==3
+        return Assign(build(pyle[1]),build(pyle[2]))
     if f==S('return'):
-        assert len(reg)==2
-        return Return(build(reg[1]))
+        assert len(pyle)==2
+        return Return(build(pyle[1]))
     if f==S('yield'):
-        assert len(reg)==2
-        return Yield(build(reg[1]))
+        assert len(pyle)==2
+        return Yield(build(pyle[1]))
     if f==S('mk-list'):
-        return MkList(list(map(build,reg[1:])))
+        return MkList(list(map(build,pyle[1:])))
     if f==S('mk-tuple'):
-        return MkTuple(list(map(build,reg[1:])))
+        return MkTuple(list(map(build,pyle[1:])))
     if f==S('mk-set'):
-        return MkSet(list(map(build,reg[1:])))
+        return MkSet(list(map(build,pyle[1:])))
     if f==S('mk-dict'):
-        return MkDict(list(map(buildPair,reg[1:])))
+        return MkDict(list(map(buildPair,pyle[1:])))
     if f==S('try'):
         klassClauses=[]
         finallyClause=None
-        assert len(reg)>=2
+        assert len(pyle)>=2
         sawFinally=False
         finallyBody=None
-        for clause in reg[2:]:
+        for clause in pyle[2:]:
             assert not sawFinally
             assert len(clause) in [2,3]
             if len(clause)==2:
@@ -512,41 +512,41 @@ def build(reg):
                 klassClauses.append((Var(S(str(clause[0])[1:])),
                                      Var(clause[1]),
                                      build(clause[2])))
-        return Try(build(reg[1]),klassClauses,finallyBody)
+        return Try(build(pyle[1]),klassClauses,finallyBody)
     if f==S('raise'):
-        assert len(reg)==2
-        return Raise(build(reg[1]))
+        assert len(pyle)==2
+        return Raise(build(pyle[1]))
     if f==S('reraise'):
-        assert len(reg)==1
+        assert len(pyle)==1
         return Reraise()
     if f==S('binop'):
-        assert len(reg)==4
-        return Binop(build(reg[1]),
-                     build(reg[2]),
-                     build(reg[3]))
+        assert len(pyle)==4
+        return Binop(build(pyle[1]),
+                     build(pyle[2]),
+                     build(pyle[3]))
     if f==S('quote'):
-        assert len(reg)==2
+        assert len(pyle)==2
         def q(r):
             if isinstance(r,list):
                 return List(list(map(q,r)))
             else:
                 return Literal(r)
-        return Quote(q(reg[1]))
+        return Quote(q(pyle[1]))
     if f==S('if'):
-        assert len(reg) in [3,4]
-        cond=build(reg[1])
-        thenClause=build(reg[2])
-        elseClause=build(reg[3]) if len(reg)==4 else None
+        assert len(pyle) in [3,4]
+        cond=build(pyle[1])
+        thenClause=build(pyle[2])
+        elseClause=build(pyle[3]) if len(pyle)==4 else None
         return If(cond,thenClause,elseClause)
     if f==S('while'):
-        assert len(reg)==3
-        cond=build(reg[1])
-        body=build(reg[2])
+        assert len(pyle)==3
+        cond=build(pyle[1])
+        body=build(pyle[2])
         return While(cond,body)
     if f==S('def'):
-        assert len(reg)==4
-        name=build(reg[1])
-        body=build(reg[3])
+        assert len(pyle)==4
+        name=build(pyle[1])
+        body=build(pyle[3])
 
         posArgs=[]
         kwArgs=[]
@@ -559,7 +559,7 @@ def build(reg):
                 '&global': globals,
                 '&nonlocal': nonlocals}
         cur=posArgs
-        for arg in reg[2]:
+        for arg in pyle[2]:
             assert isinstance(arg,S)
             if arg[0]=='&':
                 cur=states[str(arg)]
@@ -568,48 +568,48 @@ def build(reg):
 
         return Def(name,posArgs,kwArgs,restArgs,globals,nonlocals,body)
     if f==S('break'):
-        assert len(reg)==1
+        assert len(pyle)==1
         return Break()
     if f==S('continue'):
-        assert len(reg)==1
+        assert len(pyle)==1
         return Continue()
     if f==S('pass'):
-        assert len(reg)==1
+        assert len(pyle)==1
         return Pass()
     if f==S('begin'):
-        return Begin(list(map(build,reg[1:])))
+        return Begin(list(map(build,pyle[1:])))
     if f==S('import'):
-        assert len(reg)==2
-        return Import(build(reg[1]))
+        assert len(pyle)==2
+        return Import(build(pyle[1]))
     if f==S('import'):
-        assert len(reg)==2
-        return Import(build(reg[1]))
+        assert len(pyle)==2
+        return Import(build(pyle[1]))
     if f==S('.'):
-        assert len(reg)>2
-        return Dot(build(reg[1]),
-                   list(map(build,reg[2:])))
+        assert len(pyle)>2
+        return Dot(build(pyle[1]),
+                   list(map(build,pyle[2:])))
     if f==S('[]'):
-        assert len(reg)==3
-        return Subscript(build(reg[1]),build(reg[2]))
+        assert len(pyle)==3
+        return Subscript(build(pyle[1]),build(pyle[2]))
 
     if f==S('slice'):
-        assert len(reg)==4
-        return Slice(build(reg[1]),build(reg[2]),build(reg[3]))
+        assert len(pyle)==4
+        return Slice(build(pyle[1]),build(pyle[2]),build(pyle[3]))
 
     if f==S('call'):
-        assert len(reg)==4
+        assert len(pyle)==4
 
-        if isinstance(reg[2],list):
-            posArgs=list(map(build,reg[2]))
+        if isinstance(pyle[2],list):
+            posArgs=list(map(build,pyle[2]))
         else:
-            posArgs=build(reg[2])
+            posArgs=build(pyle[2])
 
-        if isinstance(reg[3],list):
-            kwArgs=list(map(buildPair,reg[3]))
+        if isinstance(pyle[3],list):
+            kwArgs=list(map(buildPair,pyle[3]))
         else:
-            kwArgs=build(reg[3])
+            kwArgs=build(pyle[3])
 
-        return Call(build(reg[1]),posArgs,kwArgs)
+        return Call(build(pyle[1]),posArgs,kwArgs)
 
-    print(reg)
+    print(pyle)
     assert False
