@@ -1,5 +1,5 @@
 import pdb
-from adder.common import Symbol as S, gensym, q
+from adder.common import Symbol as S, gensym, q, literable
 import adder.gomer
 
 def const(expr):
@@ -214,11 +214,6 @@ class Annotator:
         return 'annotate_%s' % s.replace('-','_')
 
     def __call__(self,parsedExpr,scope,globalDict,localDict):
-        if globalDict is None:
-            globalDict=adder.gomer.mkGlobals()
-        if localDict is None:
-            localDict=globalDict
-
         try:
             (expr,line)=parsedExpr
         except ValueError as ve:
@@ -245,6 +240,17 @@ class Annotator:
                                   (scope.id,line)],line),scope,
                                 globalDict,localDict)
                 required=scope.requiredScope(expr)
+
+                exprPy=expr.toPython()
+                if (required is Scope.root
+                    and exprPy in globalDict
+                    and literable(globalDict[exprPy])):
+                    return (globalDict[exprPy],line,required)
+                if (required is scope
+                    and exprPy in localDict
+                    and literable(localDict[exprPy])):
+                    return (localDict[exprPy],line,required)
+
                 entry=required[expr]
                 if (entry.asConst
                     and entry.constValueValid
@@ -411,7 +417,13 @@ class Annotator:
                  ),
                 line,scope)
 
-annotate=Annotator()
+def annotate(parsedExpr,scope,globalDict,localDict):
+    if globalDict is None:
+        globalDict=adder.gomer.mkGlobals()
+    if localDict is None:
+        localDict=globalDict
+    return annotate.annotator(parsedExpr,scope,globalDict,localDict)
+annotate.annotator=Annotator()
 
 def stripAnnotations(annotated,*,quoted=False):
     try:
@@ -437,3 +449,28 @@ def stripAnnotations(annotated,*,quoted=False):
                            expr[2:]))
                 )
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
+
+def compileAndEval(expr,scope,globalDict,localDict,*,
+                   hasLines=False,defLine=0,
+                   verbose=False):
+    def addLines(e):
+        if hasLines:
+            return e
+        if literable(e):
+            return (e,defLine)
+        assert isinstance(e,list)
+        return (list(map(addLines,e)),defLine)
+
+    if scope is None:
+        scope=Scope(None)
+    if globalDict is None:
+        globalDict=adder.gomer.mkGlobals()
+    if localDict is None:
+        localDict=globalDict
+
+    annotated=annotate(addLines(expr),scope,globalDict,localDict)
+    gomer=stripAnnotations(annotated)
+    return adder.gomer.geval(gomer,
+                             globalDict=globalDict,
+                             localDict=localDict,
+                             verbose=verbose)

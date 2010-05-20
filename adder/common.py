@@ -9,6 +9,14 @@ def isLegalPython(s):
         return False
     return pythonLegal.match(s)
 
+def literable(x):
+    if x is None:
+        return True
+    for t in [int,str,float,bool]:
+        if isinstance(x,t):
+            return True
+    return False
+
 class Symbol:
     registry={}
     def __new__(cls,s):

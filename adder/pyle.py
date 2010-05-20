@@ -3,7 +3,7 @@
 #  function arguments which include function calls.  See
 #  doc/compiler.html for the syntax.
 
-from adder.common import Symbol as S
+from adder.common import Symbol as S, literable
 import re,pdb
 
 indentStep=4
@@ -469,11 +469,8 @@ def build(reg):
         return (build(var),build(val))
     if isinstance(reg,S):
         return Var(reg)
-    if reg is None:
-        return Literal(None)
-    for t in [int,str,float,bool]:
-        if isinstance(reg,t):
-            return Literal(reg)
+    if literable(reg):
+        return Literal(reg)
     assert isinstance(reg,list)
     assert reg
     f=reg[0]

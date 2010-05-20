@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler2 import Scope,annotate,stripAnnotations,AssignedToConst,Redefined
+from adder.compiler2 import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
@@ -1296,12 +1296,48 @@ class EvalTestCase(EmptyStripTestCase):
         scope=Scope(None)
         assert self.evalAdder("current-scope",scope=scope) is scope
 
+class CompileAndEvalTestCase(EmptyStripTestCase):
+    def e(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
+        if isinstance(exprStr,tuple):
+            exprs=[exprStr]
+            hasLines=True
+        else:
+            if isinstance(exprStr,list):
+                exprs=[exprStr]
+                hasLines=False
+            else:
+                exprs=list(adder.parser.parse(exprStr))
+                hasLines=True
+
+        if scope is None:
+            scope=Scope(None)
+        self.g=mkGlobals()
+        for (k,v) in globalsToSet.items():
+            scope.addDef(S(k),v,0)
+            self.g[S("%s-1" % k).toPython()]=v
+        res=None
+        for expr in exprs:
+            res=compileAndEval(expr,scope,self.g,None,
+                               hasLines=hasLines,
+                               verbose=verbose)
+        return res
+
+    def testTimes2(self):
+        assert self.e("(* 9 7)")==63
+
+    def testDefun1(self):
+        assert self.e("""(defun f (x) (* x 7))
+(f 9)
+""")==63
+        assert self.g[S('f-1').toPython()](12)==84
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
       unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
+      unittest.makeSuite(CompileAndEvalTestCase,'test'),
      )
     )
 
