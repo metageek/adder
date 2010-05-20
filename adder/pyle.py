@@ -631,18 +631,22 @@ def findScratchVars(p,path):
 
 # Remember to convert to iteration
 def pathCompare(path1,path2):
-    if not path1:
-        if path2:
+    N1=len(path1)
+    N2=len(path2)
+    i=0
+    while i<N1 and i<N2:
+        if path1[0]<path2[0]:
             return -1
-        else:
+        if path1[0]>path2[0]:
+            return 1
+        i+=1
+    if i==N1:
+        if i==N2:
             return 0
-    if not path2:
+        else:
+            return -1
+    else:
         return 1
-    if path1[0]<path2[0]:
-        return -1
-    if path1[0]>path2[0]:
-        return 1
-    return pathCompare(path1[1:],path2[1:])
 
 def scratchLifetimes(pyle):
     scratchToLifetime={}
