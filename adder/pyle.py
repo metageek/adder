@@ -608,4 +608,5 @@ def build(reg):
 
         return Call(build(reg[1]),posArgs,kwArgs)
 
+    print(reg)
     assert False

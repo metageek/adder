@@ -474,3 +474,13 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
                              globalDict=globalDict,
                              localDict=localDict,
                              verbose=verbose)
+
+def loadFile(f):
+    scope=Scope(None)
+    globalDict=adder.gomer.mkGlobals()
+    res=None
+    for parsedExpr in adder.parser.parseFile(f):
+        res=compileAndEval(parsedExpr,scope,
+                           globalDict,None,
+                           hasLines=True)
+    return (res,globalDict)

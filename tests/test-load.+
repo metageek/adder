@@ -1,0 +1,16 @@
+(defun fact (n)
+  (if (< n 2)
+      1
+      (* n (fact (- n 1)))
+      )
+  )
+
+(defvar x7 (fact 7))
+
+(defun fib (n)
+  (if (< n 3)
+      1
+      (+ (fib (- n 1))
+         (fib (- n 2)))))
+
+(defvar fib7 (fib 7))

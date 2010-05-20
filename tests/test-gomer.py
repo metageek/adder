@@ -2384,6 +2384,13 @@ z=x*y
             None
             )
 
+    def testAssignCallStmt(self):
+        assert self.toP([S(':='),S('z'),[S('f'),9,7]],
+                        True)==(
+            ["z=f(9,7)"],"z=f(9,7)\n",
+            None
+            )
+
     def testAssignExpr(self):
         assert self.toP([S(':='),S('z'),[S('*'),9,7]],
                         False)==(

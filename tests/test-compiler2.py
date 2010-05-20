@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler2 import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval
+from adder.compiler2 import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval,loadFile
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
@@ -1296,6 +1296,9 @@ class EvalTestCase(EmptyStripTestCase):
         scope=Scope(None)
         assert self.evalAdder("current-scope",scope=scope) is scope
 
+def lookup(g,var):
+    return g[S(var).toPython()]
+
 class CompileAndEvalTestCase(EmptyStripTestCase):
     def e(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
         if isinstance(exprStr,tuple):
@@ -1322,6 +1325,9 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
                                verbose=verbose)
         return res
 
+    def __getitem__(self,var):
+        return lookup(self.g,var)
+
     def testTimes2(self):
         assert self.e("(* 9 7)")==63
 
@@ -1329,7 +1335,16 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         assert self.e("""(defun f (x) (* x 7))
 (f 9)
 """)==63
-        assert self.g[S('f-1').toPython()](12)==84
+        assert self['f-1'](12)==84
+
+class LoadTestCase(unittest.TestCase):
+    def testLoad(self):
+        thisFile=self.__class__.testLoad.__code__.co_filename
+        thisDir=os.path.split(thisFile)[0]
+        codeFile=os.path.join(thisDir,'test-load.+')
+        (lastValue,globalDict)=loadFile(codeFile)
+        assert lastValue==13
+        assert lookup(globalDict,'x')==5040
 
 suite=unittest.TestSuite(
     ( 

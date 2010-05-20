@@ -279,10 +279,10 @@ class ReduceAssign(Reducer):
                     and isinstance(lhs[0],S)
                     and (lhs[0]==S('.') or lhs[0]==S('[]'))
                     ))
+        rhsExpr=reduce(rhs,False,stmtCollector,inAssignment=True)
         if self.isSimple(rhs):
-            stmtCollector(gomer)
+            stmtCollector([gomer[0],gomer[1],rhsExpr])
         else:
-            rhsExpr=reduce(rhs,False,stmtCollector,inAssignment=True)
             stmtCollector([S(':='),lhs,rhsExpr])
         if not isStmt:
             return lhs
