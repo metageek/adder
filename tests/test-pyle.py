@@ -1250,6 +1250,22 @@ class ScratchLifetimesTestCase(unittest.TestCase):
     def testLifetimesContinue(self):
         self.lt([S('continue')],[])
 
+    def testLifetimesTry(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        s4=mkScratch('cat')
+        self.lt([S('try'),
+                [S(':='),s1,[S('call'),S('f'),s2]],
+                 [S(':KeyError'),S('ke'),[S('call'),s3,8]],
+                 [S(':ValueError'),S('te'),[S('call'),s3,s1]],
+                 [S(':finally'),[S('call'),S('g'),s4]]
+                 ],
+                [(s2,([1],[1])),
+                 (s4,([4,1],[4,1])),
+                 (s3,([2,2],[3,2])),
+                 (s1,([1],[3,2]))])
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
