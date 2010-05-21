@@ -617,17 +617,11 @@ def build(pyle):
     print(pyle)
     assert False
 
-def findScratchVars(p,path):
-    if isinstance(p,S):
-        if p.isScratch:
-            yield (p,path)
-        return
-    if literable(p):
-        return
-    assert isinstance(p,list)
-    for (i,x) in enumerate(p):
-        for scratch in findScratchVars(x,path+[i]):
-            yield scratch
+def findScratchVars(p):
+    for (path,stmt) in descendantStmts(p):
+        for var in childVars(stmt):
+            if var.isScratch:
+                yield (var,path)
 
 # Remember to convert to iteration
 def pathCompare(path1,path2):
@@ -648,13 +642,95 @@ def pathCompare(path1,path2):
     else:
         return 1
 
+def childStmts(pyleStmt):
+    assert isinstance(pyleStmt,list) and pyleStmt
+    if pyleStmt[0] is S('if'):
+        yield ([2],pyleStmt[2])
+        if len(pyleStmt)>3:
+            yield ([3],pyleStmt[3])
+        return
+
+    if pyleStmt[0] is S('try'):
+        yield ([1],pyleStmt[1])
+        for (i,clause) in enumerate(pyleStmt[2:]):
+            if clause[0] is S(':finally'):
+                yield ([2+i,1],clause[1])
+            else:
+                yield ([2+i,2],clause[2])
+        return
+
+    if pyleStmt[0] is S('while'):
+        yield ([2],pyleStmt[2])
+        return
+
+    if pyleStmt[0] is S('def'):
+        yield ([3],pyleStmt[3])
+        return
+
+    if pyleStmt[0] is S('begin'):
+        for (i,stmt) in enumerate(pyleStmt[1:]):
+            yield ([1+i],stmt)
+        return
+
+def childVars(pyleStmt):
+    if isinstance(pyleStmt,S):
+        if pyleStmt.isKeyword():
+            return []
+        return [pyleStmt]
+
+    assert isinstance(pyleStmt,list) and pyleStmt
+    def extraCandidates():
+        if pyleStmt[0] is S('try'):
+            for clause in pyleStmt[2:]:
+                yield clause[1]
+                if clause[0] is not S(':finally'):
+                    yield clause[2]
+            return
+
+        if pyleStmt[0] is S('def'):
+            for arg in pyleStmt[2]:
+                yield arg
+            yield pyleStmt[3]
+            return
+
+        if pyleStmt[0] is S(':='):
+            for xhs in pyleStmt[1:]:
+                if isinstance(xhs,list):
+                    for var in childVars(xhs):
+                        yield var
+
+    def candidates():
+        if pyleStmt[0] is S('.'):
+            yield pyleStmt[1]
+            return
+
+        if pyleStmt[0] is S('quote'):
+            return
+
+        for p in pyleStmt[1:]:
+            yield p
+        for p in extraCandidates():
+            yield p
+
+    return filter(lambda c: isinstance(c,S) and not c.isKeyword(),
+                  candidates())
+
+def descendantStmts(pyleStmt,*,path=None):
+    assert isinstance(pyleStmt,list)
+    if path is None:
+        path=[]
+    yield (path,pyleStmt)
+    for (pathSteps,child) in childStmts(pyleStmt):
+        for desc in descendantStmts(child,path=path+pathSteps):
+            yield desc
+
 # Change so that it walks the tree of Pyle statements, not the tree of
 # S-expressions.  Then there's a simple way to add the scratch=None
 # statements: given path p, set pyle[[p]] to
 # begin(pyle[[p]],scratch=None).
 def scratchLifetimes(pyle):
     scratchToLifetime={}
-    for (scratch,path) in findScratchVars(pyle,[]):
+    for (scratch,path) in findScratchVars(pyle):
         if scratch not in scratchToLifetime:
             scratchToLifetime[scratch]=(path,path)
         else:
