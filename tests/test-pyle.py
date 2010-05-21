@@ -1274,6 +1274,47 @@ class ScratchLifetimesTestCase(unittest.TestCase):
     def testLifetimesReraise(self):
         self.lt([S('reraise')],[])
 
+    def testLifetimesIfWithElse(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        s4=mkScratch('cat')
+        self.lt([S('if'),
+                s1,
+                 [S('call'),S('f'),s3,s2],
+                 [S('call'),s4,s2]
+                 ],
+                [(s2,([2],[3])),
+                 (s4,([3],[3])),
+                 (s3,([2],[2])),
+                 (s1,([],[]))])
+
+    def testLifetimesIfNoElse(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        s4=mkScratch('cat')
+        self.lt([S('if'),
+                s1,
+                 [S('call'),S('f'),s3,s2]
+                 ],
+                [(s2,([2],[2])),
+                 (s3,([2],[2])),
+                 (s1,([],[]))])
+
+    def testLifetimesWhile(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        s4=mkScratch('cat')
+        self.lt([S('while'),
+                s1,
+                 [S(':='),s1,[S('call'),S('f'),s1,s2]]
+                 ],
+                [(s2,([2],[2])),
+                 (s1,([],[2]))])
+
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
