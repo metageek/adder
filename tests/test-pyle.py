@@ -1127,13 +1127,112 @@ class ScratchLifetimesTestCase(unittest.TestCase):
         self.lt([S('call'),S('f'),s1,s2],
                 [(s2,([],[])),(s1,([],[]))])
 
-    def testLifetimesAssign(self):
+    def testLifetimesAssignInt(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,7],
+                [(s1,([],[]))])
+
+    def testLifetimesAssignVar(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,s2],
+                [(s2,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignCall(self):
         s1=mkScratch('foo')
         s2=mkScratch('bar')
         self.lt([S(':='),s1,
                  [S('call'),S('f'),s1,s2]
                  ],
                 [(s2,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignBinop(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,
+                 [S('+'),s1,s2]
+                 ],
+                [(s2,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignDot(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,
+                 [S('.'),s1,S('x'),s2]
+                 ],
+                [(s1,([],[]))])
+
+    def testLifetimesAssignSubscript(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,
+                 [S('[]'),s1,s2]
+                 ],
+                [(s2,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignSlice1(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        self.lt([S(':='),s1,
+                 [S('slice'),s1,s2]
+                 ],
+                [(s2,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignSlice2(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S(':='),s1,
+                 [S('slice'),s1,s2,s3]
+                 ],
+                [(s2,([],[])),(s3,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignQuote(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S(':='),s1,
+                 [S('quote'),[s1,s2,s3]]
+                 ],
+                [(s1,([],[]))])
+
+    def testLifetimesAssignMkList(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S(':='),s1,
+                 [S('mk-list'),s1,s2,s3]
+                 ],
+                [(s2,([],[])),(s3,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignMkTuple(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S(':='),s1,
+                 [S('mk-tuple'),s1,s2,s3]
+                 ],
+                [(s2,([],[])),(s3,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignMkSet(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S(':='),s1,
+                 [S('mk-set'),s1,s2,s3]
+                 ],
+                [(s2,([],[])),(s3,([],[])),(s1,([],[]))])
+
+    def testLifetimesAssignMkDict(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        s4=mkScratch('cat')
+        self.lt([S(':='),s1,
+                 [S('mk-dict'),[S('a'),s4],[s2,s3]]
+                 ],
+                [(s4,([],[])),(s3,([],[])),(s1,([],[]))])
 
 suite=unittest.TestSuite(
     ( 

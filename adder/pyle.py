@@ -699,6 +699,12 @@ def childVars(pyleStmt):
                     for var in childVars(xhs):
                         yield var
 
+        if pyleStmt[0] is S('mk-dict'):
+            for pair in pyleStmt[1:]:
+                assert isinstance(pair,list)
+                for var in childVars(pair[1]):
+                    yield var
+
     def candidates():
         if pyleStmt[0] is S('.'):
             yield pyleStmt[1]
