@@ -1266,6 +1266,14 @@ class ScratchLifetimesTestCase(unittest.TestCase):
                  (s3,([2,2],[3,2])),
                  (s1,([1],[3,2]))])
 
+    def testLifetimesRaise(self):
+        s1=mkScratch('foo')
+        self.lt([S('raise'),s1],
+                [(s1,([],[]))])
+
+    def testLifetimesReraise(self):
+        self.lt([S('reraise')],[])
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
