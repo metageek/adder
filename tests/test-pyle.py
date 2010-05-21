@@ -1234,6 +1234,22 @@ class ScratchLifetimesTestCase(unittest.TestCase):
                  ],
                 [(s4,([],[])),(s3,([],[])),(s1,([],[]))])
 
+    def testLifetimesReturn(self):
+        s1=mkScratch('foo')
+        self.lt([S('return'),s1],
+                [(s1,([],[]))])
+
+    def testLifetimesYield(self):
+        s1=mkScratch('foo')
+        self.lt([S('yield'),s1],
+                [(s1,([],[]))])
+
+    def testLifetimesBreak(self):
+        self.lt([S('break')],[])
+
+    def testLifetimesContinue(self):
+        self.lt([S('continue')],[])
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
