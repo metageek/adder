@@ -648,6 +648,10 @@ def pathCompare(path1,path2):
     else:
         return 1
 
+# Change so that it walks the tree of Pyle statements, not the tree of
+# S-expressions.  Then there's a simple way to add the scratch=None
+# statements: given path p, set pyle[[p]] to
+# begin(pyle[[p]],scratch=None).
 def scratchLifetimes(pyle):
     scratchToLifetime={}
     for (scratch,path) in findScratchVars(pyle,[]):
