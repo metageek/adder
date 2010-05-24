@@ -623,7 +623,6 @@ def findScratchVars(p):
             if var.isScratch:
                 yield (var,path)
 
-# Remember to convert to iteration
 def pathCompare(path1,path2):
     N1=len(path1)
     N2=len(path2)

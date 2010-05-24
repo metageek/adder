@@ -1314,6 +1314,17 @@ class ScratchLifetimesTestCase(unittest.TestCase):
                 [(s2,([2],[2])),
                  (s1,([],[2]))])
 
+    def testLifetimesDefSimple(self):
+        s1=mkScratch('foo')
+        s2=mkScratch('bar')
+        s3=mkScratch('dog')
+        self.lt([S('def'),s1,[S('x'),s2],
+                 [S(':='),s3,[S('call'),S('f'),s2,17]],
+                 ],
+                [(s2,([],[3])),
+                 (s3,([3],[3])),
+                 (s1,([],[]))])
+
 
 suite=unittest.TestSuite(
     ( 
