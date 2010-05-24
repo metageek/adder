@@ -1101,11 +1101,29 @@ print(z)
     def testImport(self):
         assert self.toP([S('import'),S('re')])==("import re","import re\n")
 
+class TrimScratchesTestCase(unittest.TestCase):
+    def tst(self,stmt,expected):
+        actual=trimScratches(stmt)
+        if actual!=expected:
+            print(stmt)
+            print(actual)
+            print(expected)
+        assert actual==expected
+
+    def testCallWith(self):
+        s1=mkScratch()
+        self.tst([S('foo'),17,s1],
+                 [S('begin'),
+                  [S('foo'),17,s1],
+                  [S(':='),s1,None]]
+                 )
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
       unittest.makeSuite(ToPythonTestCase,'test'),
       unittest.makeSuite(BuildToPythonTestCase,'test'),
+      unittest.makeSuite(TrimScratchesTestCase,'test'),
      )
     )
 

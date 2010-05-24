@@ -729,25 +729,87 @@ def descendantStmts(pyleStmt,*,path=None):
         for desc in descendantStmts(child,path=path+pathSteps):
             yield desc
 
+def descendantVars(pyleStmt):
+    for (path,desc) in descendantStmts(pyleStmt):
+        for var in childVars(desc):
+            yield var
+
 BEFORE=-1
 AFTER=1
 
 def trimmer(scratch):
     return [S(':='),scratch,None]
 
+def trimBeforeOrAfter(pyleStmt,scratch,before):
+    assert pyleStmt and isinstance(pyleStmt,list)
+    if pyleStmt[0] in trimBeforeOrAfter.scopeExiters:
+        return pyleStmt
+
+    if before:
+        return [S('begin'),trimmer(scratch),pyleStmt]
+    else:
+        return [S('begin'),pyleStmt,trimmer(scratch)]
+
+trimBeforeOrAfter.scopeExiters={S('return'),S('raise'),S('reraise')}
+
+def trimBefore(pyleStmt,scratch):
+    return trimBeforeOrAfter(pyleStmt,scratch,True)
+
+def trimAfter(pyleStmt,scratch):
+    return trimBeforeOrAfter(pyleStmt,scratch,False)
+
 def trim1Scratch(pyleStmt,scratch):
     assert pyleStmt and isinstance(pyleStmt,list)
-    if pyleStmt[0] is S('begin'):
-        i=len(pyleStmt)-1
-        while i>1:
-            t=trim1Scratch(pyleStmt[i],scratch)
-            if t==AFTER:
-                return pyleStmt[:(i+1)]+[trimmer(scratch)]+pyleStmt[i+1:]
-            if t==BEFORE:
-                i-=1
-                continue
-            return pyleStmt[:i]+[t]+pyleStmt[i+1:]
-        return BEFORE
+
+    if pyleStmt[0] is S('try'):
+        mustTrimAfter=False
+        allBefore=True
+        allAfter=True
+        bodyT=trim1Scratch(pyleStmt[1],scratch)
+        if bodyT==BEFORE:
+            allAfter=False
+            newBody=pyleStmt[1]
+        else:
+            allBefore=False
+            if bodyT==AFTER:
+                newBody=pyleStmt[1]
+                mustTrimAfter=True
+            else:
+                allAfter=False
+                newBody=bodyT
+
+        newClauses=[]
+        for clause in pyleStmt[2:]:
+            if clause[0] is S(':finally'):
+                clauseBody=clause[1]
+            else:
+                clauseBody=clause[2]
+            clauseT=trim1Scratch(clauseBody,scratch)
+            if clauseT==BEFORE:
+                allAfter=False
+                newClause=clause
+            else:
+                allBefore=False
+                if clauseT==AFTER:
+                    mustTrimAfter=True
+                    newClause=clause
+                else:
+                    allAfter=False
+                    if clause[0] is S(':finally'):
+                        newClause=[clause[0],clauseT]
+                    else:
+                        newClause=[clause[0],clause[1],clauseT]
+            newClauses.append(newClause)
+        if allBefore:
+            return BEFORE
+        if allAfter:
+            return AFTER
+        newTry=[S('try'),newBody]+newClauses
+        if mustTrimAfter:
+            return trimAfter(newTry,scratch)
+        else:
+            return newTry
+
     if pyleStmt[0] is S('if'):
         condMatch=(pyleStmt[1] is scratch)
         thenT=trim1Scratch(pyleStmt[2],scratch)
@@ -793,12 +855,46 @@ def trim1Scratch(pyleStmt,scratch):
                 pyleStmt[1],
                 thenT,elseT]
 
-    if pyleStmt[0] is S('return'):
+    if pyleStmt[0] is S('while'):
         if pyleStmt[1] is scratch:
-            return pyleStmt
+            return AFTER
+        t=trim1Scratch(pyleStmt[2],scratch)
+        if t==AFTER or t==BEFORE:
+            return t
+        return [S('while'),pyleStmt[1],t]
+
+    if pyleStmt[0] is S('def'):
+        # (def) doesn't have to do anything, because scratch vars are
+        #   local to function bodies.
+        return BEFORE
+
+    if pyleStmt[0] is S('begin'):
+        i=len(pyleStmt)-1
+        while i>1:
+            t=trim1Scratch(pyleStmt[i],scratch)
+            if t==AFTER:
+                return pyleStmt[:(i+1)]+[trimmer(scratch)]+pyleStmt[i+1:]
+            if t==BEFORE:
+                i-=1
+                continue
+            return pyleStmt[:i]+[t]+pyleStmt[i+1:]
         return BEFORE
 
     if scratch in childVars(pyleStmt):
         return AFTER
     else:
         return BEFORE
+
+def trimScratches(pyleStmt):
+    scratches=set()
+    for var in descendantVars(pyleStmt):
+        if var.isScratch:
+            scratches.add(var)
+    for scratch in sorted(scratches):
+        t=trim1Scratch(pyleStmt,scratch)
+        if t==AFTER:
+            pyleStmt=trimAfter(pyleStmt,scratch)
+        else:
+            if t!=BEFORE:
+                pyleStmt=t
+    return pyleStmt
