@@ -1104,19 +1104,84 @@ print(z)
 class TrimScratchesTestCase(unittest.TestCase):
     def tst(self,stmt,expected):
         actual=trimScratches(stmt)
-        if actual!=expected:
+        if expected is None:
+            success=(actual is stmt)
+        else:
+            success=(actual==expected)
+        if not success:
             print(stmt)
             print(actual)
             print(expected)
-        assert actual==expected
+        assert success
 
-    def testCallWith(self):
+    def testReturn(self):
         s1=mkScratch()
-        self.tst([S('foo'),17,s1],
+        self.tst([S('return'),s1],None)
+
+    def testYield(self):
+        s1=mkScratch()
+        self.tst([S('yield'),s1],
                  [S('begin'),
-                  [S('foo'),17,s1],
+                  [S('yield'),s1],
+                  [S(':='),s1,None]])
+
+    def testTry1(self):
+        s1=mkScratch()
+        self.tst([S('try'),
+                  [S('call'),S('f'),s1],
+                  [S(':finally'),[S('call'),S('g')]]
+                  ],
+                 [S('begin'),
+                  [S('try'),
+                   [S('call'),S('f'),s1],
+                   [S(':finally'),[S('call'),S('g')]]
+                   ],
+                  [S(':='),s1,None]
+                  ])
+
+    def testTry2(self):
+        s1=mkScratch()
+        self.tst([S('try'),
+                  [S('call'),S('f'),s1],
+                  [S(':ValueError'),S('ve'),[S('call'),S('h'),s1,S('ve')]],
+                  [S(':finally'),[S('call'),S('g')]]
+                  ],
+                 [S('begin'),
+                  [S('try'),
+                   [S('call'),S('f'),s1],
+                   [S(':ValueError'),S('ve'),[S('call'),S('h'),s1,S('ve')]],
+                   [S(':finally'),[S('call'),S('g')]]
+                   ],
+                  [S(':='),s1,None]
+                  ])
+
+    def testCallWithArg(self):
+        s1=mkScratch()
+        self.tst([S('call'),S('foo'),17,s1],
+                 [S('begin'),
+                  [S('call'),S('foo'),17,s1],
                   [S(':='),s1,None]]
                  )
+
+    def testCallWithF(self):
+        s1=mkScratch()
+        self.tst([S('call'),s1,17,19],
+                 [S('begin'),
+                  [S('call'),s1,17,19],
+                  [S(':='),s1,None]]
+                 )
+
+    def testCallWithBoth(self):
+        s1=mkScratch()
+        self.tst([S('call'),s1,17,s1],
+                 [S('begin'),
+                  [S('call'),s1,17,s1],
+                  [S(':='),s1,None]]
+                 )
+
+    def testCallWithout(self):
+        s1=mkScratch()
+        self.tst([S('foo'),17,19],None)
 
 suite=unittest.TestSuite(
     ( 
