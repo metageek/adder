@@ -1106,7 +1106,6 @@ suite=unittest.TestSuite(
       unittest.makeSuite(StrTestCase,'test'),
       unittest.makeSuite(ToPythonTestCase,'test'),
       unittest.makeSuite(BuildToPythonTestCase,'test'),
-      unittest.makeSuite(ScratchLifetimesTestCase,'test'),
      )
     )
 

@@ -729,3 +729,76 @@ def descendantStmts(pyleStmt,*,path=None):
         for desc in descendantStmts(child,path=path+pathSteps):
             yield desc
 
+BEFORE=-1
+AFTER=1
+
+def trimmer(scratch):
+    return [S(':='),scratch,None]
+
+def trim1Scratch(pyleStmt,scratch):
+    assert pyleStmt and isinstance(pyleStmt,list)
+    if pyleStmt[0] is S('begin'):
+        i=len(pyleStmt)-1
+        while i>1:
+            t=trim1Scratch(pyleStmt[i],scratch)
+            if t==AFTER:
+                return pyleStmt[:(i+1)]+[trimmer(scratch)]+pyleStmt[i+1:]
+            if t==BEFORE:
+                i-=1
+                continue
+            return pyleStmt[:i]+[t]+pyleStmt[i+1:]
+        return BEFORE
+    if pyleStmt[0] is S('if'):
+        condMatch=(pyleStmt[1] is scratch)
+        thenT=trim1Scratch(pyleStmt[2],scratch)
+        elseT=trim1Scratch(pyleStmt[3],scratch) if len(pyleStmt)>2 else BEFORE
+        if thenT==BEFORE:
+            if elseT==BEFORE:
+                if condMatch:
+                    return AFTER
+                else:
+                    return BEFORE
+            if elseT==AFTER:
+                return [S('if'),
+                        pyleStmt[1],
+                        trimBefore(pyleStmt[2],scratch),
+                        trimAfter(pyleStmt[3],scratch)]
+            return [S('if'),
+                    pyleStmt[1],
+                    trimBefore(pyleStmt[2],scratch),
+                    elseT]
+        if thenT==AFTER:
+            if elseT==BEFORE:
+                return [S('if'),
+                        pyleStmt[1],
+                        trimAfter(pyleStmt[2],scratch),
+                        trimBefore(pyleStmt[3],scratch)]
+            if elseT==AFTER:
+                return AFTER
+            return [S('if'),
+                    pyleStmt[1],
+                    trimAfter(pyleStmt[2],scratch),
+                    elseT]
+        if elseT==BEFORE:
+            return [S('if'),
+                    pyleStmt[1],
+                    thenT,
+                    trimBefore(pyleStmt[3],scratch)]
+        if elseT==AFTER:
+            return [S('if'),
+                    pyleStmt[1],
+                    thenT,
+                    trimAfter(pyleStmt[3],scratch)]
+        return [S('if'),
+                pyleStmt[1],
+                thenT,elseT]
+
+    if pyleStmt[0] is S('return'):
+        if pyleStmt[1] is scratch:
+            return pyleStmt
+        return BEFORE
+
+    if scratch in childVars(pyleStmt):
+        return AFTER
+    else:
+        return BEFORE
