@@ -729,21 +729,3 @@ def descendantStmts(pyleStmt,*,path=None):
         for desc in descendantStmts(child,path=path+pathSteps):
             yield desc
 
-# Change so that it walks the tree of Pyle statements, not the tree of
-# S-expressions.  Then there's a simple way to add the scratch=None
-# statements: given path p, set pyle[[p]] to
-# begin(pyle[[p]],scratch=None).
-def scratchLifetimes(pyle):
-    scratchToLifetime={}
-    for (scratch,path) in findScratchVars(pyle):
-        if scratch not in scratchToLifetime:
-            scratchToLifetime[scratch]=(path,path)
-        else:
-            (start,end)=scratchToLifetime[scratch]
-            if pathCompare(path,start)<0:
-                start=path
-            else:
-                if pathCompare(path,end)>0:
-                    end=path
-            scratchToLifetime[scratch]=(start,end)
-    return scratchToLifetime
