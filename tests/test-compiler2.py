@@ -1197,13 +1197,15 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("(print 9 7)")==7
 
     def testGensym0(self):
-        scratch=gensym()
+        gensym()
+        gensym()
         sym=gensym()
         gensym.nextId=1
         assert self.evalAdder('(gensym)')==sym
 
     def testGensym1(self):
-        scratch=gensym('scratch')
+        gensym()
+        gensym()
         foo=gensym('foo')
         gensym.nextId=1
         assert self.evalAdder('(gensym "foo")')==foo
