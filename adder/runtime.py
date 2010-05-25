@@ -5,7 +5,7 @@ def getScopeById(id):
 getScopeById.scopes={}
 
 def eval(adder,scope,globalDict,localDict):
-    from adder.compiler2 import annotate,stripAnnotations,addLines
+    from adder.compiler import annotate,stripAnnotations,addLines
     from adder.gomer import geval
 
     parsedExpr=addLines(adder,0)
@@ -13,6 +13,6 @@ def eval(adder,scope,globalDict,localDict):
     return geval(gomer,globalDict=globalDict,localDict=localDict)
 
 def load(f,scope,globalDict):
-    from adder.compiler2 import loadFile
+    from adder.compiler import loadFile
     (lastValue,globalDict)=loadFile(f,scope,globalDict)
     return lastValue
