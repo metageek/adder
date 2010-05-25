@@ -1453,6 +1453,22 @@ class TrimScratchesTestCase(unittest.TestCase):
         s1=mkScratch()
         self.tst([S('foo'),17,19],None)
 
+    def testCallVarargsPos(self):
+        s1=mkScratch()
+        self.tst([S('call'),S('foo'),s1,[]],
+                 [S('begin'),
+                  [S('call'),S('foo'),s1,[]],
+                  [S(':='),s1,None]]
+                 )
+
+    def testCallVarargsKw(self):
+        s1=mkScratch()
+        self.tst([S('call'),S('foo'),[],s1],
+                 [S('begin'),
+                  [S('call'),S('foo'),[],s1],
+                  [S(':='),s1,None]]
+                 )
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),

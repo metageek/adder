@@ -708,11 +708,21 @@ def childVars(pyleStmt):
                     yield var
 
         if pyleStmt[0] is S('call'):
-            for posArg in pyleStmt[2]:
-                for var in childVars(posArg):
+            if isinstance(pyleStmt[2],list):
+                for posArg in pyleStmt[2]:
+                    for var in childVars(posArg):
+                        yield var
+            else:
+                for var in childVars(pyleStmt[2]):
                     yield var
-            for pair in pyleStmt[3]:
-                for var in childVars(pair[1]):
+            if isinstance(pyleStmt[3],list):
+                for pair in pyleStmt[3]:
+                    if not (isinstance(pair,list) and len(pair)>0):
+                        pdb.set_trace()
+                    for var in childVars(pair[1]):
+                        yield var
+            else:
+                for var in childVars(pyleStmt[3]):
                     yield var
 
     def candidates():

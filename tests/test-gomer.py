@@ -3853,6 +3853,7 @@ class EvalTestCase(unittest.TestCase):
         fred1=geval([S('gensym'),"fred"])
         gensym.nextId=1
         gensym('skip')
+        gensym('skip')
         fred2=gensym('fred')
         assert fred1 is fred2
 
@@ -4128,8 +4129,7 @@ class EvalTestCase(unittest.TestCase):
                          [S('f'),[S('*'),S('a'),S('a')]]]
                         ],
                        razor=razor,
-                       f=f,
-                       v=True)
+                       f=f)
         assert g['a']==17
         assert 'b' not in g
         assert isinstance(val,list)
