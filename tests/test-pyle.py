@@ -1128,13 +1128,13 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testTry1(self):
         s1=mkScratch()
         self.tst([S('try'),
-                  [S('call'),S('f'),s1],
-                  [S(':finally'),[S('call'),S('g')]]
+                  [S('call'),S('f'),[s1],[]],
+                  [S(':finally'),[S('call'),S('g'),[],[]]]
                   ],
                  [S('begin'),
                   [S('try'),
-                   [S('call'),S('f'),s1],
-                   [S(':finally'),[S('call'),S('g')]]
+                   [S('call'),S('f'),[s1],[]],
+                   [S(':finally'),[S('call'),S('g'),[],[]]]
                    ],
                   [S(':='),s1,None]
                   ])
@@ -1142,15 +1142,17 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testTry2(self):
         s1=mkScratch()
         self.tst([S('try'),
-                  [S('call'),S('f'),s1],
-                  [S(':ValueError'),S('ve'),[S('call'),S('h'),s1,S('ve')]],
-                  [S(':finally'),[S('call'),S('g')]]
+                  [S('call'),S('f'),[s1],[]],
+                  [S(':ValueError'),S('ve'),
+                   [S('call'),S('h'),[s1,S('ve')],[]]],
+                  [S(':finally'),[S('call'),[S('g')],[],[]]]
                   ],
                  [S('begin'),
                   [S('try'),
-                   [S('call'),S('f'),s1],
-                   [S(':ValueError'),S('ve'),[S('call'),S('h'),s1,S('ve')]],
-                   [S(':finally'),[S('call'),S('g')]]
+                   [S('call'),S('f'),[s1],[]],
+                   [S(':ValueError'),S('ve'),
+                    [S('call'),S('h'),[s1,S('ve')],[]]],
+                   [S(':finally'),[S('call'),[S('g')],[],[]]]
                    ],
                   [S(':='),s1,None]
                   ])
@@ -1162,11 +1164,11 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testIfNoElse(self):
         s1=mkScratch()
         self.tst([S('if'),S('foo'),
-                  [S('call'),S('f'),s1]
+                  [S('call'),S('f'),[s1],[]]
                   ],
                  [S('if'),S('foo'),
                   [S('begin'),
-                   [S('call'),S('f'),s1],
+                   [S('call'),S('f'),[s1],[]],
                    [S(':='),s1,None]]
                   ]
                  )
@@ -1174,26 +1176,26 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testIfWithElse1(self):
         s1=mkScratch()
         self.tst([S('if'),S('foo'),
-                  [S('call'),S('f'),s1],
-                  [S('call'),S('g'),17,s1]],
+                  [S('call'),S('f'),[s1],[]],
+                  [S('call'),S('g'),[17,s1],[]]],
                  [S('begin'),
                   [S('if'),S('foo'),
-                   [S('call'),S('f'),s1],
-                   [S('call'),S('g'),17,s1]],
+                   [S('call'),S('f'),[s1],[]],
+                   [S('call'),S('g'),[17,s1],[]]],
                   [S(':='),s1,None]]
                  )
 
     def testIfWithElse2(self):
         s1=mkScratch()
         self.tst([S('if'),S('foo'),
-                  [S('call'),S('f'),9],
-                  [S('call'),S('g'),17,s1]],
+                  [S('call'),S('f'),[9],[]],
+                  [S('call'),S('g'),[17,s1],[]]],
                  [S('if'),S('foo'),
                   [S('begin'),
                    [S(':='),s1,None],
-                   [S('call'),S('f'),9]],
+                   [S('call'),S('f'),[9],[]]],
                   [S('begin'),
-                   [S('call'),S('g'),17,s1],
+                   [S('call'),S('g'),[17,s1],[]],
                    [S(':='),s1,None]]
                   ]
                  )
@@ -1201,14 +1203,14 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testIfWithElse3(self):
         s1=mkScratch()
         self.tst([S('if'),s1,
-                  [S('call'),S('f'),9],
-                  [S('call'),S('g'),17,s1]],
+                  [S('call'),S('f'),[9],[]],
+                  [S('call'),S('g'),[17,s1],[]]],
                  [S('if'),s1,
                   [S('begin'),
                    [S(':='),s1,None],
-                   [S('call'),S('f'),9]],
+                   [S('call'),S('f'),[9],[]]],
                   [S('begin'),
-                   [S('call'),S('g'),17,s1],
+                   [S('call'),S('g'),[17,s1],[]],
                    [S(':='),s1,None]]
                   ]
                  )
@@ -1216,10 +1218,10 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testWhile1(self):
         s1=mkScratch()
         self.tst([S('while'),s1,
-                  [S('call'),S('f'),9]],
+                  [S('call'),S('f'),[9],[]]],
                  [S('begin'),
                   [S('while'),s1,
-                   [S('call'),S('f'),9]],
+                   [S('call'),S('f'),[9],[]]],
                   [S(':='),s1,None]
                   ]
                  )
@@ -1227,10 +1229,10 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testWhile2(self):
         s1=mkScratch()
         self.tst([S('while'),S('foo'),
-                  [S('call'),S('f'),s1]],
+                  [S('call'),S('f'),[s1],[]]],
                  [S('begin'),
                   [S('while'),S('foo'),
-                   [S('call'),S('f'),s1]],
+                   [S('call'),S('f'),[s1],[]]],
                   [S(':='),s1,None]
                   ]
                  )
@@ -1238,11 +1240,11 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testBegin1(self):
         s1=mkScratch()
         self.tst([S('begin'),
-                  [S('call'),S('f'),s1],
-                  [S('call'),S('g'),17,s1]],
+                  [S('call'),S('f'),[s1],[]],
+                  [S('call'),S('g'),[17,s1],[]]],
                  [S('begin'),
-                  [S('call'),S('f'),s1],
-                  [S('call'),S('g'),17,s1],
+                  [S('call'),S('f'),[s1],[]],
+                  [S('call'),S('g'),[17,s1],[]],
                   [S(':='),s1,None]
                   ]
                  )
@@ -1250,12 +1252,12 @@ class TrimScratchesTestCase(unittest.TestCase):
     def testBegin2(self):
         s1=mkScratch()
         self.tst([S('begin'),
-                  [S('call'),S('f'),s1],
-                  [S('call'),S('g'),17]],
+                  [S('call'),S('f'),[s1],[]],
+                  [S('call'),S('g'),[17],[]]],
                  [S('begin'),
-                  [S('call'),S('f'),s1],
+                  [S('call'),S('f'),[s1],[]],
                   [S(':='),s1,None],
-                  [S('call'),S('g'),17]
+                  [S('call'),S('g'),[17],[]]
                   ]
                  )
 
@@ -1289,9 +1291,9 @@ class TrimScratchesTestCase(unittest.TestCase):
 
     def testAssignCall(self):
         s1=mkScratch()
-        self.tst([S(':='),S('foo'),[S('call'),S('bar'),s1]],
+        self.tst([S(':='),S('foo'),[S('call'),S('bar'),[s1],[]]],
                  [S('begin'),
-                  [S(':='),S('foo'),[S('call'),S('bar'),s1]],
+                  [S(':='),S('foo'),[S('call'),S('bar'),[s1],[]]],
                   [S(':='),s1,None]
                   ]
                  )
@@ -1425,25 +1427,25 @@ class TrimScratchesTestCase(unittest.TestCase):
 
     def testCallWithArg(self):
         s1=mkScratch()
-        self.tst([S('call'),S('foo'),17,s1],
+        self.tst([S('call'),S('foo'),[17,s1],[]],
                  [S('begin'),
-                  [S('call'),S('foo'),17,s1],
+                  [S('call'),S('foo'),[17,s1],[]],
                   [S(':='),s1,None]]
                  )
 
     def testCallWithF(self):
         s1=mkScratch()
-        self.tst([S('call'),s1,17,19],
+        self.tst([S('call'),s1,[17,19],[]],
                  [S('begin'),
-                  [S('call'),s1,17,19],
+                  [S('call'),s1,[17,19],[]],
                   [S(':='),s1,None]]
                  )
 
     def testCallWithBoth(self):
         s1=mkScratch()
-        self.tst([S('call'),s1,17,s1],
+        self.tst([S('call'),s1,[17,s1],[]],
                  [S('begin'),
-                  [S('call'),s1,17,s1],
+                  [S('call'),s1,[17,s1],[]],
                   [S(':='),s1,None]]
                  )
 

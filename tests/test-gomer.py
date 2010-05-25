@@ -4128,7 +4128,8 @@ class EvalTestCase(unittest.TestCase):
                          [S('f'),[S('*'),S('a'),S('a')]]]
                         ],
                        razor=razor,
-                       f=f)
+                       f=f,
+                       v=True)
         assert g['a']==17
         assert 'b' not in g
         assert isinstance(val,list)

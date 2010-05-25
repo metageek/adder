@@ -615,6 +615,7 @@ def build(pyle):
         return Call(build(pyle[1]),posArgs,kwArgs)
 
     print(pyle)
+    pdb.set_trace()
     assert False
 
 def findScratchVars(p):
@@ -677,7 +678,9 @@ def childVars(pyleStmt):
             return []
         return [pyleStmt]
 
-    assert isinstance(pyleStmt,list) and pyleStmt
+    if not (isinstance(pyleStmt,list) and pyleStmt):
+        return []
+
     def extraCandidates():
         if pyleStmt[0] is S('try'):
             for clause in pyleStmt[2:]:
@@ -701,6 +704,14 @@ def childVars(pyleStmt):
         if pyleStmt[0] is S('mk-dict'):
             for pair in pyleStmt[1:]:
                 assert isinstance(pair,list)
+                for var in childVars(pair[1]):
+                    yield var
+
+        if pyleStmt[0] is S('call'):
+            for posArg in pyleStmt[2]:
+                for var in childVars(posArg):
+                    yield var
+            for pair in pyleStmt[3]:
                 for var in childVars(pair[1]):
                     yield var
 

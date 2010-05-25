@@ -630,24 +630,19 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
         localDict=globalDict
     pyleBody=[]
     pyleExpr=reduce(gomer,False,pyleBody.append)
+    resVar=gensym('res')
+    pyleBody=adder.pyle.trimScratches([S('begin')]
+                                      +pyleBody
+                                      +[[S(':='),resVar,pyleExpr]])
     stmtTrees=[]
     if verbose:
         print(pyleBody)
-        print(pyleExpr)
-    for pyleStmt in pyleBody:
-        il=adder.pyle.build(pyleStmt)
-        stmtTree=il.toPythonTree()
-        stmtTrees.append(stmtTree)
+    il=adder.pyle.build(pyleBody)
+    stmtTree=il.toPythonTree()
+    stmtTrees.append(stmtTree)
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
-    il=adder.pyle.build(pyleExpr)
-    if il is None:
-        exprFlat=''
-    else:
-        exprTree=il.toPythonTree()
-        exprFlat=adder.pyle.flatten(exprTree)
     if verbose:
         print(stmtFlat)
-        print(exprFlat)
     try:
         exec(stmtFlat,globalDict,localDict)
     except TypeError as te:
@@ -655,7 +650,7 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
         print(stmtFlat)
         pdb.set_trace()
         raise
-    res=eval(exprFlat,globalDict,localDict)
+    res=globalDict[resVar.toPython()]
     if verbose:
         pdb.set_trace()
     return res
