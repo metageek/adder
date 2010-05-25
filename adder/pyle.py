@@ -813,7 +813,7 @@ def trim1Scratch(pyleStmt,scratch):
     if pyleStmt[0] is S('if'):
         condMatch=(pyleStmt[1] is scratch)
         thenT=trim1Scratch(pyleStmt[2],scratch)
-        elseT=trim1Scratch(pyleStmt[3],scratch) if len(pyleStmt)>2 else BEFORE
+        elseT=trim1Scratch(pyleStmt[3],scratch) if len(pyleStmt)>3 else BEFORE
         if thenT==BEFORE:
             if elseT==BEFORE:
                 if condMatch:
@@ -831,10 +831,15 @@ def trim1Scratch(pyleStmt,scratch):
                     elseT]
         if thenT==AFTER:
             if elseT==BEFORE:
-                return [S('if'),
-                        pyleStmt[1],
-                        trimAfter(pyleStmt[2],scratch),
-                        trimBefore(pyleStmt[3],scratch)]
+                if len(pyleStmt)>3:
+                    return [S('if'),
+                            pyleStmt[1],
+                            trimAfter(pyleStmt[2],scratch),
+                            trimBefore(pyleStmt[3],scratch)]
+                else:
+                    return [S('if'),
+                            pyleStmt[1],
+                            trimAfter(pyleStmt[2],scratch)]
             if elseT==AFTER:
                 return AFTER
             return [S('if'),
@@ -870,7 +875,7 @@ def trim1Scratch(pyleStmt,scratch):
 
     if pyleStmt[0] is S('begin'):
         i=len(pyleStmt)-1
-        while i>1:
+        while i>0:
             t=trim1Scratch(pyleStmt[i],scratch)
             if t==AFTER:
                 return pyleStmt[:(i+1)]+[trimmer(scratch)]+pyleStmt[i+1:]

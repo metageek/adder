@@ -1155,6 +1155,274 @@ class TrimScratchesTestCase(unittest.TestCase):
                   [S(':='),s1,None]
                   ])
 
+    def testRaise(self):
+        s1=mkScratch()
+        self.tst([S('raise'),s1],None)
+
+    def testIfNoElse(self):
+        s1=mkScratch()
+        self.tst([S('if'),S('foo'),
+                  [S('call'),S('f'),s1]
+                  ],
+                 [S('if'),S('foo'),
+                  [S('begin'),
+                   [S('call'),S('f'),s1],
+                   [S(':='),s1,None]]
+                  ]
+                 )
+
+    def testIfWithElse1(self):
+        s1=mkScratch()
+        self.tst([S('if'),S('foo'),
+                  [S('call'),S('f'),s1],
+                  [S('call'),S('g'),17,s1]],
+                 [S('begin'),
+                  [S('if'),S('foo'),
+                   [S('call'),S('f'),s1],
+                   [S('call'),S('g'),17,s1]],
+                  [S(':='),s1,None]]
+                 )
+
+    def testIfWithElse2(self):
+        s1=mkScratch()
+        self.tst([S('if'),S('foo'),
+                  [S('call'),S('f'),9],
+                  [S('call'),S('g'),17,s1]],
+                 [S('if'),S('foo'),
+                  [S('begin'),
+                   [S(':='),s1,None],
+                   [S('call'),S('f'),9]],
+                  [S('begin'),
+                   [S('call'),S('g'),17,s1],
+                   [S(':='),s1,None]]
+                  ]
+                 )
+
+    def testIfWithElse3(self):
+        s1=mkScratch()
+        self.tst([S('if'),s1,
+                  [S('call'),S('f'),9],
+                  [S('call'),S('g'),17,s1]],
+                 [S('if'),s1,
+                  [S('begin'),
+                   [S(':='),s1,None],
+                   [S('call'),S('f'),9]],
+                  [S('begin'),
+                   [S('call'),S('g'),17,s1],
+                   [S(':='),s1,None]]
+                  ]
+                 )
+
+    def testWhile1(self):
+        s1=mkScratch()
+        self.tst([S('while'),s1,
+                  [S('call'),S('f'),9]],
+                 [S('begin'),
+                  [S('while'),s1,
+                   [S('call'),S('f'),9]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testWhile2(self):
+        s1=mkScratch()
+        self.tst([S('while'),S('foo'),
+                  [S('call'),S('f'),s1]],
+                 [S('begin'),
+                  [S('while'),S('foo'),
+                   [S('call'),S('f'),s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testBegin1(self):
+        s1=mkScratch()
+        self.tst([S('begin'),
+                  [S('call'),S('f'),s1],
+                  [S('call'),S('g'),17,s1]],
+                 [S('begin'),
+                  [S('call'),S('f'),s1],
+                  [S('call'),S('g'),17,s1],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testBegin2(self):
+        s1=mkScratch()
+        self.tst([S('begin'),
+                  [S('call'),S('f'),s1],
+                  [S('call'),S('g'),17]],
+                 [S('begin'),
+                  [S('call'),S('f'),s1],
+                  [S(':='),s1,None],
+                  [S('call'),S('g'),17]
+                  ]
+                 )
+
+    def testAssignInt(self):
+        s1=mkScratch()
+        self.tst([S(':='),s1,7],
+                 [S('begin'),
+                  [S(':='),s1,7],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignOtherVar(self):
+        s1=mkScratch()
+        self.tst([S(':='),s1,S('foo')],
+                 [S('begin'),
+                  [S(':='),s1,S('foo')],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignScratchVar(self):
+        s1=mkScratch()
+        s2=mkScratch()
+        self.tst([S(':='),S('foo'),s1],
+                 [S('begin'),
+                  [S(':='),S('foo'),s1],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignCall(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('call'),S('bar'),s1]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('call'),S('bar'),s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignBinop(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('binop'),S('<'),S('bar'),s1]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('binop'),S('<'),S('bar'),s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignDot1(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('.'),s1,S('bar')]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('.'),s1,S('bar')]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignDot2(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('.'),S('bar'),s1]],None)
+
+    def testAssignSubscript1(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('[]'),s1,S('bar')]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('[]'),s1,S('bar')]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSubscript2(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('[]'),S('bar'),s1]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('[]'),S('bar'),s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSlice1(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('slice'),s1,S('bar')]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('slice'),s1,S('bar')]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSlice2(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('slice'),S('bar'),s1]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('slice'),S('bar'),s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSlice3(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('slice'),S('bar'),s1,7]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('slice'),S('bar'),s1,7]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSlice4(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('slice'),S('bar'),7,s1]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('slice'),S('bar'),7,s1]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignSlice4(self):
+        s1=mkScratch()
+        s2=mkScratch()
+        self.tst([S(':='),S('foo'),[S('slice'),S('bar'),s1,s2]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('slice'),S('bar'),s1,s2]],
+                  [S(':='),s2,None],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignQuote(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('quote'),s1]],None)
+
+    def testAssignMkList(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('mk-list'),s1,17]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('mk-list'),s1,17]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignMkTuple(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('mk-tuple'),s1,17]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('mk-tuple'),s1,17]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignMkSet(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('mk-set'),s1,17]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('mk-set'),s1,17]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
+    def testAssignMkDict(self):
+        s1=mkScratch()
+        self.tst([S(':='),S('foo'),[S('mk-dict'),[S('foo'),s1]]],
+                 [S('begin'),
+                  [S(':='),S('foo'),[S('mk-dict'),[S('foo'),s1]]],
+                  [S(':='),s1,None]
+                  ]
+                 )
+
     def testCallWithArg(self):
         s1=mkScratch()
         self.tst([S('call'),S('foo'),17,s1],
