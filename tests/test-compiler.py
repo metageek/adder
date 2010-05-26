@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import unittest,pdb,sys,os
-from adder.compiler import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval,loadFile
+from adder.compiler import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval,loadFile,Context,stripLines
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
@@ -1360,13 +1360,30 @@ y
 """)==84
 
 class LoadTestCase(unittest.TestCase):
+    def setUp(self):
+        adder.runtime.getScopeById.scopes={}
+        Scope.nextId=1
+
     def testLoad(self):
         thisFile=self.__class__.testLoad.__code__.co_filename
         thisDir=os.path.split(thisFile)[0]
         codeFile=os.path.join(thisDir,'test-load.+')
         (lastValue,globalDict)=loadFile(codeFile,None,None)
         assert lastValue==13
-        assert lookup(globalDict,'x7-2')==5040
+        assert lookup(globalDict,'x7-1')==5040
+
+class ContextTestCase(CompileAndEvalTestCase):
+    def e(self,exprStr,*,verbose=False,**globalsToSet):
+        self.context=Context(loadPrelude=False)
+        for (k,v) in globalsToSet.items():
+            self.context.define(k,v)
+        res=None
+        for parsedExpr in adder.parser.parse(exprStr):
+            res=self.context.eval(stripLines(parsedExpr),verbose=verbose)
+        return res
+
+    def __getitem__(self,var):
+        return lookup(self.context.globals,var)
 
 suite=unittest.TestSuite(
     ( 
@@ -1374,8 +1391,9 @@ suite=unittest.TestSuite(
       unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
-      unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      #unittest.makeSuite(CompileAndEvalTestCase,'test'),
       unittest.makeSuite(LoadTestCase,'test'),
+      unittest.makeSuite(ContextTestCase,'test'),
      )
     )
 

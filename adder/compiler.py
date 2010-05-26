@@ -513,7 +513,7 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
         localDict=globalDict
 
     if not hasLines:
-        expr=addLines(expr)
+        expr=addLines(expr,defLine)
     annotated=annotate(expr,scope,globalDict,localDict)
     gomer=stripAnnotations(annotated)
     return adder.gomer.geval(gomer,
@@ -521,14 +521,40 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
                              localDict=localDict,
                              verbose=verbose)
 
-def loadFile(f,scope,globalDict):
+def loadFile(f,scope,globalDict,*,inSrcDir=False):
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
         globalDict=adder.gomer.mkGlobals()
     res=None
+
+    if inSrcDir:
+        srcFile=self.__class__.load.__code__.co_filename
+        srcDir=os.path.split(srcFile)[0]
+        f=os.path.join(srcDir,f)
+
     for parsedExpr in adder.parser.parseFile(f):
         res=compileAndEval(parsedExpr,scope,
                            globalDict,None,
                            hasLines=True)
     return (res,globalDict)
+
+class Context:
+    def __init__(self,*,loadPrelude=True):
+        self.scope=Scope(None)
+        self.globals={}
+        if loadPrelude:
+            self.load('prelude.+',inSrcDir=True)
+
+    def load(self,f,*,inSrcDir=False):
+        loadFile(f,self.scope,self.globals,inSrcDir=inSrcDir)
+
+    def eval(self,expr,*,verbose=False):
+        return compileAndEval(expr,
+                              self.scope,self.globals,
+                              None,
+                              hasLines=False,verbose=verbose)
+
+    def define(self,name,value):
+        self.scope.addDef(S(name),value,0)
+        self.g[S("%s-1" % name).toPython()]=value
