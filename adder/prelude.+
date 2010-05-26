@@ -39,7 +39,7 @@
 (defmacro cond (&rest cases)
   (defun mk (cs)
     (if (not cs)
-        None
+        none
         (mk-list (quote if)
                  (head (head cs))
                  (cons (quote begin) (tail (head cs)))
@@ -93,7 +93,7 @@
   (defvar exprs (list (map (lambda (def)
                              (if (list? def)
                                  ([] def 1)
-                                 None))
+                                 none))
                            decls)))
   (defvar scratches (list (map gensym vars)))
 

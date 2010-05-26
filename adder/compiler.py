@@ -1,4 +1,4 @@
-import pdb
+import pdb,os
 from adder.common import Symbol as S, gensym, q, literable
 import adder.gomer
 
@@ -133,6 +133,9 @@ class Scope:
 
     root=None
 
+    def __repr__(self):
+        return 'adder.runtime.getScopeById(%d)' % self.id
+
     def addDef(self,name,initExpr,line,*,
                asConst=False,
                ignoreScopeId=False,
@@ -193,7 +196,7 @@ for name in ['defun','lambda','defvar','scope',
              'quote','import',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
-             'and','or',':=','.',
+             'and','or','not',':=','.',
              'defconst',
              '==','!=','<=','<','>=','>',
              '+','-','*','/','//','%','in',
@@ -202,8 +205,7 @@ for name in ['defun','lambda','defvar','scope',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
              'reverse','stdenv','apply','eval','exec-py',
              'getScopeById','globals','locals',
-             # All before this point are annotated.
-             'defmacro','python','load',
+             'defmacro','python','load','adder',
              ]:
     Scope.root.addDef(S(name),None,0)
 
@@ -282,7 +284,8 @@ class Annotator:
 
     def annotate_defmacro(self,expr,line,scope,globalDict,localDict):
         (name,nameLine)=expr[1]
-        expanderName=gensym('macro-'+str(name))
+        expanderName=gensym('macro-'+('dot-dot' if str(name)=='..'
+                                      else str(name)))
         def expand(xArgs,xScope,xGlobalDict,xLocalDict):
             xCall=[expanderName]+list(map(q,xArgs))
             return adder.runtime.eval(xCall,xScope,xGlobalDict,xLocalDict)
@@ -471,10 +474,12 @@ def stripAnnotations(annotated,*,quoted=False):
         print(ve,annotated)
         raise
     if (not quoted
-        and isinstance(expr,S)
-        and scope.id>0
-        and not scope[expr].ignoreScopeId):
-        return S('%s-%d' % (str(expr),scope.id))
+        and isinstance(expr,S)):
+        if expr is S('&rest'):
+            return expr
+        if (scope.id>0
+            and not scope[expr].ignoreScopeId):
+            return S('%s-%d' % (str(expr),scope.id))
     if not (expr and isinstance(expr,list)):
         return expr
     if not quoted and expr[0][0] in [S('quote'),S('import')]:
@@ -529,7 +534,7 @@ def loadFile(f,scope,globalDict,*,inSrcDir=False):
     res=None
 
     if inSrcDir:
-        srcFile=self.__class__.load.__code__.co_filename
+        srcFile=loadFile.__code__.co_filename
         srcDir=os.path.split(srcFile)[0]
         f=os.path.join(srcDir,f)
 

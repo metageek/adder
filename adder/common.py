@@ -88,6 +88,8 @@ class Symbol:
         return isLegalPython(self.s)
 
     def toPython(self):
+        if str(self)=='..':
+            return '__adder_dotdot__'
         def escapeSegment(seg):
             if isLegalPython(seg):
                 return seg

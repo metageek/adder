@@ -616,6 +616,7 @@ def mkGlobals():
     python=O()
     for (k,v) in __builtins__.items():
         setattr(python,k,v)
+    python.sys=sys
     g['python']=python
     a=O()
     a.common=adder.common

@@ -119,6 +119,35 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[2])==[S('current-scope'),S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
+    def testDefunRest(self):
+        (scoped,scopes)=self.annotate(([(S('defun'),1),
+                                        (S('foo'),1),
+                                        ([(S('x'),1),
+                                          (S('y'),1),
+                                          (S('&rest'),1),
+                                          (S('r'),1),
+                                          ],1),
+                                        ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                                         2)
+                                        ],
+                                       1))
+        assert scoped==([(S('defun'),1,0),
+                         (S('foo'),1,1),
+                         ([(S('x'),1,2),
+                           (S('y'),1,2),
+                           (S('&rest'),1,1),
+                           (S('r'),1,2),
+                           ],1,1),
+                         ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
+                         ],
+                        1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert sorted(scopes[1])==[S('current-scope'),S('foo')]
+        assert sorted(scopes[2])==[S('current-scope'),S('r'),S('x'),S('y')]
+        assert scopes[2].parent is scopes[1]
+
     def testLambda(self):
         (scoped,scopes)=self.annotate(([(S('lambda'),1),
                                         ([(S('x'),1),
@@ -365,6 +394,22 @@ class StripTestCase(EmptyStripTestCase):
                               ],
                              1))==[S('defun'),S('foo-1'),
                                    [S('x-2'),S('y-2')],
+                                   [S('*'),S('x-2'),S('y-2')]
+                                   ]
+
+    def testDefunRest(self):
+        assert self.clarify(([(S('defun'),1),
+                              (S('foo'),1),
+                              ([(S('x'),1),
+                                (S('y'),1),
+                                (S('&rest'),1),
+                                (S('r'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))==[S('defun'),S('foo-1'),
+                                   [S('x-2'),S('y-2'),S('&rest'),S('r-2')],
                                    [S('*'),S('x-2'),S('y-2')]
                                    ]
 
@@ -1373,8 +1418,11 @@ class LoadTestCase(unittest.TestCase):
         assert lookup(globalDict,'x7-1')==5040
 
 class ContextTestCase(CompileAndEvalTestCase):
+    def loadPrelude(self):
+        return False
+
     def e(self,exprStr,*,verbose=False,**globalsToSet):
-        self.context=Context(loadPrelude=False)
+        self.context=Context(loadPrelude=self.loadPrelude())
         for (k,v) in globalsToSet.items():
             self.context.define(k,v)
         res=None
@@ -1385,6 +1433,10 @@ class ContextTestCase(CompileAndEvalTestCase):
     def __getitem__(self,var):
         return lookup(self.context.globals,var)
 
+class PreludeTestCase(ContextTestCase):
+    def loadPrelude(self):
+        return True
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
@@ -1394,6 +1446,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
       unittest.makeSuite(LoadTestCase,'test'),
       unittest.makeSuite(ContextTestCase,'test'),
+      unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 
