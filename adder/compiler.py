@@ -542,7 +542,7 @@ def loadFile(f,scope,globalDict,*,inSrcDir=False):
 class Context:
     def __init__(self,*,loadPrelude=True):
         self.scope=Scope(None)
-        self.globals={}
+        self.globals=adder.gomer.mkGlobals()
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)
 
