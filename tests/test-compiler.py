@@ -1391,7 +1391,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
-      #unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      unittest.makeSuite(CompileAndEvalTestCase,'test'),
       unittest.makeSuite(LoadTestCase,'test'),
       unittest.makeSuite(ContextTestCase,'test'),
      )
