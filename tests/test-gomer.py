@@ -361,6 +361,45 @@ class ReduceTestCase(unittest.TestCase):
             ]
         assert self.stmts==expected
 
+    def testDefunStmtRest(self):
+        x=self.r([S('defun'),S('fact'),[S('n'),S('&rest'),S('r')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 True)
+        assert x is None
+
+        gensym.nextId=1
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        expected=[
+            [S('def'),S('fact'),[S('n'),S('&rest'),S('r')],
+             [S('begin'),
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('call'),S('fact'),[scratch2],[]]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
     def testLambdaExpr(self):
         x=self.r([S('lambda'),[S('n')],
                   [S('if'),
@@ -384,6 +423,47 @@ class ReduceTestCase(unittest.TestCase):
 
         expected=[
             [S('def'),lambdaScratch,[S('n')],
+             [S('begin'),
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('call'),S('fact'),[scratch2],[]]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
+    def testLambdaExprRest(self):
+        x=self.r([S('lambda'),[S('n'),S('&rest'),S('r')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 False)
+
+        gensym.nextId=1
+        lambdaScratch=gensym('lambda')
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        assert x==lambdaScratch
+
+        expected=[
+            [S('def'),lambdaScratch,[S('n'),S('&rest'),S('r')],
              [S('begin'),
               [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
               [S('if'),
@@ -2276,6 +2356,60 @@ while %s:
             'fact'
             )
 
+    def testDefunStmtRest(self):
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+        condScratchP=condScratch.toPython()
+        ifScratchP=ifScratch.toPython()
+        scratch3P=scratch3.toPython()
+        scratch4P=scratch4.toPython()
+        scratch5P=scratch5.toPython()
+
+        gensym.nextId=1
+        assert self.toP([S('defun'),S('fact'),[S('n'),S('&rest'),S('r')],
+                         [S('if'),
+                          [S('<'),S('n'),2],
+                          1,
+                          [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                          ]
+                         ],
+                        True)==(
+            [("def fact(n,*r):",
+              [("%s=n<2" % condScratchP,
+                ("if %s:" % condScratchP,
+                 ["%s=1" % ifScratchP],
+                 "else:",
+                 [("%s=n-1" % scratch3P,
+                   "%s=fact(%s)" % (scratch4P,scratch3P),
+                   "%s=n*%s" % (scratch5P,scratch4P),
+                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ),
+                "return %s" % ifScratchP
+                )]
+              )],"""def fact(n,*r):
+    %s=n<2
+    if %s:
+        %s=1
+    else:
+        %s=n-1
+        %s=fact(%s)
+        %s=n*%s
+        %s=%s
+    return %s
+""" % (condScratchP,
+       condScratchP,
+       ifScratchP,
+       scratch3P,
+       scratch4P,scratch3P,
+       scratch5P,scratch4P,
+       ifScratchP,scratch5P,
+       ifScratchP),
+            None
+            )
+
     def testLambdaExpr(self):
         lambdaScratch=gensym('lambda')
         condScratch=gensym('scratch')
@@ -2312,6 +2446,63 @@ while %s:
                 "return %s" % ifScratchP
                 )]
               )],"""def %s(n):
+    %s=n<2
+    if %s:
+        %s=1
+    else:
+        %s=n-1
+        %s=fact(%s)
+        %s=n*%s
+        %s=%s
+    return %s
+""" % (lambdaScratchP,
+       condScratchP,
+       condScratchP,
+       ifScratchP,
+       scratch3P,
+       scratch4P,scratch3P,
+       scratch5P,scratch4P,
+       ifScratchP,scratch5P,
+       ifScratchP),
+            lambdaScratchP
+            )
+
+    def testLambdaExprRest(self):
+        lambdaScratch=gensym('lambda')
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+        lambdaScratchP=lambdaScratch.toPython()
+        condScratchP=condScratch.toPython()
+        ifScratchP=ifScratch.toPython()
+        scratch3P=scratch3.toPython()
+        scratch4P=scratch4.toPython()
+        scratch5P=scratch5.toPython()
+
+        gensym.nextId=1
+        assert self.toP([S('lambda'),[S('n'),S('&rest'),S('r')],
+                         [S('if'),
+                          [S('<'),S('n'),2],
+                          1,
+                          [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                          ]
+                         ],
+                        False)==(
+            [("def %s(n,*r):" % lambdaScratchP,
+              [("%s=n<2" % condScratchP,
+                ("if %s:" % condScratchP,
+                 ["%s=1" % ifScratchP],
+                 "else:",
+                 [("%s=n-1" % scratch3P,
+                   "%s=fact(%s)" % (scratch4P,scratch3P),
+                   "%s=n*%s" % (scratch5P,scratch4P),
+                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ),
+                "return %s" % ifScratchP
+                )]
+              )],"""def %s(n,*r):
     %s=n<2
     if %s:
         %s=1
