@@ -183,13 +183,10 @@ class StrTestCase(unittest.TestCase):
                     Assign(Var(S('z')),Literal(7))]))=='{x=9; z=7}'
 
 class ToPythonTestCase(unittest.TestCase):
-    def setUp(self):
-        self.verbose=False
-
-    def toP(self,il):
+    def toP(self,il,*,v=False):
         tree=il.toPythonTree()
         flat=flatten(tree)
-        if self.verbose:
+        if v:
             print()
             print(tree)
             print(flat)
@@ -631,14 +628,11 @@ print(z)
         assert self.toP(Import(Var(S('re'))))==("import re","import re\n")
 
 class BuildToPythonTestCase(unittest.TestCase):
-    def setUp(self):
-        self.verbose=False
-
-    def toP(self,pyle):
+    def toP(self,pyle,*,v=False):
         il=build(pyle)
         tree=il.toPythonTree()
         flat=flatten(tree)
-        if self.verbose:
+        if v:
             print()
             print(tree)
             print(flat)
@@ -950,6 +944,16 @@ else:
                          [S('return'),S('x')]
                          ])==(("def f(x):",["return x"]),
                               """def f(x):
+    return x
+""")
+
+    def testDef1PosRest(self):
+        assert self.toP([S('def'),
+                         S('f'),
+                         [S('x'),S('&rest'),S('args')],
+                         [S('return'),S('x')]
+                         ])==(("def f(x,*args):",["return x"]),
+                              """def f(x,*args):
     return x
 """)
 

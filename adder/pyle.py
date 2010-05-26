@@ -355,6 +355,7 @@ class Def(Stmt):
         self.kwArgs=list(kwArgs)
         self.globals=list(globals)
         self.nonlocals=list(nonlocals)
+        self.restArg=restArgs[0] if restArgs else None
 
     def __str__(self):
         if self.globals:
@@ -370,6 +371,10 @@ class Def(Stmt):
         return '{def %s(%s)%s%s %s}' % (str(self.f),
                                         ','.join(map(str,
                                                      (self.posArgs
+                                                      +(['*'+str(self.restArg)
+                                                         ] if self.restArg
+                                                        else []
+                                                        )
                                                       +(['*'] if self.kwArgs
                                                         else [])
                                                       +self.kwArgs
@@ -385,14 +390,18 @@ class Def(Stmt):
         if self.nonlocals:
             body.append('nonlocal %s' % (','.join(map(str,self.nonlocals))))
         body.append(self.body.toPythonTree())
-                        
-        return ('def %s(%s%s%s):' % (str(self.f),
-                                     ','.join(map(str,self.posArgs)),
-                                     (',*,' if (self.posArgs and self.kwArgs)
-                                      else ('*,' if self.kwArgs else '')
-                                      ),
-                                     ','.join(map(str,self.kwArgs))
-                                     ),
+
+        args=','.join(map(str,self.posArgs))
+        if self.restArg:
+            if args:
+                args+=','
+            args+='*'+str(self.restArg)
+        if self.kwArgs:
+            if args:
+                args+=','
+            args+='*,'
+            args+=','.join(map(str,self.kwArgs))
+        return ('def %s(%s):' % (str(self.f),args),
                 body)
 
 class Break(Stmt):

@@ -178,7 +178,10 @@
 <li>var ::= $symbol</li>
 <li>any ::= $var | $literal | $list</li>
 <li>simple ::= $var | $literal</li>
-<li>fcall ::= LIST(call $var LIST($simple*) LIST((LIST($var $simple))*))
+<li>fcall ::= LIST(call $var LIST($simple*)
+                             LIST((LIST($var $simple))*)
+                             $var?
+                   )
 </li>
 <li>lvalue ::= $var | $dot | $subscript</li>
 <li>assign ::= LIST(:= $lvalue ($simple | $fcall | $binop
