@@ -1490,6 +1490,69 @@ class PreludeTestCase(ContextTestCase):
     def testCons(self):
         assert self.e("(cons 0 '(1 2 3))")==[0,1,2,3]
 
+    def _testCond(self,**globalsToSet):
+        return self.e("""(cond
+ ((< x 3) (- x))
+ ((== x 3) x)
+ ((> x 3) (* x x))
+)
+""",**globalsToSet)
+        
+    def testCond1(self):
+        assert self._testCond(x=2)==-2
+
+    def testCond2(self):
+        assert self._testCond(x=3)==3
+
+    def testCond3(self):
+        assert self._testCond(x=7)==49
+
+    def testDotDot(self):
+        class O2:
+            def __init__(self):
+                self.x=7
+
+            def f(self):
+                return self.x*self.x
+
+        assert self.e("(((.. f) o))",o=O2())==49
+
+    def testListPT(self):
+        assert self.e("(list? '(1 2 3))") is True
+
+    def testListPF(self):
+        assert self.e("(list? 12)") is False
+
+    def testTuplePT(self):
+        assert self.e("(tuple? (mk-tuple 1 2 3))") is True
+
+    def testTuplePF(self):
+        assert self.e("(tuple? 12)") is False
+
+    def testSetPT(self):
+        assert self.e("(set? (mk-set 1 2 3))") is True
+
+    def testSetPF(self):
+        assert self.e("(set? 12)") is False
+
+    def testDictPT(self):
+        assert self.e("(dict? (mk-dict :a 1 :b 2 :c 3))") is True
+
+    def testDictPF(self):
+        assert self.e("(dict? 12)") is False
+
+    def testSymbolPT(self):
+        assert self.e("(symbol? 'quibble)") is True
+
+    def testSymbolPF(self):
+        assert self.e("(symbol? 12)") is False
+
+    def testIntPT(self):
+        assert self.e("(int? 12)") is True
+
+    def testIntPF(self):
+        assert self.e("(int? 12.5)") is False
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
