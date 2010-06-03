@@ -562,4 +562,4 @@ class Context:
 
     def define(self,name,value):
         self.scope.addDef(S(name),value,0)
-        self.g[S("%s-1" % name).toPython()]=value
+        self.globals[S("%s-1" % name).toPython()]=value

@@ -17,10 +17,10 @@
            (mk-list (quote defvar) scratch expr)
            (mk-list (quote print)
                     (mk-list (quote quote) expr)
+                    ":"
                     scratch)
            scratch))
 
-(defvar prelude-loaded true)
 (defun head (l)
   ([] l 0)
   )

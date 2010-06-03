@@ -1437,6 +1437,59 @@ class PreludeTestCase(ContextTestCase):
     def loadPrelude(self):
         return True
 
+    def testConstMap(self):
+        assert self.e('map') is map
+
+    def testConstZip(self):
+        assert self.e('zip') is zip
+
+    def testConstStdin(self):
+        assert self.e('stdin') is sys.stdin
+
+    def testConstStdout(self):
+        assert self.e('stdout') is sys.stdout
+
+    def testConstStderr(self):
+        assert self.e('stderr') is sys.stderr
+
+    def testConstTypeList(self):
+        assert self.e('type-list') is list
+
+    def testConstTypeTuple(self):
+        assert self.e('type-tuple') is tuple
+
+    def testConstTypeSet(self):
+        assert self.e('type-set') is set
+
+    def testConstTypeDict(self):
+        assert self.e('type-dict') is dict
+
+    def testConstTypeSymbol(self):
+        assert self.e('type-symbol') is S
+
+    def testConstTypeInt(self):
+        assert self.e('type-int') is int
+
+    def testConstGensym(self):
+        assert self.e('gensym') is gensym
+
+    def testDp(self):
+        assert self.e('(dp 17)')==17
+
+    def testHead(self):
+        assert self.e("(head '(1 2 3))")==1
+
+    def testTail(self):
+        assert self.e("(tail '(1 2 3))")==[2,3]
+
+    def testReverseBang(self):
+        l=[1,2,3]
+        assert self.e("(reverse! l)",l=l) is l
+        assert l==[3,2,1]
+
+    def testCons(self):
+        assert self.e("(cons 0 '(1 2 3))")==[0,1,2,3]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
