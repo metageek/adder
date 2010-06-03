@@ -1560,6 +1560,91 @@ class PreludeTestCase(ContextTestCase):
 (mk-list x y)
 )""")==[9,63]
 
+    def testLet(self):
+        try:
+            self.e("""(let
+ ((x 9)
+  (y (* x 7)))
+(mk-list x y)
+)""")
+            assert False
+        except adder.compiler.Undefined as u:
+            assert u.args==(S("x"),)
+
+    def testDefineVar(self):
+        assert self.e("(define x 17)")==17
+        assert self['x-1']==17
+
+    def testDefineFunc(self):
+        assert self.e("(define (sq x) (* x x))") is self['sq-1']
+        assert self['sq-1'](17)==289
+
+    def testError(self):
+        try:
+            self.e('(error "foobar")')
+            assert False
+        except Exception as e:
+            assert e.args==("foobar",)
+
+    def _testCase(self,**globalsToSet):
+        return self.e("""(case x
+(1 'foo)
+((2 3) 'bar)
+(otherwise 'baz)
+)""",**globalsToSet)
+
+    def testCase1(self):
+        assert self._testCase(x=1) is S('foo')
+
+    def testCase2(self):
+        assert self._testCase(x=2) is S('bar')
+
+    def testCase3(self):
+        assert self._testCase(x=3) is S('bar')
+
+    def testCase4(self):
+        assert self._testCase(x=4) is S('baz')
+
+    def _testCaseNoOtherwise(self,**globalsToSet):
+        return self.e("""(case x
+(1 'foo)
+((2 3) 'bar)
+)""",**globalsToSet)
+
+    def testCaseNoOtherwise1(self):
+        assert self._testCaseNoOtherwise(x=1) is S('foo')
+
+    def testCaseNoOtherwise2(self):
+        assert self._testCaseNoOtherwise(x=2) is S('bar')
+
+    def testCaseNoOtherwise3(self):
+        assert self._testCaseNoOtherwise(x=3) is S('bar')
+
+    def testCaseNoOtherwise4(self):
+        assert self._testCaseNoOtherwise(x=4) is None
+
+    def _testEcase(self,**globalsToSet):
+        return self.e("""(ecase x
+(1 'foo)
+((2 3) 'bar)
+)""",**globalsToSet)
+
+    def testEcase1(self):
+        assert self._testEcase(x=1) is S('foo')
+
+    def testEcase2(self):
+        assert self._testEcase(x=2) is S('bar')
+
+    def testEcase3(self):
+        assert self._testEcase(x=3) is S('bar')
+
+    def testEcase4(self):
+        try:
+            self._testEcase(x=4)
+            assert False
+        except Exception as e:
+            assert e.args==("Fell through ecase",)
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
