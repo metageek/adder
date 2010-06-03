@@ -1553,6 +1553,13 @@ class PreludeTestCase(ContextTestCase):
     def testIntPF(self):
         assert self.e("(int? 12.5)") is False
 
+    def testLetStar(self):
+        assert self.e("""(let*
+ ((x 9)
+  (y (* x 7)))
+(mk-list x y)
+)""")==[9,63]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
