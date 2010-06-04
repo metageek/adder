@@ -208,6 +208,8 @@
 </li>
 <li>def ::= LIST(def $var LIST($var*) $stmt)
 </li>
+<li>class ::= LIST(class $var LIST($var*) $stmt*)
+</li>
 <li>break ::= LIST(break)
 </li>
 <li>continue ::= LIST(continue)
@@ -243,8 +245,8 @@
 </li>
 
 <li>stmt ::= $return | $yield | $try | $raise | $reraise
-      | $if | $while | $def | $break | $continue | $pass | $begin
-      | $assign | $import
+      | $if | $while | $break | $continue | $def | $class
+      | $assign | $import | $pass | $begin
       | $fcall
 </li>
 </ul>

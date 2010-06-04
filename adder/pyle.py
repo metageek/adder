@@ -404,6 +404,27 @@ class Def(Stmt):
         return ('def %s(%s):' % (str(self.f),args),
                 body)
 
+class Class(Stmt):
+    def __init__(self,name,bases,body):
+        assert isinstance(name,Var)
+        for base in bases:
+            assert isinstance(base,Var)
+        self.name=name
+        self.bases=bases
+        self.body=body
+
+    def toPythonTree(self):
+        if self.bases:
+            baseStr='(%s)' % ','.join(map(str,self.bases))
+        else:
+            baseStr=''
+        if self.body:
+            bodyTree=list(map(toPythonTree,self.body))
+        else:
+            bodyTree=['pass']
+        return ('class %s%s:' % (self.name,baseStr),
+                bodyTree)
+
 class Break(Stmt):
     def __str__(self):
         return 'break'
@@ -579,6 +600,13 @@ def build(pyle):
                 cur.append(build(arg))
 
         return Def(name,posArgs,kwArgs,restArgs,globals,nonlocals,body)
+    if f==S('class'):
+        assert len(pyle)>=3
+        name=build(pyle[1])
+        bases=list(map(build,pyle[2]))
+        body=list(map(build,pyle[3:]))
+
+        return Class(name,bases,body)
     if f==S('break'):
         assert len(pyle)==1
         return Break()

@@ -582,6 +582,76 @@ else:
     return x
 """)
 
+    def testClassTopEmpty(self):
+        assert self.toP(Class(Var(S('C')),[],[]))==(
+            ("class C:",["pass"]),
+            """class C:
+    pass
+""")
+
+    def testClass1BaseEmpty(self):
+        assert self.toP(Class(Var(S('C')),
+                              [Var(S('Base'))],
+                              []))==(
+            ("class C(Base):",["pass"]),
+            """class C(Base):
+    pass
+""")
+
+    def testClass2BaseEmpty(self):
+        assert self.toP(Class(Var(S('C')),
+                              [Var(S('Base1')),Var(S('Base2'))],
+                              []))==(
+            ("class C(Base1,Base2):",["pass"]),
+            """class C(Base1,Base2):
+    pass
+""")
+
+    def testClass2BaseFunc(self):
+        assert self.toP(Class(Var(S('C')),
+                              [Var(S('Base1')),Var(S('Base2'))],
+                              [Def(Var(S('__init__')),
+                                   [Var(S('self'))],
+                                   [],[],[],[],
+                                   Assign(Dot(Var(S('self')),
+                                              [Var(S('x'))]),
+                                          Literal(9)))
+                               ]))==(
+            ("class C(Base1,Base2):",
+             [("def __init__(self):",
+               ["self.x=9"])
+              ]
+             ),
+            """class C(Base1,Base2):
+    def __init__(self):
+        self.x=9
+""")
+
+    def testClass2BaseFuncStatic(self):
+        assert self.toP(Class(Var(S('C')),
+                              [Var(S('Base1')),Var(S('Base2'))],
+                              [Assign(Var(S('y')),
+                                      Literal(7)),
+                               Def(Var(S('__init__')),
+                                   [Var(S('self'))],
+                                   [],[],[],[],
+                                   Assign(Dot(Var(S('self')),
+                                              [Var(S('x'))]),
+                                          Literal(9))
+                                   )
+                               ]))==(
+            ("class C(Base1,Base2):",
+             ["y=7",
+              ("def __init__(self):",
+               ["self.x=9"])
+              ]
+             ),
+            """class C(Base1,Base2):
+    y=7
+    def __init__(self):
+        self.x=9
+""")
+
     def testBreak(self):
         assert self.toP(Break())==("break","break\n")
 
@@ -1059,6 +1129,62 @@ else:
     global g1,g2
     nonlocal nl1,nl2
     return x
+""")
+
+    def testClassTopEmpty(self):
+        assert self.toP([S('class'),S('C'),[]])==(
+            ("class C:",["pass"]),
+            """class C:
+    pass
+""")
+
+    def testClass1BaseEmpty(self):
+        assert self.toP([S('class'),S('C'),[S('Base')]])==(
+            ("class C(Base):",["pass"]),
+            """class C(Base):
+    pass
+""")
+
+    def testClass2BaseEmpty(self):
+        assert self.toP([S('class'),S('C'),[S('Base1'),S('Base2')]])==(
+            ("class C(Base1,Base2):",["pass"]),
+            """class C(Base1,Base2):
+    pass
+""")
+
+    def testClass2BaseFunc(self):
+        assert self.toP([S('class'),S('C'),
+                         [S('Base1'),S('Base2')],
+                         [S('def'),S('__init__'),[S('self')],
+                          [S(':='),[S('.'),S('self'),S('x')],9]
+                          ]])==(
+            ("class C(Base1,Base2):",
+             [("def __init__(self):",
+               ["self.x=9"])
+              ]
+             ),
+            """class C(Base1,Base2):
+    def __init__(self):
+        self.x=9
+""")
+
+    def testClass2BaseFuncStatic(self):
+        assert self.toP([S('class'),S('C'),
+                         [S('Base1'),S('Base2')],
+                         [S(':='),S('y'),7],
+                         [S('def'),S('__init__'),[S('self')],
+                          [S(':='),[S('.'),S('self'),S('x')],9]
+                          ]])==(
+            ("class C(Base1,Base2):",
+             ["y=7",
+              ("def __init__(self):",
+               ["self.x=9"])
+              ]
+             ),
+            """class C(Base1,Base2):
+    y=7
+    def __init__(self):
+        self.x=9
 """)
 
     def testBreak(self):
