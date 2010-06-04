@@ -554,11 +554,12 @@ class Context:
     def load(self,f,*,inSrcDir=False):
         loadFile(f,self.scope,self.globals,inSrcDir=inSrcDir)
 
-    def eval(self,expr,*,verbose=False):
+    def eval(self,expr,*,verbose=False,hasLines=False,defLine=0):
         return compileAndEval(expr,
                               self.scope,self.globals,
                               None,
-                              hasLines=False,verbose=verbose)
+                              hasLines=hasLines,defLine=defLine,
+                              verbose=verbose)
 
     def define(self,name,value):
         self.scope.addDef(S(name),value,0)
