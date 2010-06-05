@@ -495,6 +495,109 @@ class ReduceTestCase(unittest.TestCase):
         assert x is None
         assert not self.stmts
 
+    def testClassTopEmptyStmt(self):
+        x=self.r([S('class'),S('C'),[]],
+                 True)
+        assert x is None
+
+        assert self.stmts==[
+            [S('class'),S('C'),[]]
+            ]
+
+    def testClass1BaseEmptyStmt(self):
+        x=self.r([S('class'),S('C'),[S('B')]],
+                 True)
+        assert x is None
+
+        assert self.stmts==[
+            [S('class'),S('C'),[S('B')]]
+            ]
+
+    def testClass2BaseEmptyStmt(self):
+        x=self.r([S('class'),S('C'),[S('B1'),S('B2')]],
+                 True)
+        assert x is None
+
+        assert self.stmts==[
+            [S('class'),S('C'),[S('B1'),S('B2')]]
+            ]
+
+    def testClass2BaseFuncStmt(self):
+        scratch1=gensym('scratch')
+        gensym.nextId=1
+
+        x=self.r([S('class'),S('C'),[S('B1'),S('B2')],
+                  [S('defun'),S('__init__'),[S('self'),S('x')],
+                   [S(':='),[S('.'),S('self'),S('x')],S('x')]
+                   ]
+                  ],
+                 True)
+        assert x is None
+
+        assert self.stmts==[
+            [S('class'),S('C'),[S('B1'),S('B2')],
+             [S('def'),S('__init__'),[S('self'),S('x')],
+              [S('begin'),
+               [S(':='),[S('.'),S('self'),S('x')],S('x')],
+               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
+               [S('return'),scratch1]
+               ]
+              ]
+             ]
+            ]
+
+    def testClass2BaseFuncStaticStmt(self):
+        scratch1=gensym('scratch')
+        gensym.nextId=1
+
+        x=self.r([S('class'),S('C'),[S('B1'),S('B2')],
+                  [S(':='),S('y'),7],
+                  [S('defun'),S('__init__'),[S('self'),S('x')],
+                   [S(':='),[S('.'),S('self'),S('x')],S('x')]
+                   ]
+                  ],
+                 True)
+        assert x is None
+
+        assert self.stmts==[
+            [S('class'),S('C'),[S('B1'),S('B2')],
+             [S(':='),S('y'),7],
+             [S('def'),S('__init__'),[S('self'),S('x')],
+              [S('begin'),
+               [S(':='),[S('.'),S('self'),S('x')],S('x')],
+               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
+               [S('return'),scratch1]
+               ]
+              ]
+             ]
+            ]
+
+    def testClass2BaseFuncStaticExpr(self):
+        scratch1=gensym('scratch')
+        gensym.nextId=1
+
+        x=self.r([S('class'),S('C'),[S('B1'),S('B2')],
+                  [S(':='),S('y'),7],
+                  [S('defun'),S('__init__'),[S('self'),S('x')],
+                   [S(':='),[S('.'),S('self'),S('x')],S('x')]
+                   ]
+                  ],
+                 False)
+        assert x is S('C')
+
+        assert self.stmts==[
+            [S('class'),S('C'),[S('B1'),S('B2')],
+             [S(':='),S('y'),7],
+             [S('def'),S('__init__'),[S('self'),S('x')],
+              [S('begin'),
+               [S(':='),[S('.'),S('self'),S('x')],S('x')],
+               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
+               [S('return'),scratch1]
+               ]
+              ]
+             ]
+            ]
+
     def testBeginStmt(self):
         x=self.r([S('begin'),
                   [S(':='),S('x'),9],

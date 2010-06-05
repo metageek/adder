@@ -259,6 +259,17 @@ class ReduceLambda(Reducer):
         reduce([S('defun'),name]+gomer[1:],True,stmtCollector)
         return name
 
+class ReduceClass(Reducer):
+    def reduce(self,gomer,isStmt,stmtCollector):
+        name=gomer[1]
+        bases=gomer[2]
+        body=[]
+        for g in gomer[3:]:
+            reduce(g,True,body.append)
+        stmtCollector([S('class'),name,bases]+body)
+        if not isStmt:
+            return name
+
 class ReduceAssign(Reducer):
     def isSimple(self,rhs):
         if not isinstance(rhs,list):
@@ -538,6 +549,7 @@ reductionRules={S('if') : ReduceIf(),
                 S('while') : ReduceWhile(),
                 S('defun') : ReduceDefun(),
                 S('lambda') : ReduceLambda(),
+                S('class') : ReduceClass(),
                 S(':=') : ReduceAssign(),
                 S('begin') : ReduceBegin(),
                 S('import') : ReduceImport(),
