@@ -13,14 +13,14 @@ def maybeBegin(body):
         return [S('begin')]+body
 
 class Reducer:
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         pass
 
 class ReduceDefault(Reducer):
     def getF(self,gomer,stmtCollector):
         return reduce(gomer[0],False,stmtCollector)
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         f=self.getF(gomer,stmtCollector)
         posArgs=[]
         kwArgs=[]
@@ -47,7 +47,7 @@ class ReduceDefault(Reducer):
         return [S('call'),f,posArgs,kwArgs]
 
 class ReduceDont(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         return gomer
 
 class ReduceRenameFunc(ReduceDefault):
@@ -58,8 +58,8 @@ class ReduceRenameFunc(ReduceDefault):
     def getF(self,gomer,stmtCollector):
         return self.pyFunc
 
-    def reduce(self,gomer,isStmt,stmtCollector):
-        res=ReduceDefault.reduce(self,gomer,isStmt,stmtCollector)
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
+        res=ReduceDefault.reduce(self,gomer,isStmt,stmtCollector,inClass)
         if not (isStmt and self.isPure):
             return res
 
@@ -68,14 +68,14 @@ class ReduceFuncToSame(Reducer):
         self.pyleTag=S(pyleTag)
         self.isPure=isPure
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         res=[self.pyleTag]+list(map(lambda s: reduce(s,False,stmtCollector),
                                     gomer[1:]))
         if not (isStmt and self.isPure):
             return res
 
 class ReduceMkDict(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         def groupPairs(i):
             (first,hasFirst)=(None,False)
             for x in i:
@@ -94,7 +94,7 @@ class ReduceMkDict(Reducer):
             return res
 
 class ReduceReverse(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)==2
         if isStmt:
             return reduce([[S('.'),gomer[1],S('reverse')]],
@@ -109,7 +109,7 @@ class ReduceReverse(Reducer):
         
 
 class ReduceApply(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer) in [3,4]
         f=reduce(gomer[1],False,stmtCollector)
         if gomer[2]==[S('quote'),[]]:
@@ -124,7 +124,7 @@ class ReduceApply(Reducer):
         return [S('call'),f,posArgs,kwArgs]
 
 class ReduceTry(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         def clauseStmt(clauseStmts):
             clauseBody=[]
             expr=reduce([S('begin')]+clauseStmts,
@@ -171,7 +171,7 @@ class ReduceTry(Reducer):
         return scratch
 
 class ReduceIf(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer) in [3,4]
         condExpr=reduce(gomer[1],False,stmtCollector)
         thenBody=[]
@@ -203,7 +203,7 @@ class ReduceIf(Reducer):
 class ReduceWhile(Reducer):
     scratchStack=[]
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)>=2
         if isStmt:
             scratch=None
@@ -231,18 +231,24 @@ class ReduceWhile(Reducer):
 
 class ReduceDefun(Reducer):
     isGeneratorStack=[]
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         ReduceDefun.isGeneratorStack.append(False)
         name=gomer[1]
         argList=gomer[2]
         body=[]
         bodyGs=gomer[3:]
         if bodyGs:
-            for g in bodyGs[:-1]:
-                reduce(g,True,body.append)
-            resExpr=reduce(bodyGs[-1],False,body.append)
-            if not ReduceDefun.isGeneratorStack.pop():
-                reduce([S('return'),resExpr],True,body.append)
+            forceVoid=(inClass and name is S('__init__'))
+            if forceVoid:
+                for g in bodyGs:
+                    reduce(g,True,body.append)
+                ReduceDefun.isGeneratorStack.pop()
+            else:
+                for g in bodyGs[:-1]:
+                    reduce(g,True,body.append)
+                resExpr=reduce(bodyGs[-1],False,body.append)
+                if not ReduceDefun.isGeneratorStack.pop():
+                    reduce([S('return'),resExpr],True,body.append)
         if body:
             body=maybeBegin(body)
         else:
@@ -252,7 +258,7 @@ class ReduceDefun(Reducer):
             return name
 
 class ReduceLambda(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         if isStmt:
             return None
         name=gensym('lambda')
@@ -260,12 +266,12 @@ class ReduceLambda(Reducer):
         return name
 
 class ReduceClass(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         name=gomer[1]
         bases=gomer[2]
         body=[]
         for g in gomer[3:]:
-            reduce(g,True,body.append)
+            reduce(g,True,body.append,inClass=True)
         stmtCollector([S('class'),name,bases]+body)
         if not isStmt:
             return name
@@ -282,7 +288,7 @@ class ReduceAssign(Reducer):
                 return False
         return True
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         lhs=gomer[1]
         rhs=gomer[2]
         assert (isinstance(lhs,S)
@@ -299,7 +305,7 @@ class ReduceAssign(Reducer):
             return lhs
 
 class ReduceBegin(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         parts=gomer[1:]
         if not parts:
             return None
@@ -311,7 +317,7 @@ class ReduceBegin(Reducer):
             return lastExpr
 
 class ReduceImport(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         last=None
         for module in gomer[1:]:
             assert isinstance(module,S)
@@ -324,7 +330,7 @@ class ReduceBreakOrContinue(Reducer):
     def __init__(self,name):
         self.name=S(name)
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert isStmt
         assert len(gomer)==1
         scratch=ReduceWhile.scratchStack[-1]
@@ -333,7 +339,7 @@ class ReduceBreakOrContinue(Reducer):
         stmtCollector([self.name])
 
 class ReduceQuote(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         if isStmt:
             return
         assert len(gomer)==2
@@ -350,7 +356,7 @@ class ReduceReturn(Reducer):
     #  order.  Of course, it *can't* have a value, since it skips
     #  past the value, so it doesn't matter what we return as the
     #  expr code.  So we don't, and let the caller get None.
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)==2
         stmtCollector([S('return'),reduce(gomer[1],False,stmtCollector)])
 
@@ -359,7 +365,7 @@ class ReduceYield(Reducer):
     #  you use it as an expr, it'll get put into the statement stream
     #  in the correct order, and the value yielded will be used as
     #  the value of the expr.
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)==2
 
         # This guard is in place to permit the unit tests to test
@@ -374,7 +380,7 @@ class ReduceYield(Reducer):
             return expr
 
 class ReduceAnd(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         if len(gomer)==1:
             if isStmt:
                 return
@@ -391,7 +397,7 @@ class ReduceAnd(Reducer):
                       isStmt,stmtCollector)
 
 class ReduceOr(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         if len(gomer)==1:
             if isStmt:
                 return
@@ -408,7 +414,7 @@ class ReduceOr(Reducer):
                       isStmt,stmtCollector)
 
 class ReduceDot(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)>1
         if len(gomer)==2:
             return reduce(gomer[1],isStmt,stmtCollector)
@@ -425,7 +431,7 @@ class ReduceDot(Reducer):
         return res
 
 class ReduceRaise(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer) in [1,2]
         if len(gomer)==1:
             stmtCollector([S('reraise')])
@@ -433,7 +439,7 @@ class ReduceRaise(Reducer):
             stmtCollector([S('raise'),reduce(gomer[1],False,stmtCollector)])
 
 class ReducePrint(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         expr=None
         stmt=[S('call'),S('print')]
         args=[]
@@ -451,7 +457,7 @@ class ReduceAdditiveBinop(Reducer):
         self.op=op
         self.identity=identity
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         def expr():
             if len(gomer)==1:
                 return self.identity
@@ -471,7 +477,7 @@ class ReduceSubtractiveBinop(Reducer):
         self.identity=identity
         self.unop=unop
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         def expr():
             if len(gomer)==1:
                 return self.identity
@@ -497,7 +503,7 @@ class ReduceComparisonBinop(Reducer):
     def __init__(self,op):
         self.op=op
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         def expr():
             if len(gomer)<=2:
                 return True
@@ -521,7 +527,7 @@ class ReduceSimpleBinop(Reducer):
     def __init__(self,op):
         self.op=op
 
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)==3
         op1=reduce(gomer[1],False,stmtCollector)
         op2=reduce(gomer[2],False,stmtCollector)
@@ -529,7 +535,7 @@ class ReduceSimpleBinop(Reducer):
             return [S('binop'),self.op,op1,op2]
 
 class ReduceSubscript(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer)==3
         obj=reduce(gomer[1],False,stmtCollector)
         index=reduce(gomer[2],False,stmtCollector)
@@ -537,7 +543,7 @@ class ReduceSubscript(Reducer):
             return [S('[]'),obj,index]
 
 class ReduceSlice(Reducer):
-    def reduce(self,gomer,isStmt,stmtCollector):
+    def reduce(self,gomer,isStmt,stmtCollector,inClass):
         assert len(gomer) in [3,4]
         obj=reduce(gomer[1],False,stmtCollector)
         left=reduce(gomer[2],False,stmtCollector)
@@ -603,11 +609,11 @@ def getReducer(f):
     else:
         return reduceDefault
 
-def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False):
+def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False,inClass=False):
     if isinstance(gomer,list):
         assert gomer
         reducer=getReducer(gomer[0])
-        gomer=reducer.reduce(gomer,isStmt,stmtCollector)
+        gomer=reducer.reduce(gomer,isStmt,stmtCollector,inClass)
     if isStmt:
         if isinstance(gomer,list):
             stmtCollector(gomer)

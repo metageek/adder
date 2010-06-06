@@ -109,7 +109,7 @@ class Scope:
 
     nextId=1
 
-    def __init__(self,parent,*,isRoot=False):
+    def __init__(self,parent,*,isRoot=False,isClassScope=False):
         self.entries={}
         id=None
 
@@ -128,6 +128,7 @@ class Scope:
         else:
             self.id=id
         self.readOnly=False
+        self.isClassScope=isClassScope
 
         self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
 
@@ -140,6 +141,8 @@ class Scope:
                asConst=False,
                ignoreScopeId=False,
                macroExpander=None):
+        if self.isClassScope:
+            ignoreScopeId=True
         assert not self.readOnly
         if name in self.entries:
             raise Redefined(name,initExpr,self.entries[name])
@@ -158,10 +161,11 @@ class Scope:
         cur=self
         already=set()
         while cur is not None:
-            for key in self.entries:
-                if key not in already:
-                    already.add(key)
-                    yield key
+            if not cur.isClassScope:
+                for key in self.entries:
+                    if key not in already:
+                        already.add(key)
+                        yield key
             cur=cur.parent
 
     def __len__(self):
@@ -169,30 +173,37 @@ class Scope:
         already=set()
         res=0
         while cur is not None:
-            for key in self.entries:
-                if key not in already:
-                    already.add(key)
-                    res+=1
+            if not cur.isClassScope:
+                for key in self.entries:
+                    if key not in already:
+                        already.add(key)
+                        res+=1
             cur=cur.parent
         return res
 
-    def __getitem__(self,key):
+    def get(self,key,*,skipClassScopes=True):
         cur=self
         while cur is not None:
-            if key in cur.entries:
-                return cur.entries[key]
+            if not (skipClassScopes and cur.isClassScope):
+                if key in cur.entries:
+                    return cur.entries[key]
             cur=cur.parent
         raise Undefined(key)
 
-    def requiredScope(self,sym):
-        if sym in self.entries:
-            return self
+    def __getitem__(self,key):
+        return self.get(key)
+
+    def requiredScope(self,sym,*,skipClassScopes=True):
+        if  not (skipClassScopes and self.isClassScope):
+            if sym in self.entries:
+                return self
         if self.parent is not None:
-            return self.parent.requiredScope(sym)
+            return self.parent.requiredScope(sym,
+                                             skipClassScopes=skipClassScopes)
         raise Undefined(sym)
 
 Scope.root=Scope(None,isRoot=True)
-for name in ['defun','lambda','defvar','scope',
+for name in ['class','defun','lambda','defvar','scope',
              'quote','import',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
@@ -424,6 +435,22 @@ class Annotator:
         return ([scopedDef,
                  scopedVar,scopedInitExpr],line,scope)
 
+    def annotate_class(self,expr,line,scope,globalDict,localDict):
+        classScope=Scope(scope,isClassScope=True)
+        namePE=expr[1]
+        scope.addDef(namePE[0],namePE[1],None)
+        return (([(S('class'),expr[0][1],Scope.root),
+                  (namePE[0],namePE[1],scope),
+                  (list(map(lambda e: self(e,scope,globalDict,localDict),
+                            expr[2][0])),
+                   expr[2][1],
+                   scope)
+                  ]
+                 +list(map(lambda e: self(e,classScope,globalDict,localDict),
+                           expr[3:]))
+                 ),
+                line,scope)
+
     def annotate_defun(self,expr,line,scope,globalDict,localDict):
         return self.defunOrLambda(expr[0],expr[1],expr[2],expr[3:],
                                   line,scope,globalDict,localDict)
@@ -444,7 +471,7 @@ class Annotator:
         scoped=[self(opPE,scope,globalDict,localDict)]
         if namePE:
             scope.addDef(namePE[0],namePE[1],None)
-            scoped.append(self(namePE,scope,globalDict,localDict))
+            scoped.append((namePE[0],namePE[1],scope))
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
         for parsedExpr in bodyPEs:
@@ -478,7 +505,7 @@ def stripAnnotations(annotated,*,quoted=False):
         if expr is S('&rest'):
             return expr
         if (scope.id>0
-            and not scope[expr].ignoreScopeId):
+            and not scope.get(expr,skipClassScopes=False).ignoreScopeId):
             return S('%s-%d' % (str(expr),scope.id))
     if not (expr and isinstance(expr,list)):
         return expr

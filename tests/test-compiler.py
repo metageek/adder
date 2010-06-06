@@ -94,6 +94,46 @@ class AnnotateTestCase(unittest.TestCase):
         assert len(scopes[1])==2
         assert sorted(scopes[1])==[S('current-scope'),S('foo')]
 
+    def testClass(self):
+        scope=Scope(None)
+        scope.addDef(S('Base1'),None,1)
+        scope.addDef(S('Base2'),None,1)
+        (scoped,scopes)=self.annotate(([(S('class'),1),
+                                        (S('C'),1),
+                                        ([(S('Base1'),1),
+                                          (S('Base2'),1)
+                                          ],1),
+                                        ([(S('defun'),2),
+                                          (S('__init__'),2),
+                                          ([(S('self'),2),
+                                            (S('x'),2)
+                                            ],2),
+                                          ([(S(':='),3),
+                                            ([(S('.'),3),
+                                              (S('self'),3),
+                                              (S('x'),3)],3),
+                                            (S('x'),3)],3)
+                                          ],2)
+                                        ],1),
+                                      scope=scope)
+        assert scoped==([(S('class'),1,0),
+                         (S('C'),1,1),
+                         ([(S('Base1'),1,1),
+                           (S('Base2'),1,1)
+                           ],1,1),
+                         ([(S('defun'),2,0),
+                           (S('__init__'),2,2),
+                           ([(S('self'),2,3),
+                             (S('x'),2,3)
+                             ],2,2),
+                           ([(S(':='),3,0),
+                             ([(S('.'),3,0),
+                               (S('self'),3,3),
+                               (S('x'),3,3)],3,3),
+                             (S('x'),3,3)],3,3)
+                           ],2,2)
+                         ],1,1)
+
     def testDefun(self):
         (scoped,scopes)=self.annotate(([(S('defun'),1),
                                         (S('foo'),1),
@@ -383,6 +423,35 @@ class StripTestCase(EmptyStripTestCase):
         scope.addDef(S('foo'),None,1)
         assert self.clarify((S('foo'),1),scope=scope)==S('foo-1')
 
+    def testClass(self):
+        scope=Scope(None)
+        scope.addDef(S('Base1'),None,1)
+        scope.addDef(S('Base2'),None,1)
+        assert self.clarify(([(S('class'),1),
+                              (S('C'),1),
+                              ([(S('Base1'),1),
+                                (S('Base2'),1)
+                                ],1),
+                              ([(S('defun'),2),
+                                (S('__init__'),2),
+                                ([(S('self'),2),
+                                  (S('x'),2)
+                                  ],2),
+                                ([(S(':='),3),
+                                  ([(S('.'),3),
+                                    (S('self'),3),
+                                    (S('x'),3)],3),
+                                  (S('x'),3)],3)
+                                ],2)
+                              ],1),
+                            scope=scope)==[S('class'),S('C-1'),
+                                           [S('Base1-1'),S('Base2-1')],
+                                           [S('defun'),S('__init__'),
+                                            [S('self-3'),S('x-3')],
+                                            [S(':='),
+                                             [S('.'),S('self-3'),S('x')],
+                                             S('x-3')]]]
+
     def testDefun(self):
         assert self.clarify(([(S('defun'),1),
                               (S('foo'),1),
@@ -529,6 +598,23 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         scope=Scope(None)
         scope.addDef(S('foo'),None,1)
         assert self.clarify("foo",scope=scope)==S('foo-1')
+
+    def testClass(self):
+        scope=Scope(None)
+        scope.addDef(S('Base1'),None,1)
+        scope.addDef(S('Base2'),None,1)
+        assert self.clarify("""(class C (Base1 Base2)
+  (defun __init__ (self x)
+    (:= (. self x) x))
+)
+""",
+                            scope=scope)==[S('class'),S('C-1'),
+                                           [S('Base1-1'),S('Base2-1')],
+                                           [S('defun'),S('__init__'),
+                                            [S('self-3'),S('x-3')],
+                                            [S(':='),
+                                             [S('.'),S('self-3'),S('x')],
+                                             S('x-3')]]]
 
     def testDefun(self):
         assert self.clarify("""(defun foo (x y)
@@ -1007,6 +1093,24 @@ class EvalTestCase(EmptyStripTestCase):
     def testVar(self):
         assert self.evalAdder("foo",foo=17)==17
 
+    def testClass(self):
+        class Base1:
+            pass
+        class Base2:
+            pass
+        c=self.evalAdder("""(begin
+(class C (Base1 Base2)
+  (defun __init__ (self x)
+    (:= (. self x) x))
+  )
+(C 17)
+)
+""",
+                         Base1=Base1,Base2=Base2)
+        assert isinstance(c,Base1)
+        assert isinstance(c,Base2)
+        assert c.x==17
+
     def testDefun(self):
         assert self.evalAdder("""(begin
 (defun foo (x y)
@@ -1380,6 +1484,24 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 
     def testTimes2(self):
         assert self.e("(* 9 7)")==63
+
+    def testClass(self):
+        class Base1:
+            pass
+        class Base2:
+            pass
+        c=self.e("""(begin
+(class C (Base1 Base2)
+  (defun __init__ (self x)
+    (:= (. self x) x))
+  )
+(C 17)
+)
+""",
+                 Base1=Base1,Base2=Base2)
+        assert isinstance(c,Base1)
+        assert isinstance(c,Base2)
+        assert c.x==17
 
     def testDefun1(self):
         assert self.e("""(defun f (x) (* x 7))

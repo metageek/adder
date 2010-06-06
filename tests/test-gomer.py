@@ -537,11 +537,7 @@ class ReduceTestCase(unittest.TestCase):
         assert self.stmts==[
             [S('class'),S('C'),[S('B1'),S('B2')],
              [S('def'),S('__init__'),[S('self'),S('x')],
-              [S('begin'),
-               [S(':='),[S('.'),S('self'),S('x')],S('x')],
-               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
-               [S('return'),scratch1]
-               ]
+              [S(':='),[S('.'),S('self'),S('x')],S('x')],
               ]
              ]
             ]
@@ -563,11 +559,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('class'),S('C'),[S('B1'),S('B2')],
              [S(':='),S('y'),7],
              [S('def'),S('__init__'),[S('self'),S('x')],
-              [S('begin'),
-               [S(':='),[S('.'),S('self'),S('x')],S('x')],
-               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
-               [S('return'),scratch1]
-               ]
+              [S(':='),[S('.'),S('self'),S('x')],S('x')],
               ]
              ]
             ]
@@ -589,11 +581,7 @@ class ReduceTestCase(unittest.TestCase):
             [S('class'),S('C'),[S('B1'),S('B2')],
              [S(':='),S('y'),7],
              [S('def'),S('__init__'),[S('self'),S('x')],
-              [S('begin'),
-               [S(':='),[S('.'),S('self'),S('x')],S('x')],
-               [S(':='),scratch1,[S('.'),S('self'),S('x')]],
-               [S('return'),scratch1]
-               ]
+              [S(':='),[S('.'),S('self'),S('x')],S('x')],
               ]
              ]
             ]
