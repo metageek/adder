@@ -1,6 +1,5 @@
 # A structured internal representation; basically an annotated form of
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
-#  Includes a basic interpreter, for use in macro expansion.
 
 import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym, mkScratch
