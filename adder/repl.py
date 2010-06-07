@@ -15,7 +15,8 @@ def readEvalGenerator(context,instream,exceptionHandler):
 
 class Repl:
     def __init__(self,*,context=None,prompt='> ',
-                 instream=None,outstream=None):
+                 instream=None,outstream=None,
+                 interactive=True):
         self.context=context
         self.prompt=prompt
         self.instream=instream
@@ -25,10 +26,12 @@ class Repl:
         if self.outstream is None:
             self.outstream=sys.stdout
         if self.context is None:
-            self.outstream.write('Loading prelude...')
-            self.outstream.flush()
+            if interactive:
+                self.outstream.write('Loading prelude...')
+                self.outstream.flush()
             self.context=Context()
-            self.outstream.write('done.\n')
+            if interactive:
+                self.outstream.write('done.\n')
 
     def load(self,f):
         self.context.load(f)

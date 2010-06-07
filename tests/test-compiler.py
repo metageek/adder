@@ -1571,6 +1571,12 @@ class PreludeTestCase(ContextTestCase):
     def testConstZip(self):
         assert self.e('zip') is zip
 
+    def testConstNext(self):
+        assert self.e('next') is next
+
+    def testConstIter(self):
+        assert self.e('iter') is iter
+
     def testConstStdin(self):
         assert self.e('stdin') is sys.stdin
 

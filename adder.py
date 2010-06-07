@@ -22,13 +22,14 @@ progDir=os.path.dirname(__file__)
 pkgDir=os.path.join(progDir,'adder')
 sys.path.append(pkgDir)
 
-import adder.repl
-repl=adder.repl.Repl()
+if not args:
+    interactive=True
 
-loadedFiles=False
+import adder.repl
+repl=adder.repl.Repl(interactive=interactive)
+
 for f in args:
-    loadedFiles=True
     repl.load(f)
 
-if (not loadedFiles) or interactive:
+if interactive:
     repl.run()
