@@ -663,13 +663,7 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
     if verbose:
         print(stmtFlat)
-    try:
-        exec(stmtFlat,globalDict,localDict)
-    except TypeError as te:
-        print(gomer)
-        print(stmtFlat)
-        pdb.set_trace()
-        raise
+    exec(stmtFlat,globalDict,localDict)
     res=globalDict[resVar.toPython()]
     if verbose:
         pdb.set_trace()
