@@ -1,7 +1,7 @@
 from adder.parser import parseStream
 from adder.compiler import Context
 import adder.common
-import sys,pdb
+import sys,pdb,readline
 
 def readEvalGenerator(context,instream,exceptionHandler):
     for parsedExpr in parseStream(instream):
@@ -22,7 +22,17 @@ class Repl:
         self.instream=instream
         self.outstream=outstream
         if self.instream is None:
-            self.instream=sys.stdin
+            if interactive:
+                def readlines():
+                    while True:
+                        try:
+                            line=input()
+                        except EOFError:
+                            break
+                        yield line+'\n'
+                self.instream=readlines()
+            else:
+                self.instream=sys.stdin
         if self.outstream is None:
             self.outstream=sys.stdout
         if self.context is None:
