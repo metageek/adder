@@ -2,14 +2,21 @@
 
 import sys,os,getopt
 
-interactive=True
-(opts,args)=getopt.getopt(sys.argv[1:],"h?",["help"])
+interactive=False
+(opts,args)=getopt.getopt(sys.argv[1:],"h?i",["help","interactive"])
 for (opt,optval) in opts:
     if opt in ["-h","-?","--help"]:
-        print("""Usage: %s [FILE]...
+        print("""Usage: %s [OPTIONS] [FILE]...
 FILEs are Adder source files to load.  If none specified, will run
-in interactive mode.""" % sys.argv[0])
+in interactive mode.
+
+Options:
+  -i, --interactive    Run in interactive mode after loading files (if any).
+  -h, -?, --help       This help.
+""" % sys.argv[0])
         sys.exit()
+    if opt in ["-i","--interactive"]:
+        interactive=True
 
 progDir=os.path.dirname(__file__)
 pkgDir=os.path.join(progDir,'adder')
@@ -18,9 +25,10 @@ sys.path.append(pkgDir)
 import adder.repl
 repl=adder.repl.Repl()
 
+loadedFiles=False
 for f in args:
-    interactive=False
+    loadedFiles=True
     repl.load(f)
 
-if interactive:
+if (not loadedFiles) or interactive:
     repl.run()
