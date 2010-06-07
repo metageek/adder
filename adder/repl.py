@@ -1,5 +1,6 @@
 from adder.parser import parseStream
 from adder.compiler import Context
+import adder.common
 import sys,pdb
 
 def readEvalGenerator(context,instream,exceptionHandler):
@@ -31,6 +32,6 @@ def repl(*,context=None,
     outstream.write(prompt)
     outstream.flush()
     for val in readEvalGenerator(context,instream,exceptionHandler):
-        outstream.write('%s\n' % repr(val))
+        outstream.write('%s\n' % adder.common.adderStr(val))
         outstream.write(prompt)
         outstream.flush()
