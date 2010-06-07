@@ -1127,15 +1127,6 @@ class EvalTestCase(EmptyStripTestCase):
     def testDefvar(self):
         assert self.evalAdder("(begin (defvar x 17) x)")==17
 
-    def testDefvarRedefinitionFails(self):
-        try:
-            self.evalAdder("(begin (defvar x 17) (defvar x 12))")
-            assert False
-        except Redefined as red:
-            assert red.args[0]==S('x')
-            assert red.args[1][:2]==(12,1)
-            assert red.args[2].initExpr[:2]==(17,1)
-
     def testDefconst(self):
         assert self.evalAdder("(begin (defconst x 17) x)")==17
 
@@ -1145,6 +1136,15 @@ class EvalTestCase(EmptyStripTestCase):
             assert False
         except AssignedToConst as ass:
             assert ass.args==(S('x'),)
+
+    def testDefconstRedefinitionFails(self):
+        try:
+            self.evalAdder("(begin (defconst x 17) (defconst x 12))")
+            assert False
+        except Redefined as red:
+            assert red.args[0]==S('x')
+            assert red.args[1][:2]==(12,1)
+            assert red.args[2].initExpr[:2]==(17,1)
 
     def testScopeTrivial(self):
         assert self.evalAdder("(scope 17)")==17

@@ -140,11 +140,12 @@ class Scope:
     def addDef(self,name,initExpr,line,*,
                asConst=False,
                ignoreScopeId=False,
-               macroExpander=None):
+               macroExpander=None,
+               redefPermitted=False):
         if self.isClassScope:
             ignoreScopeId=True
         assert not self.readOnly
-        if name in self.entries:
+        if name in self.entries and not redefPermitted:
             raise Redefined(name,initExpr,self.entries[name])
         self.entries[name]=Scope.Entry(initExpr=initExpr,
                                        line=line,
@@ -152,7 +153,8 @@ class Scope:
                                        ignoreScopeId=ignoreScopeId,
                                        macroExpander=macroExpander)
 
-    def addConst(self,name,value,line,*,ignoreScopeId=False):
+    def addConst(self,name,value,line,*,
+                 ignoreScopeId=False):
         self.addDef(name,q(value),line,
                     asConst=True,
                     ignoreScopeId=ignoreScopeId)
@@ -218,7 +220,7 @@ for name in ['class','defun','lambda','defvar','scope',
              'getScopeById','globals','locals',
              'defmacro','python','load','adder',
              ]:
-    Scope.root.addDef(S(name),None,0)
+    Scope.root.addDef(S(name),None,0,redefPermitted=True)
 
 Scope.root.addConst(S('true'),True,0)
 Scope.root.addConst(S('false'),False,0)
@@ -300,7 +302,7 @@ class Annotator:
         def expand(xArgs,xScope,xGlobalDict,xLocalDict):
             xCall=[expanderName]+list(map(q,xArgs))
             return adder.runtime.eval(xCall,xScope,xGlobalDict,xLocalDict)
-        scope.addDef(name,None,line,macroExpander=expand)
+        scope.addDef(name,None,line,macroExpander=expand,redefPermitted=True)
         return self(([(S('defun'),line),(expanderName,line)]+expr[2:],
                      line),
                     scope,globalDict,localDict)
@@ -380,7 +382,7 @@ class Annotator:
                                globalDict,localDict)
         for (pkg,pkgLine) in expr[1:]:
             scope.addDef(S(str(pkg).split('.')[0]),None,pkgLine,
-                         ignoreScopeId=True)
+                         ignoreScopeId=True,redefPermitted=True)
         return res
 
     def quoteOrImport(self,expr,line,scope,justOneArg,globalDict,localDict):
@@ -430,7 +432,8 @@ class Annotator:
     def defvarOrDefconst(self,expr,line,scope,asConst,globalDict,localDict):
         scopedDef=self((S(':='),expr[0][1]),scope,globalDict,localDict)
         scopedInitExpr=self(expr[2],scope,globalDict,localDict)
-        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],asConst=asConst)
+        scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],
+                     asConst=asConst,redefPermitted=not asConst)
         scopedVar=(expr[1][0],expr[1][1],scope)
         return ([scopedDef,
                  scopedVar,scopedInitExpr],line,scope)
@@ -438,7 +441,7 @@ class Annotator:
     def annotate_class(self,expr,line,scope,globalDict,localDict):
         classScope=Scope(scope,isClassScope=True)
         namePE=expr[1]
-        scope.addDef(namePE[0],namePE[1],None)
+        scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
         return (([(S('class'),expr[0][1],Scope.root),
                   (namePE[0],namePE[1],scope),
                   (list(map(lambda e: self(e,scope,globalDict,localDict),
@@ -470,7 +473,7 @@ class Annotator:
             return (argExpr,argLine,childScope)
         scoped=[self(opPE,scope,globalDict,localDict)]
         if namePE:
-            scope.addDef(namePE[0],namePE[1],None)
+            scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
             scoped.append((namePE[0],namePE[1],scope))
         (argsExpr,argsLine)=argsPE
         scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
@@ -589,5 +592,5 @@ class Context:
                               verbose=verbose)
 
     def define(self,name,value):
-        self.scope.addDef(S(name),value,0)
+        self.scope.addDef(S(name),value,0,redefPermitted=True)
         self.globals[S("%s-1" % name).toPython()]=value
