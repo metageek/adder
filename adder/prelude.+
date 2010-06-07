@@ -157,3 +157,8 @@
                  (mk-list (mk-list (quote otherwise)
                                    (mk-list (quote error)
                                             "Fell through ecase")))))))
+(define (take i n)
+  (:= i ((. python iter) i))
+  (while (> n 0)
+         (yield ((. python next) i))
+         (:= n (- n 1))))

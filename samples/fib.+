@@ -1,0 +1,13 @@
+(define (fib)
+  (define n1 1)
+  (define n2 1)
+  (define tmp none)
+  (yield n1)
+  (yield n2)
+  (while true
+         (:= tmp (+ n1 n2))
+         (yield tmp)
+         (:= n1 n2)
+         (:= n2 tmp)))
+
+(print (list (take (fib) 5)))

@@ -13,25 +13,35 @@ def readEvalGenerator(context,instream,exceptionHandler):
             else:
                 raise
 
-def repl(*,context=None,
-           instream=None,
-           outstream=None,
-           prompt='> '):
-    if instream is None:
-        instream=sys.stdin
-    if outstream is None:
-        outstream=sys.stdout
-    if context is None:
-        outstream.write('Loading prelude...')
-        outstream.flush()
-        context=Context()
-        outstream.write('done.\n')
-    def exceptionHandler(e):
-        outstream.write('Exception: %s\n' % str(e))
+class Repl:
+    def __init__(self,*,context=None,prompt='> ',
+                 instream=None,outstream=None):
+        self.context=context
+        self.prompt=prompt
+        self.instream=instream
+        self.outstream=outstream
+        if self.instream is None:
+            self.instream=sys.stdin
+        if self.outstream is None:
+            self.outstream=sys.stdout
+        if self.context is None:
+            self.outstream.write('Loading prelude...')
+            self.outstream.flush()
+            self.context=Context()
+            self.outstream.write('done.\n')
 
-    outstream.write(prompt)
-    outstream.flush()
-    for val in readEvalGenerator(context,instream,exceptionHandler):
-        outstream.write('%s\n' % adder.common.adderStr(val))
-        outstream.write(prompt)
-        outstream.flush()
+    def load(self,f):
+        self.context.load(f)
+
+    def run(self):
+        def exceptionHandler(e):
+            self.outstream.write('Exception: %s\n%s' % (str(e),self.prompt))
+
+        self.outstream.write(self.prompt)
+        self.outstream.flush()
+        for val in readEvalGenerator(self.context,
+                                     self.instream,
+                                     exceptionHandler):
+            self.outstream.write('%s\n' % adder.common.adderStr(val))
+            self.outstream.write(self.prompt)
+            self.outstream.flush()

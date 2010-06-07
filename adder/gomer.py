@@ -281,6 +281,8 @@ class ReduceAssign(Reducer):
         if not isinstance(rhs,list):
             return True
         assert rhs
+        if not isinstance(rhs[0],S):
+            return False
         if rhs[0] in reductionRules:
             return False
         for arg in rhs[1:]:
