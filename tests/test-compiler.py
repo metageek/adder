@@ -1559,6 +1559,12 @@ class PreludeTestCase(ContextTestCase):
     def loadPrelude(self):
         return True
 
+    def testConstEvalPy(self):
+        assert self.e('eval-py') is eval
+
+    def testCallEvalPy(self):
+        assert self.e('(eval-py "9*7")')==63
+
     def testConstMap(self):
         assert self.e('map') is map
 

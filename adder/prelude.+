@@ -1,3 +1,4 @@
+(defconst eval-py (. python eval))
 (defconst map (. python map))
 (defconst zip (. python zip))
 (defconst stdin (. python sys stdin))
