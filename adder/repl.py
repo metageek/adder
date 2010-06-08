@@ -1,7 +1,12 @@
 from adder.parser import parseStream
 from adder.compiler import Context
 import adder.common
-import sys,pdb,readline
+import sys,pdb
+
+try:
+    import readline
+except ImportError:
+    pass
 
 def readEvalGenerator(context,instream,exceptionHandler):
     for parsedExpr in parseStream(instream):
