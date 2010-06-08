@@ -39,7 +39,9 @@
 
        (define move-to (self dest)
          (unless (in dest ([] (. self links) (. self player)))
-             (:= (. self player) dest)
+                 (print "Can't get there from here.")
+                 (return))
+         (:= (. self player) dest)
          )
        )
 
