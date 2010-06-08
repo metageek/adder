@@ -165,3 +165,9 @@
   (while (> n 0)
          (yield (next i))
          (:= n (- n 1))))
+
+(defmacro when (cond &rest body)
+  (mk-list 'if cond (cons 'begin (list body))))
+
+(defmacro unless (cond &rest body)
+  (mk-list 'if (mk-list 'not cond) (cons 'begin (list body))))
