@@ -358,8 +358,12 @@ class ReduceReturn(Reducer):
     #  past the value, so it doesn't matter what we return as the
     #  expr code.  So we don't, and let the caller get None.
     def reduce(self,gomer,isStmt,stmtCollector,inClass):
-        assert len(gomer)==2
-        stmtCollector([S('return'),reduce(gomer[1],False,stmtCollector)])
+        assert len(gomer) in [1,2]
+        if  len(gomer)==1:
+            stmtCollector([S('return')])
+        else:
+            stmtCollector([S('return'),
+                           reduce(gomer[1],False,stmtCollector)])
 
 class ReduceYield(Reducer):
     # Python yield has to be a statement; Adder (yield) does not.  If

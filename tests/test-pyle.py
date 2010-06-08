@@ -78,6 +78,7 @@ class StrTestCase(unittest.TestCase):
     def testReturn(self):
         assert str(Return(Var(S('fred'))))=='return fred'
         assert str(Return(Literal(7)))=='return 7'
+        assert str(Return())=='return'
 
     def testYield(self):
         assert str(Yield(Var(S('fred'))))=='yield fred'
@@ -276,6 +277,9 @@ class ToPythonTestCase(unittest.TestCase):
 
     def testReturn(self):
         assert self.toP(Return(Literal(7)))==("return 7","return 7\n")
+
+    def testReturnBlank(self):
+        assert self.toP(Return())==("return","return\n")
 
     def testYield(self):
         assert self.toP(Yield(Literal(7)))==("yield 7","yield 7\n")
@@ -797,6 +801,9 @@ class BuildToPythonTestCase(unittest.TestCase):
 
     def testReturn(self):
         assert self.toP([S('return'),7])==("return 7","return 7\n")
+
+    def testReturnBlank(self):
+        assert self.toP([S('return')])==("return","return\n")
 
     def testYield(self):
         assert self.toP([S('yield'),7])==("yield 7","yield 7\n")

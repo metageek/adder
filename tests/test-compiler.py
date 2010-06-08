@@ -733,6 +733,13 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             [S('return'),S('x-2')],
             ]
 
+    def testReturnBlank(self):
+        assert self.clarify("(defun foo (x) (return) x)")==[
+            S('defun'),S('foo-1'),[S('x-2')],
+            [S('return')],
+            S('x-2')
+            ]
+
     def testRaise(self):
         assert self.clarify("(defun foo (x) (raise x))")==[
             S('defun'),S('foo-1'),[S('x-2')],
@@ -1508,6 +1515,12 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 (f 9)
 """)==63
         assert self['f-1'](12)==84
+
+    def testDefunReturnBlank(self):
+        assert self.e("""(defun f (x) (return) (* x 7))
+(f 9)
+""") is None
+        assert self['f-1'](12) is None
 
     def testLoad(self):
         thisFile=self.__class__.testLoad.__code__.co_filename

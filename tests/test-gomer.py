@@ -2806,6 +2806,17 @@ return %s
             "None"
             )
 
+    def testReturnBlankStmt(self):
+        scratch=gensym('scratch')
+        scratchP=scratch.toPython()
+        assert self.toP([S('return')],
+                        True)==(
+            ["return"],
+            """return
+""",
+            None
+            )
+
     def testYieldStmt(self):
         scratch=gensym('scratch')
         scratchP=scratch.toPython()

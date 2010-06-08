@@ -161,12 +161,15 @@ class Assign(Stmt):
                           )
 
 class Return(Stmt):
-    def __init__(self,value):
+    def __init__(self,value=None):
         assert isinstance(value,Simple) or value is None
         self.value=value
 
     def __str__(self):
-        return 'return %s' % str(self.value)
+        if self.value is None:
+            return 'return'
+        else:
+            return 'return %s' % str(self.value)
 
 class Yield(Stmt):
     def __init__(self,value):
@@ -512,8 +515,11 @@ def build(pyle):
         assert len(pyle)==3
         return Assign(build(pyle[1]),build(pyle[2]))
     if f==S('return'):
-        assert len(pyle)==2
-        return Return(build(pyle[1]))
+        assert len(pyle) in [1,2]
+        if len(pyle)==1:
+            return Return()
+        else:
+            return Return(build(pyle[1]))
     if f==S('yield'):
         assert len(pyle)==2
         return Yield(build(pyle[1]))
