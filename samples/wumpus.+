@@ -41,7 +41,7 @@
 
        (define (move-to self dest override-p)
          (unless (or override-p
-                     (in dest ([] (. self links) (. self player))))
+                     ((. self adjacent) (. self player) dest))
                  (print "Can't get there from here.")
                  (return true))
          (let ((with-wumpus (== dest (. self wumpus)))
@@ -69,8 +69,22 @@
            (:= (. self player) dest)
            true))
 
+       (define (adjacent self r1 r2)
+         (in r2 ([] (. self links) r1))
+         )
+
+       (define (bats-nearby self)
+         (or ((. self adjacent) (. self player) ([] (. self bats) 0))
+             ((. self adjacent) (. self player) ([] (. self bats) 1))))
+
        (define (run self)
          (while true
+                (when ((. self adjacent) (. self player) (. self wumpus))
+                      (print "I smell a Wumpus!"))
+                (when ((. self bats-nearby))
+                      (print "Bats nearby!"))
+                (when ((. self adjacent) (. self player) (. self pit))
+                      (print "I feel a draft!"))
                 (print (% "You are in room %d.  There are tunnels to rooms %s.\nWhere do you want to go?"
                           (mk-tuple
                            (. self player)
