@@ -69,6 +69,13 @@
            (:= (. self player) dest)
            true))
 
+       (define (shoot-at self dest)
+         (let ((hit (== dest (. self wumpus))))
+           (if hit
+               (print "You killed the Wumpus!")
+               (print "Nope, no Wumpus there."))
+           (not hit)))
+
        (define (adjacent self r1 r2)
          (in r2 ([] (. self links) r1))
          )
@@ -85,20 +92,41 @@
                       (print "Bats nearby!"))
                 (when ((. self adjacent) (. self player) (. self pit))
                       (print "I feel a draft!"))
-                (print (% "You are in room %d.  There are tunnels to rooms %s.\nWhere do you want to go?"
+                (print (% "You are in room %d.  There are tunnels to rooms %s.\nShoot or move?"
                           (mk-tuple
                            (. self player)
                            ((. python str) ([] (. self links) (. self player)))
                            )))
-                (let ((room-line ((. stdin readline))))
-                  (let ((room none))
-                  (try
-                   (:= room ((. python int) room-line))
-                   (:ValueError _ (begin
-                                    (print "That is not an integer.")
-                                    (continue))))
-                  (unless ((. self move-to) room false)
-                          (break))))))
+                (let* ((cmd-line ((. stdin readline)))
+                       (cmd-char (if cmd-line
+                                     ((. ([] cmd-line 0) lower))))
+                       )
+                  (unless (in cmd-char "msq")
+                          (print "That is not an option.")
+                          (continue))
+                  (when (== cmd-char "q")
+                        (print "OK, quitting.")
+                        (break))
+                  (print (% "%s which room?"
+                            (if (== cmd-char "m") "To" "At")
+                            ))
+                  (let ((room-line ((. stdin readline))))
+                    (let ((room none))
+                      (try
+                       (:= room ((. python int) room-line))
+                       (:ValueError _ (begin
+                                        (print "That is not an integer.")
+                                        (continue))))
+                      (unless
+                       (if (== cmd-char "m")
+                           ((. self move-to) room false)
+                           ((. self shoot-at) room))
+                       (break))
+                      )
+                    )
+                  )
+                )
+         )
        )
 
 (let ((w (Wumpus)))
