@@ -135,7 +135,7 @@ def parse(s):
             quotePending=('quote',line)
             continue
         if kind==BACKQUOTE:
-            quotePending=('`',line)
+            quotePending=('backquote',line)
             continue
         if kind==COMMA:
             quotePending=(',',line)

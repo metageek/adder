@@ -206,7 +206,7 @@ class Scope:
 
 Scope.root=Scope(None,isRoot=True)
 for name in ['class','defun','lambda','defvar','scope','try',
-             'quote','import',
+             'quote','backquote','import',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
              'and','or','not',':=','.',
@@ -460,6 +460,45 @@ class Annotator:
                  +list(map(annotateDumbly,args))
                  ),
                 line,scope)
+
+    def annotate_backquote(self,expr,line,scope,globalDict,localDict):
+        assert len(expr)==2
+        (arg,argLine)=expr[1]
+        if not isinstance(arg,list):
+            expr=[(S('quote'),expr[0][1]),expr[1]]
+            return self.annotate_quote(expr,line,scope,
+                                       globalDict,localDict)
+        sublists=[]
+        curSublist=[]
+        curSublistFirstLine=None
+
+        for (a,aLine) in arg:
+            if isinstance(a,list) and a[0][0] is S(',@'):
+                if curSublist:
+                    sublists.append([(S('mk-list'),
+                                      curSublistFirstLine,
+                                      Scope.root)]+curSublist)
+                    curSublist=[]
+                    curSublistFirstLine=None
+                sublists.append(self(a[1],scope,globalDict,localDict))
+                continue
+            if isinstance(a,list) and a[0][0] is S(','):
+                curItem=self(a[1],scope,globalDict,localDict)
+            else:
+                curItem=self(([(S('quote'),aLine,Scope.root),a],aLine),
+                             scope,globalDict,localDict)
+            if not curSublist:
+                curSublistFirstLine=aLine
+            curSublist.append(curItem)
+        if curSublist:
+            sublists.append([(S('mk-list'),
+                              curSublistFirstLine,
+                              Scope.root)]+curSublist)
+        if len(sublists)==1:
+            return sublists[0]
+        else:
+            return ([(S('+'),line,Scope.root)]+sublists,
+                    line,scope)
 
     def annotate_dot(self,expr,line,scope,globalDict,localDict):
         def annotateDumbly(parsedExpr):

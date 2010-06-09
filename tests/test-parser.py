@@ -62,29 +62,29 @@ class ParserTestCase(unittest.TestCase):
 
     def testBackQuotedSymbol(self):
         l=list(parse("`foo"))
-        l2=[([(S('`'),1),(S('foo'),1)],1)]
+        l2=[([(S('backquote'),1),(S('foo'),1)],1)]
         assert l==l2
         assert isinstance(l[0][0][0][0],S)
 
     def testBackQuotedList(self):
         l=list(parse("`(1 2)"))
-        l2=[([(S('`'),1),([(1,1),(2,1)],1)],1)]
+        l2=[([(S('backquote'),1),([(1,1),(2,1)],1)],1)]
         assert l==l2
         assert isinstance(l[0][0][0][0],S)
 
     def testBackQuotedListWithComma(self):
         l=list(parse("`(1 2 ,foo)"))
-        l2=[([(S('`'),1),([(1,1),(2,1),
-                           ([(S(','),1),(S('foo'),1)],1)
-                           ],1)],1)]
+        l2=[([(S('backquote'),1),([(1,1),(2,1),
+                                   ([(S(','),1),(S('foo'),1)],1)
+                                   ],1)],1)]
         assert l==l2
         assert isinstance(l[0][0][0][0],S)
 
     def testBackQuotedListWithCommaAt(self):
         l=list(parse("`(1 2 ,@foo)"))
-        l2=[([(S('`'),1),([(1,1),(2,1),
-                           ([(S(',@'),1),(S('foo'),1)],1)
-                           ],1)],1)]
+        l2=[([(S('backquote'),1),([(1,1),(2,1),
+                                   ([(S(',@'),1),(S('foo'),1)],1)
+                                   ],1)],1)]
         assert l==l2
         assert isinstance(l[0][0][0][0],S)
 
@@ -127,7 +127,7 @@ class ParserTestCase(unittest.TestCase):
     def testBareNestedListQuotes(self):
         l=list(map(stripLines,parse('(17.3 12 (+ x y 17) \'foo "bar" quux)')))
         assert l==[[17.3,12,[S('+'),S('x'),S('y'),17],
-                    q('foo'),'bar',S('quux')]]
+                    q(S('foo')),'bar',S('quux')]]
 
     def testParseFile(self):
         thisFile=self.__class__.testParseFile.__code__.co_filename

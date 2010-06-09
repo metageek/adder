@@ -626,6 +626,11 @@ class StripTestCase(EmptyStripTestCase):
                               ],1)
                             )==[S('quote'),[S('x'),19,23]]
 
+    def testBackquoteInt(self):
+        assert self.clarify(([(S('backquote'),1),
+                              (17,1)
+                              ],1))==[S('quote'),17]
+
     def testImport(self):
         assert self.clarify(([(S('import'),1),
                               (S('re'),1),
