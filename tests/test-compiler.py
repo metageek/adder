@@ -1600,6 +1600,45 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         assert isinstance(c,Base2)
         assert c.x==17
 
+    def testTry1(self):
+        def foo(x):
+            return x
+        def bar(y):
+            return y*17
+        assert self.e("""
+(try
+ (foo 12)
+ (bar 17)
+(:Exception e (print e))
+(:finally (foo 204))
+)
+""",
+                      foo=foo,bar=bar)==289
+
+    def testTry2(self):
+        def bar(y):
+            raise Exception("nerfbuckets")
+        assert self.e("""
+(defvar l1 (mk-list))
+(defvar l2 (mk-dict))
+(defun foo (x) (:= ([] l2 x) x))
+(try
+ (foo 12)
+ (bar 17)
+(:Exception e ((. l1 append) e))
+(:finally (foo 204))
+)
+""",
+                      bar=bar) is None
+        l1=self['l1-1']
+        l2=self['l2-1']
+        assert len(l1)==1
+        assert isinstance(l1[0],Exception)
+        assert l1[0].args==("nerfbuckets",)
+        assert len(l2)==2
+        assert l2[12]==12
+        assert l2[204]==204
+
     def testDefun1(self):
         assert self.e("""(defun f (x) (* x 7))
 (f 9)
@@ -1884,14 +1923,14 @@ class PreludeTestCase(ContextTestCase):
 
 suite=unittest.TestSuite(
     ( 
-      #unittest.makeSuite(AnnotateTestCase,'test'),
-      #unittest.makeSuite(StripTestCase,'test'),
+      unittest.makeSuite(AnnotateTestCase,'test'),
+      unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
-      #unittest.makeSuite(EvalTestCase,'test'),
-      #unittest.makeSuite(CompileAndEvalTestCase,'test'),
-      #unittest.makeSuite(LoadTestCase,'test'),
-      #unittest.makeSuite(ContextTestCase,'test'),
-      #unittest.makeSuite(PreludeTestCase,'test'),
+      unittest.makeSuite(EvalTestCase,'test'),
+      unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      unittest.makeSuite(LoadTestCase,'test'),
+      unittest.makeSuite(ContextTestCase,'test'),
+      unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 
