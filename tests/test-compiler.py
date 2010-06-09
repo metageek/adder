@@ -160,6 +160,14 @@ class AnnotateTestCase(unittest.TestCase):
                              ([(S('foo'),7,1),(204,7,3)],7,3)],7,3)
                            ],6,1)
                          ],1,1)
+        assert isinstance(scopes,dict)
+        assert len(scopes)==4
+        assert scopes[0] is Scope.root
+        assert sorted(scopes[1])==[S('bar'),S('current-scope'),S('foo')]
+        assert sorted(scopes[2])==[S('current-scope'),S('e')]
+        assert sorted(scopes[3])==[S('current-scope')]
+        assert scopes[2].parent is scopes[1]
+        assert scopes[3].parent is scopes[1]
 
     def testDefun(self):
         (scoped,scopes)=self.annotate(([(S('defun'),1),
@@ -479,6 +487,33 @@ class StripTestCase(EmptyStripTestCase):
                                              [S('.'),S('self-3'),S('x')],
                                              S('x-3')]]]
 
+    def testTry(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        scope.addDef(S('bar'),None,1)
+        assert self.clarify(([(S('try'),1),
+                               ([(S('foo'),2),(12,2)],2),
+                               ([(S('bar'),3),(17,3)],3),
+                               ([(S(':Exception'),4),(S('e'),4),
+                                 ([(S('print'),5),(S('e'),5)],5)],4),
+                               ([(S(':finally'),6),
+                                 ([(S('foo'),7),(204,7)],7)],6)
+                               ],1),scope=scope)==[S('try'),
+                                                   [S('begin'),
+                                                    [S('foo-1'),12],
+                                                    [S('bar-1'),17]
+                                                    ],
+                                                   [S(':Exception'),
+                                                    S('e-2'),
+                                                    [S('begin'),
+                                                     [S('print'),S('e-2')]
+                                                     ]],
+                                                   [S(':finally'),
+                                                    [S('begin'),
+                                                     [S('foo-1'),204]]
+                                                    ]
+                                                   ]
+
     def testDefun(self):
         assert self.clarify(([(S('defun'),1),
                               (S('foo'),1),
@@ -642,6 +677,34 @@ class ParseAndStripTestCase(EmptyStripTestCase):
                                             [S(':='),
                                              [S('.'),S('self-3'),S('x')],
                                              S('x-3')]]]
+
+    def testTry(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        scope.addDef(S('bar'),None,1)
+        assert self.clarify("""
+(try
+ (foo 12)
+ (bar 17)
+(:Exception e (print e))
+(:finally (foo 204))
+)
+""",
+                            scope=scope)==[S('try'),
+                                           [S('begin'),
+                                            [S('foo-1'),12],
+                                            [S('bar-1'),17]
+                                            ],
+                                           [S(':Exception'),
+                                            S('e-2'),
+                                            [S('begin'),
+                                             [S('print'),S('e-2')]
+                                             ]],
+                                           [S(':finally'),
+                                            [S('begin'),
+                                             [S('foo-1'),204]]
+                                            ]
+                                           ]
 
     def testDefun(self):
         assert self.clarify("""(defun foo (x y)
@@ -1821,9 +1884,9 @@ class PreludeTestCase(ContextTestCase):
 
 suite=unittest.TestSuite(
     ( 
-      unittest.makeSuite(AnnotateTestCase,'test'),
+      #unittest.makeSuite(AnnotateTestCase,'test'),
       #unittest.makeSuite(StripTestCase,'test'),
-      #unittest.makeSuite(ParseAndStripTestCase,'test'),
+      unittest.makeSuite(ParseAndStripTestCase,'test'),
       #unittest.makeSuite(EvalTestCase,'test'),
       #unittest.makeSuite(CompileAndEvalTestCase,'test'),
       #unittest.makeSuite(LoadTestCase,'test'),

@@ -557,7 +557,8 @@ def stripAnnotations(annotated,*,quoted=False):
         print(ve,annotated)
         raise
     if (not quoted
-        and isinstance(expr,S)):
+        and isinstance(expr,S)
+        and not expr.isKeyword()):
         if expr is S('&rest'):
             return expr
         if (scope.id>0
