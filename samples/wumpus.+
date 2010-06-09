@@ -76,9 +76,6 @@
                            (. self player)
                            ((. python str) ([] (. self links) (. self player)))
                            )))
-                (print 5)
-                (print stdin)
-                (print 7)
                 (let ((room-line ((. stdin readline))))
                   (let ((room none))
                   (try

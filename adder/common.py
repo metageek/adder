@@ -89,21 +89,18 @@ class Symbol:
 
     def toPython(self):
         if str(self)=='..':
-            return '__adder_dotdot__'
+            return '_adder_dotdot_'
         def escapeSegment(seg):
             if isLegalPython(seg):
                 return seg
             def escape1(ch):
                 if ch=='_':
-                    return '__'
+                    return '_'
                 if pythonLegal.match(ch):
                     return ch
                 return '_%04x' % ord(ch)
-            return '__adder__'+''.join(map(escape1,seg))
-        res='.'.join(map(escapeSegment,self.s.split('.')))
-        if res=='_adder__Wumpus_002d1__adder__stdin_002d1':
-            pdb.set_trace()
-        return res
+            return '_adder_'+''.join(map(escape1,seg))
+        return '.'.join(map(escapeSegment,self.s.split('.')))
             
 
 def gensym(base=None):
