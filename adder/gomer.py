@@ -5,13 +5,6 @@ import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym, mkScratch
 import adder.runtime
 
-def dump(code):
-    n=len(code.split('\n'))
-    if (n>=91):
-        dump.f.write("%d lines:\n" % n)
-        dump.f.write(code)
-dump.f=open('log','w')
-
 def maybeBegin(body):
     if len(body)==1:
         return body[0]
@@ -673,15 +666,9 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     stmtTree=il.toPythonTree()
     stmtTrees.append(stmtTree)
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
-    dump(stmtFlat)
     if verbose:
         print(stmtFlat)
-    try:
-        exec(stmtFlat,globalDict,localDict)
-    except Exception as e:
-        print(e)
-        pdb.set_trace()
-        raise
+    exec(stmtFlat,globalDict,localDict)
     res=globalDict[resVar.toPython()]
     if verbose:
         pdb.set_trace()
