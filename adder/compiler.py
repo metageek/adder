@@ -205,7 +205,7 @@ class Scope:
         raise Undefined(sym)
 
 Scope.root=Scope(None,isRoot=True)
-for name in ['class','defun','lambda','defvar','scope',
+for name in ['class','defun','lambda','defvar','scope','try',
              'quote','import',
              'if','while','break','continue','begin',
              'yield', 'return','raise',
@@ -294,6 +294,59 @@ class Annotator:
                     expr=entry.constValue
                 return (expr,line,required)
         return (expr,line,scope)
+
+    def annotate_try(self,expr,line,scope,globalDict,localDict):
+        gomerBody=[]
+        gomerClauses=None
+        for (stmtOrClause,stmtOrClauseLine) in expr[1:]:
+            if (isinstance(stmtOrClause,list)
+                and isinstance(stmtOrClause[0][0],S)
+                and stmtOrClause[0][0].isKeyword()):
+                clauseScope=Scope(scope)
+                if not gomerClauses:
+                    gomerClauses=[]
+                (exnClass,exnClassLine)=stmtOrClause[0]
+                if exnClass is S(':finally'):
+                    if len(stmtOrClause)>1:
+                        exnBodyLine=stmtOrClause[1][1]
+                        exnBody=(([(S('begin'),exnBodyLine,Scope.root)]
+                                  +list(map(lambda e:
+                                                self(e,clauseScope,
+                                                     globalDict,localDict),
+                                            stmtOrClause[1:]))),
+                                 exnBodyLine,clauseScope)
+                        gomerClauses.append(([(S(':finally'),
+                                               exnClassLine,scope),
+                                              exnBody],exnClassLine,scope))
+                        
+                    else:
+                        pass # "finally: pass" can be optimized out
+                else:
+                    (exnVar,exnVarLine)=stmtOrClause[1]
+                    clauseScope.addDef(exnVar,None,exnVarLine)
+                    if len(stmtOrClause)>2:
+                        exnBodyLine=stmtOrClause[2][1]
+                        exnBody=(([(S('begin'),exnBodyLine,Scope.root)]
+                                  +list(map(lambda e:
+                                                self(e,clauseScope,
+                                                     globalDict,localDict),
+                                            stmtOrClause[2:]))),
+                                 exnBodyLine,clauseScope)
+                    else:
+                        exnBody=([(S('pass'),exnVarLine,clauseScope)],
+                                 exnVarLine,clauseScope)
+                    gomerClauses.append(([(exnClass,exnClassLine,scope),
+                                          (exnVar,exnVarLine,clauseScope),
+                                          exnBody
+                                          ],exnClassLine,scope))
+            else:
+                assert not gomerClauses
+                gomerBody.append(self((stmtOrClause,stmtOrClauseLine),
+                                      scope,globalDict,localDict))
+        return ([(S('try'),line,Scope.root),
+                 ([(S('begin'),line,Scope.root)]+gomerBody,line,scope)
+                 ]+gomerClauses,
+                line,scope)
 
     def annotate_defmacro(self,expr,line,scope,globalDict,localDict):
         (name,nameLine)=expr[1]
