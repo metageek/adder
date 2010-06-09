@@ -100,7 +100,10 @@ class Symbol:
                     return ch
                 return '_%04x' % ord(ch)
             return '__adder__'+''.join(map(escape1,seg))
-        return '.'.join(map(escapeSegment,self.s.split('.')))
+        res='.'.join(map(escapeSegment,self.s.split('.')))
+        if res=='_adder__Wumpus_002d1__adder__stdin_002d1':
+            pdb.set_trace()
+        return res
             
 
 def gensym(base=None):

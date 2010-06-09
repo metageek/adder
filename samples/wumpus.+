@@ -71,9 +71,14 @@
 
        (define (run self)
          (while true
-                (print (% "You are in room %d.  There are tunnels to rooms %s.\nWhere do you want to go?")
-                       (. self player)
-                       ((. python str) ([] (. self links) (. self player))))
+                (print (% "You are in room %d.  There are tunnels to rooms %s.\nWhere do you want to go?"
+                          (mk-tuple
+                           (. self player)
+                           ((. python str) ([] (. self links) (. self player)))
+                           )))
+                (print 5)
+                (print stdin)
+                (print 7)
                 (let ((room-line ((. stdin readline))))
                   (let ((room none))
                   (try

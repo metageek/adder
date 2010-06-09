@@ -5,6 +5,13 @@ import itertools,functools,re,pdb,adder.pyle,sys
 from adder.common import Symbol as S, gensym, mkScratch
 import adder.runtime
 
+def dump(code):
+    n=len(code.split('\n'))
+    if (n>=91):
+        dump.f.write("%d lines:\n" % n)
+        dump.f.write(code)
+dump.f=open('log','w')
+
 def maybeBegin(body):
     if len(body)==1:
         return body[0]
@@ -332,12 +339,13 @@ class ReduceBreakOrContinue(Reducer):
         self.name=S(name)
 
     def reduce(self,gomer,isStmt,stmtCollector,inClass):
-        assert isStmt
         assert len(gomer)==1
         scratch=ReduceWhile.scratchStack[-1]
         if scratch:
             stmtCollector([S(':='),scratch,None])
         stmtCollector([self.name])
+        if not isStmt:
+            return None
 
 class ReduceQuote(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector,inClass):
@@ -665,9 +673,15 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     stmtTree=il.toPythonTree()
     stmtTrees.append(stmtTree)
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
+    dump(stmtFlat)
     if verbose:
         print(stmtFlat)
-    exec(stmtFlat,globalDict,localDict)
+    try:
+        exec(stmtFlat,globalDict,localDict)
+    except Exception as e:
+        print(e)
+        pdb.set_trace()
+        raise
     res=globalDict[resVar.toPython()]
     if verbose:
         pdb.set_trace()
