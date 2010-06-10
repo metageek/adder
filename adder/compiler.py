@@ -475,9 +475,10 @@ class Annotator:
         for (a,aLine) in arg:
             if isinstance(a,list) and a[0][0] is S(',@'):
                 if curSublist:
-                    sublists.append([(S('mk-list'),
-                                      curSublistFirstLine,
-                                      Scope.root)]+curSublist)
+                    sublists.append(([(S('mk-list'),
+                                       curSublistFirstLine,
+                                       Scope.root)]+curSublist,
+                                     curSublistFirstLine,scope))
                     curSublist=[]
                     curSublistFirstLine=None
                 sublists.append(self(a[1],scope,globalDict,localDict))
@@ -485,15 +486,16 @@ class Annotator:
             if isinstance(a,list) and a[0][0] is S(','):
                 curItem=self(a[1],scope,globalDict,localDict)
             else:
-                curItem=self(([(S('quote'),aLine,Scope.root),a],aLine),
+                curItem=self(([(S('quote'),aLine),(a,aLine)],aLine),
                              scope,globalDict,localDict)
             if not curSublist:
                 curSublistFirstLine=aLine
             curSublist.append(curItem)
         if curSublist:
-            sublists.append([(S('mk-list'),
-                              curSublistFirstLine,
-                              Scope.root)]+curSublist)
+            sublists.append(([(S('mk-list'),
+                               curSublistFirstLine,
+                               Scope.root)]+curSublist,
+                             curSublistFirstLine,scope))
         if len(sublists)==1:
             return sublists[0]
         else:

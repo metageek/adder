@@ -631,6 +631,24 @@ class StripTestCase(EmptyStripTestCase):
                               (17,1)
                               ],1))==[S('quote'),17]
 
+    def testBackquoteList(self):
+        scope=Scope(None)
+        scope.addDef(S('y'),None,1)
+        assert self.clarify(([(S('backquote'),1),
+                              ([(S('x'),1),
+                                (19,2),
+                                (23,3),
+                                ([(S(','),1),(S('y'),1)],1)
+                                ],
+                               1)
+                              ],1),scope=scope
+                            )==[S('mk-list'),
+                                [S('quote'),S('x')],
+                                [S('quote'),19],
+                                [S('quote'),23],
+                                S('y-1')
+                                ]
+
     def testImport(self):
         assert self.clarify(([(S('import'),1),
                               (S('re'),1),
@@ -1277,6 +1295,26 @@ class EvalTestCase(EmptyStripTestCase):
 
     def testQuoteSymbolWithApostrophe(self):
         assert self.evalAdder("'x")==S('x')
+
+    def testBackquoteInt(self):
+        assert self.evalAdder("(backquote 17)")==17
+
+    def testBackquoteList(self):
+        assert self.evalAdder("""(backquote (x
+19
+23))""")==[S('x'),19,23]
+
+    def testBackquoteListWithBacktick(self):
+        assert self.evalAdder("""`(x
+19
+23
+,y)""",y=29)==[S('x'),19,23,29]
+
+    def testBackquoteSymbol(self):
+        assert self.evalAdder("(backquote x)")==S('x')
+
+    def testBackquoteSymbolWithBacktick(self):
+        assert self.evalAdder("`x")==S('x')
 
     def testImport(self):
         assert self.evalAdder("""
@@ -1928,14 +1966,14 @@ class PreludeTestCase(ContextTestCase):
 
 suite=unittest.TestSuite(
     ( 
-      unittest.makeSuite(AnnotateTestCase,'test'),
-      unittest.makeSuite(StripTestCase,'test'),
-      unittest.makeSuite(ParseAndStripTestCase,'test'),
+      #unittest.makeSuite(AnnotateTestCase,'test'),
+      #unittest.makeSuite(StripTestCase,'test'),
+      #unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
-      unittest.makeSuite(CompileAndEvalTestCase,'test'),
-      unittest.makeSuite(LoadTestCase,'test'),
-      unittest.makeSuite(ContextTestCase,'test'),
-      unittest.makeSuite(PreludeTestCase,'test'),
+      #unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      #unittest.makeSuite(LoadTestCase,'test'),
+      #unittest.makeSuite(ContextTestCase,'test'),
+      #unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 
