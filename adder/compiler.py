@@ -481,7 +481,8 @@ class Annotator:
                                      curSublistFirstLine,scope))
                     curSublist=[]
                     curSublistFirstLine=None
-                sublists.append(self(a[1],scope,globalDict,localDict))
+                sublists.append(self(([(S('list'),aLine),a[1]],aLine),
+                                     scope,globalDict,localDict))
                 continue
             if (isinstance(a,int)
                 or isinstance(a,str)

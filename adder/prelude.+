@@ -51,7 +51,7 @@
 
 (defmacro .. (&rest parts)
   `(lambda (obj)
-     (. obj ,@(list parts))))
+     (. obj ,@parts)))
 
 (defun list? (x) (isinstance x type-list))
 (defun tuple? (x) (isinstance x type-tuple))
@@ -62,16 +62,15 @@
 
 (defmacro let* (decls &rest body)
   `(scope
-    ,@(list (map (lambda (def)
-                   (if (list? def)
-                       `(defvar ,([] def 0)
-                                ,([] def 1))
-                       `(defvar ,def)
-                       )
-                   )
-                 decls)
-            )
-    ,@(list body)
+    ,@(map (lambda (def)
+             (if (list? def)
+                 `(defvar ,([] def 0)
+                    ,([] def 1))
+                 `(defvar ,def)
+                 )
+             )
+           decls)
+    ,@body
     )
   )
 
@@ -90,11 +89,10 @@
 
   (defvar decl-scratches (list (map list (zip scratches exprs))))
   (defvar decl-vars (list (map list (zip vars scratches))))
-  
-  (+ (mk-list (quote let*)
-              (+ decl-scratches
-                 decl-vars))
-     (list body)))
+
+  `(let* (,@decl-scratches
+          ,@decl-vars)
+     ,@body))
 
 (defmacro define (name-and-maybe-args &rest body-or-value)
   (if (list? name-and-maybe-args)
