@@ -1983,6 +1983,46 @@ class PreludeTestCase(ContextTestCase):
         except Exception as e:
             assert e.args==("Fell through ecase",)
 
+    def testWhenTrue(self):
+        assert self.e("""(when (< x 7)
+(:= y 9)
+(:= z (* x y))
+z
+)
+""",x=3,y=0,z=0)==27
+        assert self['y-1']==9
+        assert self['z-1']==27
+
+    def testWhenFalse(self):
+        assert self.e("""(when (< x 7)
+(:= y 9)
+(:= z (* x y))
+z
+)
+""",x=10,y=0,z=0) is None
+        assert self['y-1']==0
+        assert self['z-1']==0
+
+    def testUnlessTrue(self):
+        assert self.e("""(unless (< x 7)
+(:= y 9)
+(:= z (* x y))
+z
+)
+""",x=3,y=0,z=0) is None
+        assert self['y-1']==0
+        assert self['z-1']==0
+
+    def testUnlessFalse(self):
+        assert self.e("""(unless (< x 7)
+(:= y 9)
+(:= z (* x y))
+z
+)
+""",x=10,y=0,z=0)==90
+        assert self['y-1']==9
+        assert self['z-1']==90
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(AnnotateTestCase,'test'),
