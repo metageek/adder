@@ -106,23 +106,20 @@
 
 (defmacro case (key &rest cases)
   (define value-var (gensym "value"))
-  (cons (quote scope)
-        (cons `(define ,value-var ,key)
-              (mk-list
-               `(cond ,@(map (lambda (values-and-body)
-                               (define values (head values-and-body))
-                               (define body (tail values-and-body))
-                               `(,(cond
-                                   ((list? values)
-                                    `(in ,value-var (quote ,values)))
-                                   ((== values (quote otherwise)) true)
-                                   (true `(== ,value-var ,values)))
-                                 ,@body))
-                             cases)
-                      )
-               )
-              )
-        )
+  `(scope
+    (define ,value-var ,key)
+    (cond ,@(map (lambda (values-and-body)
+                   (define values (head values-and-body))
+                   (define body (tail values-and-body))
+                   `(,(cond
+                       ((list? values)
+                        `(in ,value-var (quote ,values)))
+                       ((== values (quote otherwise)) true)
+                       (true `(== ,value-var ,values)))
+                     ,@body))
+                 cases)
+          )
+    )
   )
 
 (defmacro ecase (key &rest cases)
