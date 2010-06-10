@@ -134,7 +134,9 @@
          (:= n (- n 1))))
 
 (defmacro when (cond &rest body)
-  (mk-list 'if cond (cons 'begin (list body))))
+  `(if ,cond
+       (begin ,@body)))
 
 (defmacro unless (cond &rest body)
-  (mk-list 'if (mk-list 'not cond) (cons 'begin (list body))))
+  `(if (not ,cond)
+       (begin ,@body)))
