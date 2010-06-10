@@ -96,13 +96,10 @@
 
 (defmacro define (name-and-maybe-args &rest body-or-value)
   (if (list? name-and-maybe-args)
-      (+ (mk-list (quote defun)
-                  (head name-and-maybe-args)
-                  (tail name-and-maybe-args))
-         (list body-or-value))
-      (mk-list (quote defvar)
-               name-and-maybe-args
-               ([] body-or-value 0))))
+      (let ((name (head name-and-maybe-args))
+            (args (tail name-and-maybe-args)))
+        `(defun ,name ,args ,@body-or-value))
+      `(defvar ,name-and-maybe-args ,(head body-or-value))))
 
 (defun error (msg)
   (raise ((. python Exception) msg)))
