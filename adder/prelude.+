@@ -116,18 +116,12 @@
                       (map (lambda (values-and-body)
                              (define values (head values-and-body))
                              (define body (tail values-and-body))
-                             (define pred
-                               (if (list? values)
-                                   (mk-list (quote in)
-                                            value-var
-                                            (mk-list (quote quote)
-                                                     values))
-                                   (if (== values (quote otherwise))
-                                       true
-                                       (mk-list (quote ==)
-                                                value-var
-                                                values))))
-                             (cons pred body))
+                             `(,(cond
+                                 ((list? values)
+                                  `(in ,value-var (quote ,values)))
+                                 ((== values (quote otherwise)) true)
+                                 (true `(== ,value-var ,values)))
+                               ,@body))
                            cases)
                       )
                      )
