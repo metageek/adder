@@ -137,12 +137,10 @@
   )
 
 (defmacro ecase (key &rest cases)
-  (cons (quote case)
-        (cons key
-              (+ (list cases)
-                 (mk-list (mk-list (quote otherwise)
-                                   (mk-list (quote error)
-                                            "Fell through ecase")))))))
+  `(case ,key
+     ,@cases
+     (otherwise (error "Fell through ecase"))))
+
 (define (take i n)
   (:= i (iter i))
   (while (> n 0)
