@@ -634,19 +634,26 @@ class StripTestCase(EmptyStripTestCase):
     def testBackquoteList(self):
         scope=Scope(None)
         scope.addDef(S('y'),None,1)
+        scope.addDef(S('z'),None,1)
         assert self.clarify(([(S('backquote'),1),
                               ([(S('x'),1),
                                 (19,2),
                                 (23,3),
-                                ([(S(','),1),(S('y'),1)],1)
+                                ([(5,4),(7,4),(11,4)],4),
+                                ([(S(','),4),(S('y'),4)],4),
+                                ([(S('quote'),4),
+                                  ([(S(','),4),(S('z'),4)],4)],4)
                                 ],
                                1)
                               ],1),scope=scope
                             )==[S('mk-list'),
                                 [S('quote'),S('x')],
-                                [S('quote'),19],
-                                [S('quote'),23],
-                                S('y-1')
+                                19,23,
+                                [S('mk-list'),5,7,11],
+                                S('y-1'),
+                                [S('mk-list'),
+                                 [S('quote'),S('quote')],
+                                 S('z-1')]
                                 ]
 
     def testImport(self):
@@ -1308,7 +1315,19 @@ class EvalTestCase(EmptyStripTestCase):
         assert self.evalAdder("""`(x
 19
 23
-,y)""",y=29)==[S('x'),19,23,29]
+,y
+,@l)""",
+                              y=29,l=[1,2,3]
+                              )==[S('x'),19,23,29,1,2,3]
+
+    def testBackquoteListWithBacktickNestedQuote(self):
+        assert self.evalAdder("""`(x
+19
+23
+,y
+(quote ,z))""",
+                              y=29,z=S('a')
+                              )==[S('x'),19,23,29,[S('quote'),S('a')]]
 
     def testBackquoteSymbol(self):
         assert self.evalAdder("(backquote x)")==S('x')
@@ -1966,14 +1985,14 @@ class PreludeTestCase(ContextTestCase):
 
 suite=unittest.TestSuite(
     ( 
-      #unittest.makeSuite(AnnotateTestCase,'test'),
-      #unittest.makeSuite(StripTestCase,'test'),
-      #unittest.makeSuite(ParseAndStripTestCase,'test'),
+      unittest.makeSuite(AnnotateTestCase,'test'),
+      unittest.makeSuite(StripTestCase,'test'),
+      unittest.makeSuite(ParseAndStripTestCase,'test'),
       unittest.makeSuite(EvalTestCase,'test'),
-      #unittest.makeSuite(CompileAndEvalTestCase,'test'),
-      #unittest.makeSuite(LoadTestCase,'test'),
-      #unittest.makeSuite(ContextTestCase,'test'),
-      #unittest.makeSuite(PreludeTestCase,'test'),
+      unittest.makeSuite(CompileAndEvalTestCase,'test'),
+      unittest.makeSuite(LoadTestCase,'test'),
+      unittest.makeSuite(ContextTestCase,'test'),
+      unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 

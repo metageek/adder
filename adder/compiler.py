@@ -483,11 +483,17 @@ class Annotator:
                     curSublistFirstLine=None
                 sublists.append(self(a[1],scope,globalDict,localDict))
                 continue
-            if isinstance(a,list) and a[0][0] is S(','):
-                curItem=self(a[1],scope,globalDict,localDict)
+            if (isinstance(a,int)
+                or isinstance(a,str)
+                or isinstance(a,float)
+                or isinstance(a,bool)):
+                curItem=(a,aLine,scope)
             else:
-                curItem=self(([(S('quote'),aLine),(a,aLine)],aLine),
-                             scope,globalDict,localDict)
+                if isinstance(a,list) and a[0][0] is S(','):
+                    curItem=self(a[1],scope,globalDict,localDict)
+                else:
+                    curItem=self(([(S('backquote'),aLine),(a,aLine)],aLine),
+                                 scope,globalDict,localDict)
             if not curSublist:
                 curSublistFirstLine=aLine
             curSublist.append(curItem)
