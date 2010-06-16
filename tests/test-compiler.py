@@ -1730,6 +1730,98 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 y
 """)==84
 
+    def testOpFuncNot(self):
+        assert self.e("""(apply not '(5))""") is False
+        assert self.e("""(apply not (mk-list false))""") is True
+
+    def testOpFuncEq(self):
+        assert self.e("""(apply == (mk-list 3 5))""") is False
+        assert self.e("""(apply == (mk-list 5 5))""") is True
+
+    def testOpFuncNe(self):
+        assert self.e("""(apply != (mk-list 3 5))""") is True
+        assert self.e("""(apply != (mk-list 5 5))""") is False
+
+    def testOpFuncLt(self):
+        assert self.e("""(apply < (mk-list 3 5))""") is True
+        assert self.e("""(apply < (mk-list 5 5))""") is False
+        assert self.e("""(apply < (mk-list 5 3))""") is False
+
+    def testOpFuncLe(self):
+        assert self.e("""(apply <= (mk-list 3 5))""") is True
+        assert self.e("""(apply <= (mk-list 5 5))""") is True
+        assert self.e("""(apply <= (mk-list 5 3))""") is False
+
+    def testOpFuncGt(self):
+        assert self.e("""(apply > (mk-list 3 5))""") is False
+        assert self.e("""(apply > (mk-list 5 5))""") is False
+        assert self.e("""(apply > (mk-list 5 3))""") is True
+
+    def testOpFuncGe(self):
+        assert self.e("""(apply >= (mk-list 3 5))""") is False
+        assert self.e("""(apply >= (mk-list 5 5))""") is True
+        assert self.e("""(apply >= (mk-list 5 3))""") is True
+
+    def testOpFuncPlus(self):
+        assert self.e("""(apply + (mk-list 9 7))""")==16
+
+    def testOpFuncMinus(self):
+        assert self.e("""(apply - (mk-list 9 7))""")==2
+
+    def testOpFuncTimes(self):
+        assert self.e("""(apply * (mk-list 9 7))""")==63
+
+    def testOpFuncIDiv(self):
+        assert self.e("""(apply // (mk-list 9 7))""")==1
+
+    def testOpFuncFDiv(self):
+        assert self.e("""(apply / (mk-list 9 7))""")==9/7
+
+    def testOpFuncPercent(self):
+        assert self.e("""(apply %
+(mk-list "foo %d bar %d" (mk-tuple 17 19)))""")=="foo 17 bar 19"
+
+    def testOpFuncIn(self):
+        assert self.e("""(apply in (mk-list 9 '(3 5 7)))""") is False
+        assert self.e("""(apply in (mk-list 5 '(3 5 7)))""") is True
+
+    def testOpFuncPrint(self):
+        assert self.e("""(apply print (mk-list 9))""") is 9
+
+    def testGensym(self):
+        gensym.nextId=4
+        x=gensym('x')
+        gensym.nextId=1
+        assert self.e("""(gensym 'x)""") is x
+        
+    def testOpFuncGensym(self):
+        gensym.nextId=10
+        x=gensym('x')
+        gensym.nextId=1
+        assert self.e("""(apply gensym (mk-list 'x))""") is x
+
+    def testOpFuncGetitem(self):
+        assert self.e("""(apply [] (mk-list '(3 5 7) 1))""") is 5
+
+    def testOpFuncGetattr(self):
+        x=O()
+        x.y=17
+        assert self.e("""(apply getattr (mk-list x "y"))""",x=x) is 17
+
+    def testOpFuncSlice1(self):
+        assert self.e("""(apply slice (mk-list '(2 3 5 7 11 13) 3))"""
+                      )==[7,11,13]
+
+    def testOpFuncSlice2(self):
+        assert self.e("""(apply slice (mk-list '(2 3 5 7 11 13) 2 5))"""
+                      )==[5,7,11]
+
+    def testOpFuncIsinstance(self):
+        assert self.e("""(apply isinstance (mk-list 5 int))""",int=int)
+
+    def testOpFuncIsinstanceNot(self):
+        assert not self.e("""(apply isinstance (mk-list 'x int))""",int=int)
+
 class LoadTestCase(unittest.TestCase):
     def setUp(self):
         adder.runtime.getScopeById.scopes={}
@@ -2025,14 +2117,14 @@ z
 
 suite=unittest.TestSuite(
     ( 
-      unittest.makeSuite(AnnotateTestCase,'test'),
-      unittest.makeSuite(StripTestCase,'test'),
-      unittest.makeSuite(ParseAndStripTestCase,'test'),
-      unittest.makeSuite(EvalTestCase,'test'),
+      #unittest.makeSuite(AnnotateTestCase,'test'),
+      #unittest.makeSuite(StripTestCase,'test'),
+      #unittest.makeSuite(ParseAndStripTestCase,'test'),
+      #unittest.makeSuite(EvalTestCase,'test'),
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
-      unittest.makeSuite(LoadTestCase,'test'),
-      unittest.makeSuite(ContextTestCase,'test'),
-      unittest.makeSuite(PreludeTestCase,'test'),
+      #unittest.makeSuite(LoadTestCase,'test'),
+      #unittest.makeSuite(ContextTestCase,'test'),
+      #unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 

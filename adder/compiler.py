@@ -96,7 +96,8 @@ class Scope:
     class Entry:
         def __init__(self,*,initExpr,line,
                      asConst=False,ignoreScopeId=False,
-                     macroExpander=None):
+                     macroExpander=None,
+                     isBuiltinFunc=False):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -106,6 +107,7 @@ class Scope:
             self.asConst=asConst
             self.ignoreScopeId=ignoreScopeId
             self.macroExpander=macroExpander
+            self.isBuiltinFunc=isBuiltinFunc
 
     nextId=1
 
@@ -134,6 +136,9 @@ class Scope:
 
     root=None
 
+    def mkChild(self):
+        return Scope(self)
+
     def __repr__(self):
         return 'adder.runtime.getScopeById(%d)' % self.id
 
@@ -141,7 +146,8 @@ class Scope:
                asConst=False,
                ignoreScopeId=False,
                macroExpander=None,
-               redefPermitted=False):
+               redefPermitted=False,
+               isBuiltinFunc=False):
         if self.isClassScope:
             ignoreScopeId=True
         assert not self.readOnly
@@ -151,7 +157,8 @@ class Scope:
                                        line=line,
                                        asConst=asConst,
                                        ignoreScopeId=ignoreScopeId,
-                                       macroExpander=macroExpander)
+                                       macroExpander=macroExpander,
+                                       isBuiltinFunc=isBuiltinFunc)
 
     def addConst(self,name,value,line,*,
                  ignoreScopeId=False):
@@ -205,12 +212,7 @@ class Scope:
         raise Undefined(sym)
 
 Scope.root=Scope(None,isRoot=True)
-for name in ['class','defun','lambda','defvar','scope','try',
-             'quote','backquote','import',
-             'if','while','break','continue','begin',
-             'yield', 'return','raise',
-             'and','or','not',':=','.',
-             'defconst',
+for name in ['not',
              '==','!=','<=','<','>=','>',
              '+','-','*','/','//','%','in',
              'print','gensym','[]','getattr','slice','isinstance',
@@ -218,8 +220,21 @@ for name in ['class','defun','lambda','defvar','scope','try',
              'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
              'reverse','stdenv','apply','eval','exec-py',
              'getScopeById','globals','locals',
-             'defmacro','python','load','adder',
+             'load','adder_function_wrapper'
              ]:
+    Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True)
+for name in ['and','or',':=','.',
+             'adder','python',
+             'class','defun','lambda','defvar','scope','try',
+             'quote','backquote',
+             'import',
+             'if','while','break','continue','begin',
+             'yield', 'return','raise',
+             'defconst',
+             #'getScopeById','globals','locals',
+             'defmacro','adder_function_wrapper'
+             ]:
+    Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True)
     Scope.root.addDef(S(name),None,0,redefPermitted=True)
 
 Scope.root.addConst(S('true'),True,0)
@@ -235,7 +250,19 @@ class Annotator:
             s=Annotator.pynamesForSymbols[s]
         return 'annotate_%s' % s.replace('-','_')
 
-    def __call__(self,parsedExpr,scope,globalDict,localDict):
+    def wrapForApply(self,expr,line,scope):
+        adder.runtime.setupGlobals(adder.gomer.mkGlobals)
+        adder.runtime.getScopeById.scopes[scope.id]=scope
+        return ([(S('lambda'),line),
+                 ([(S('&rest'),line),(S('args'),line)],line),
+                 ([(S('adder_function_wrapper'),line),
+                   ([(S('quote'),line),(expr,line)],line),
+                   (S('args'),line),
+                   (scope.id,line)
+                   ],line)
+                 ],line)
+
+    def __call__(self,parsedExpr,scope,globalDict,localDict,*,asFunc=False):
         try:
             (expr,line)=parsedExpr
         except ValueError as ve:
@@ -258,8 +285,9 @@ class Annotator:
                                                        localDict)
                     return self(addLines(expanded,line),
                                 scope,globalDict,localDict)
-            scoped=list(map(lambda e: self(e,scope,globalDict,localDict),
-                            expr))
+            scoped=([self(expr[0],scope,globalDict,localDict,asFunc=True)]
+                    +list(map(lambda e: self(e,scope,globalDict,localDict),
+                              expr[1:])))
             return (scoped,line,scope)
         if isinstance(expr,S):
             if expr.isKeyword():
@@ -283,6 +311,11 @@ class Annotator:
                     return (localDict[exprPy],line,required)
 
                 entry=required[expr]
+
+                if entry.isBuiltinFunc and not asFunc:
+                    return self(self.wrapForApply(expr,line,scope),
+                                scope,globalDict,localDict)
+
                 if (entry.asConst
                     and entry.constValueValid
                     and (isinstance(entry.constValue,int)
@@ -367,8 +400,10 @@ class Annotator:
             entry=scope[lhs]
             if entry.asConst:
                 raise AssignedToConst(lhs)
-        return (list(map(lambda e: self(e,scope,globalDict,localDict),
-                         expr)),line,scope)
+        return ([(S(':='),line,Scope.root),
+                 self(expr[1],scope,globalDict,localDict),
+                 self(expr[2],scope,globalDict,localDict)],
+                line,scope)
     
     def annotate_eval(self,expr,line,scope,globalDict,localDict):
         assert len(expr)>=2 and len(expr)<=4
@@ -384,7 +419,7 @@ class Annotator:
         else:
             localArg=self(([(S('locals'),line)],line),scope,
                           globalDict,localDict)
-        return ([self(expr[0],scope,globalDict,localDict),
+        return ([self(expr[0],scope,globalDict,localDict,asFunc=True),
                  adderArg,scopeArg,globalArg,localArg],line,scope)
     
     def annotate_load(self,expr,line,scope,globalDict,localDict):
@@ -396,7 +431,7 @@ class Annotator:
         else:
             globalArg=self(([(S('globals'),line)],line),scope,
                            globalDict,localDict)
-        return ([self(expr[0],scope,globalDict,localDict),
+        return ([self(expr[0],scope,globalDict,localDict,asFunc=True),
                  fileArg,scopeArg,globalArg],line,scope)
 
     def annotate_exec_py(self,expr,line,scope,globalDict,localDict):
@@ -419,7 +454,7 @@ class Annotator:
                  pyArg,globalArg,localArg],line,scope)
 
     def annotate_scope(self,expr,line,scope,globalDict,localDict):
-        scopedScope=self(expr[0],scope,globalDict,localDict)
+        scopedScope=self(expr[0],scope,globalDict,localDict,asFunc=True)
         childScope=Scope(scope)
         scopedChildren=list(map(lambda e: self(e,childScope,
                                                globalDict,localDict),
@@ -456,7 +491,7 @@ class Annotator:
         else:
             args=expr[1:]
             
-        return (([self(expr[0],scope,globalDict,localDict)]
+        return (([self(expr[0],scope,globalDict,localDict,asFunc=True)]
                  +list(map(annotateDumbly,args))
                  ),
                 line,scope)
@@ -515,7 +550,7 @@ class Annotator:
             assert isinstance(expr,S)
             return (expr,line,scope)
 
-        return (([self(expr[0],scope,globalDict,localDict),
+        return (([self(expr[0],scope,globalDict,localDict,asFunc=True),
                   self(expr[1],scope,globalDict,localDict)
                   ]
                  +list(map(annotateDumbly,expr[2:]))
@@ -531,7 +566,8 @@ class Annotator:
                                      globalDict,localDict)
 
     def defvarOrDefconst(self,expr,line,scope,asConst,globalDict,localDict):
-        scopedDef=self((S(':='),expr[0][1]),scope,globalDict,localDict)
+        scopedDef=self((S(':='),expr[0][1]),scope,globalDict,localDict,
+                       asFunc=True)
         scopedInitExpr=self(expr[2],scope,globalDict,localDict)
         scope.addDef(expr[1][0],scopedInitExpr,expr[1][1],
                      asConst=asConst,redefPermitted=not asConst)
@@ -572,7 +608,7 @@ class Annotator:
                 return (argExpr,argLine,scope)
             childScope.addDef(argExpr,argLine,None)
             return (argExpr,argLine,childScope)
-        scoped=[self(opPE,scope,globalDict,localDict)]
+        scoped=[self(opPE,scope,globalDict,localDict,asFunc=True)]
         if namePE:
             scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
             scoped.append((namePE[0],namePE[1],scope))

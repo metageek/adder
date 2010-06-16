@@ -669,7 +669,10 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     if verbose:
         print(stmtFlat)
     exec(stmtFlat,globalDict,localDict)
-    res=globalDict[resVar.toPython()]
+    try:
+        res=globalDict[resVar.toPython()]
+    except KeyError as ke:
+        res=localDict[resVar.toPython()]
     if verbose:
         pdb.set_trace()
     return res
