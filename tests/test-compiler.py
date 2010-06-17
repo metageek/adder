@@ -2216,8 +2216,25 @@ z
 )
 """)==7
 
+    def testDelayWithVars(self):
+        assert self.e("""(begin
+  (define y 9)
+  (define p (delay (* y 7)))
+  (force p)
+)
+""")==63
+
+    def testDelayWithVarsChanged(self):
+        assert self.e("""(begin
+  (define y 9)
+  (define p (delay (* y 7)))
+  (:= y 12)
+  (force p)
+)
+""")==84
+
 suite=unittest.TestSuite(
-    ( 
+    (
       unittest.makeSuite(AnnotateTestCase,'test'),
       unittest.makeSuite(StripTestCase,'test'),
       unittest.makeSuite(ParseAndStripTestCase,'test'),
