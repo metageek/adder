@@ -525,7 +525,7 @@ class Annotator:
         curSublistFirstLine=None
 
         for (a,aLine) in arg:
-            if isinstance(a,list) and a[0][0] is S(',@'):
+            if isinstance(a,list) and a and a[0] and a[0][0] is S(',@'):
                 if curSublist:
                     sublists.append(([(S('mk-list'),
                                        curSublistFirstLine,
@@ -542,11 +542,14 @@ class Annotator:
                 or isinstance(a,bool)):
                 curItem=(a,aLine,scope)
             else:
-                if isinstance(a,list) and a[0][0] is S(','):
-                    curItem=self(a[1],scope,globalDict,localDict)
+                if isinstance(a,list) and not a:
+                    curItem=([(S('mk-list'),aLine,scope.root)],aLine,scope)
                 else:
-                    curItem=self(([(S('backquote'),aLine),(a,aLine)],aLine),
-                                 scope,globalDict,localDict)
+                    if isinstance(a,list) and a and a[0] and a[0][0] is S(','):
+                        curItem=self(a[1],scope,globalDict,localDict)
+                    else:
+                        curItem=self(([(S('backquote'),aLine),(a,aLine)],aLine),
+                                     scope,globalDict,localDict)
             if not curSublist:
                 curSublistFirstLine=aLine
             curSublist.append(curItem)
