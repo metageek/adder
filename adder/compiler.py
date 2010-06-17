@@ -658,7 +658,7 @@ class Annotator:
                     (lhs,lhsLine,lhsScope)=expr[1]
                     if isinstance(lhs,S):
                         yield (lhs,lhsScope)
-                    searchSpace=[expr[2]]
+                        searchSpace=[expr[2]]
                 else:
                     if fExpr is S('lambda'):
                         searchSpace=expr[2:]
