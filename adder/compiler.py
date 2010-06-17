@@ -113,7 +113,10 @@ class Scope:
 
     nextId=1
 
-    def __init__(self,parent,*,isRoot=False,isClassScope=False):
+    def __init__(self,parent,*,
+                 isRoot=False,
+                 isClassScope=False,
+                 isFuncScope=False):
         self.entries={}
         id=None
 
@@ -133,10 +136,18 @@ class Scope:
             self.id=id
         self.readOnly=False
         self.isClassScope=isClassScope
+        self.isFuncScope=isFuncScope
 
         self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
 
     root=None
+
+    def atGlobalScope(self):
+        if self.isFuncScope:
+            return False
+        if not self.parent:
+            return True
+        return self.parent.atGlobalScope()
 
     def mkChild(self):
         return Scope(self)
@@ -214,6 +225,13 @@ class Scope:
             return self.parent.requiredScope(sym,
                                              skipClassScopes=skipClassScopes)
         raise Undefined(sym)
+
+    def isDescendantOf(self,other):
+        if self is other:
+            return True
+        if self.parent:
+            return self.parent.isDescendantOf(other)
+        return False
 
 Scope.root=Scope(None,isRoot=True)
 for name in ['not',
@@ -621,21 +639,66 @@ class Annotator:
 
     def defunOrLambda(self,opPE,namePE,argsPE,bodyPEs,
                       line,scope,globalDict,localDict):
-        childScope=Scope(scope)
+        childScope=Scope(scope,isFuncScope=True)
         def doArg(arg):
             (argExpr,argLine)=arg
             if argExpr[0]=='&':
                 return (argExpr,argLine,scope)
             childScope.addDef(argExpr,argLine,None)
             return (argExpr,argLine,childScope)
+
+        def seekAssignments(scopedExpr):
+            (expr,_,scope)=scopedExpr
+            if not (isinstance(expr,list) and expr):
+                return
+            fExpr=expr[0][0]
+            if isinstance(fExpr,S):
+                searchSpace=expr
+                if fExpr is S(':='):
+                    (lhs,lhsLine,lhsScope)=expr[1]
+                    if isinstance(lhs,S):
+                        yield (lhs,lhsScope)
+                    searchSpace=[expr[2]]
+                else:
+                    if fExpr is S('lambda'):
+                        searchSpace=expr[2:]
+                    else:
+                        if fExpr is S('defun'):
+                            searchSpace=expr[3:]
+                for e in searchSpace:
+                    for assignment in seekAssignments(e):
+                        yield assignment
+
         scoped=[self(opPE,scope,globalDict,localDict,asFunc=True)]
+
         if namePE:
             scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
             scoped.append((namePE[0],namePE[1],scope))
         (argsExpr,argsLine)=argsPE
-        scoped.append((list(map(doArg,argsExpr)),argsLine,scope))
+        scopedArgs=[]
+        for a in argsExpr:
+            scopedArgs.append(doArg(a))
+
+        bodyScoped=[]
+        nonlocalVars=set()
+        globalVars=set()
         for parsedExpr in bodyPEs:
-            scoped.append(self(parsedExpr,childScope,globalDict,localDict))
+            bodyPart=self(parsedExpr,childScope,globalDict,localDict)
+            bodyScoped.append(bodyPart)
+            for (var,varScope) in seekAssignments(bodyPart):
+                if not varScope.isDescendantOf(childScope):
+                    (globalVars
+                     if varScope.atGlobalScope()
+                     else nonlocalVars).add((var,varScope))
+
+        for (key,vs) in [('nonlocal',nonlocalVars),
+                         ('global',globalVars)]:
+            if vs:
+                scopedArgs.append((S('&'+key),argsLine,Scope.root))
+            for (v,vScope) in vs:
+                scopedArgs.append((v,argsLine,vScope))
+        scoped.append((scopedArgs,argsLine,scope))
+        scoped+=bodyScoped
         return (scoped,line,scope)
 
     def annotate_scope(self,expr,line,scope,globalDict,localDict):

@@ -1903,6 +1903,17 @@ y
         assert self.e("""(apply load '("%s"))""" % codeFile)==13
         assert self['x7-1']==5040
 
+    def testAccumulator(self):
+        assert self.e("""(begin
+ (defvar f (scope
+            (defvar x 0)
+            (lambda ()
+             (:= x (+ x 1))
+             x)))
+(f)
+)
+""")==1
+
 class LoadTestCase(unittest.TestCase):
     def setUp(self):
         adder.runtime.getScopeById.scopes={}
@@ -2197,6 +2208,13 @@ z
 """,x=10,y=0,z=0)==90
         assert self['y-1']==9
         assert self['z-1']==90
+
+    def testDelayInt(self):
+        assert self.e("""(begin
+  (define p (delay 7))
+  (force p)
+)
+""")==7
 
 suite=unittest.TestSuite(
     ( 
