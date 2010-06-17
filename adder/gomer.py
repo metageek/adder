@@ -647,6 +647,7 @@ def mkGlobals():
     g['adder']=a
     a.runtime=adder.runtime
     g['none']=None
+    g['stdenv']=mkGlobals
     return g
 
 def geval(gomer,*,globalDict=None,localDict=None,verbose=False):

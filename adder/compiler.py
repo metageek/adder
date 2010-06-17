@@ -228,8 +228,11 @@ for name in ['not',
              ]:
     Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True)
 
-Scope.root.addDef(S('mk-dict'),None,0,redefPermitted=True,isBuiltinFunc=True,
-                  nativeFunc='nativeMkDict')
+for (name,native) in [('mk-dict','nativeMkDict'),
+                      ('globals','globals'),
+                      ('locals','locals')]:
+    Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True,
+                      nativeFunc=native)
 
 for name in ['and','or',':=','.',
              'adder','python',

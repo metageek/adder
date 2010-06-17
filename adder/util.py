@@ -139,7 +139,7 @@ class Scope:
                              ('reverse',Reverse()),
                              ('stdenv',Stdenv()),
                              ('eval-py',EvalPy()),
-                             ('exec-py',ExecPy()),
+                             #('exec-py',ExecPy()),
                              ('import',Import()),
                              ('if',If()),
                              ('while',While()),

@@ -38,3 +38,6 @@ def setupGlobals(f):
 
 def nativeMkDict(**d):
     return d
+
+globals=__builtins__['globals']
+locals=__builtins__['locals']

@@ -1570,8 +1570,10 @@ class EvalTestCase(EmptyStripTestCase):
     def testReverse(self):
         assert self.evalAdder("(reverse '(1 2 3))")==[3,2,1]
 
-    def _testStdenv(self):
-        assert self.evalAdder('(stdenv)')==[S('stdenv')]
+    def testStdenv(self):
+        env=self.evalAdder('(stdenv)')
+        assert isinstance(env,dict)
+        assert env['setupGlobals'] is adder.runtime.setupGlobals
 
     def testApply(self):
         assert self.evalAdder("(apply f '(2))",
@@ -1589,7 +1591,7 @@ class EvalTestCase(EmptyStripTestCase):
     def testEval1(self):
         assert self.evalAdder("(eval '(* 9 7))")==63
 
-    def _testEval2(self):
+    def testEval2(self):
         assert self.evalAdder("(eval '(* 9 7) (stdenv))")==63
 
     def testExecPy(self):
@@ -1632,12 +1634,13 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         self.g=mkGlobals()
         for (k,v) in globalsToSet.items():
             scope.addDef(S(k),v,0)
-            self.g[S("%s-1" % k).toPython()]=v
+            self.g[S("%s-%d" % (k,scope.id)).toPython()]=v
         res=None
         for expr in exprs:
             res=compileAndEval(expr,scope,self.g,None,
                                hasLines=hasLines,
                                verbose=verbose)
+        self.scope=scope
         return res
 
     def __getitem__(self,var):
@@ -1856,6 +1859,50 @@ y
                         :b 7
                         :q 9))""")=={"a": 3, "b": 7, "q": 9}
 
+    def testOpFuncMkSymbol(self):
+        assert self.e("""(apply mk-symbol (mk-list "fred"))""") is S('fred')
+
+    def testOpFuncMkReverse(self):
+        assert self.e("""(apply reverse (mk-list (mk-list 1 2 3)))""")==[3,2,1]
+
+    def testOpFuncStdenv(self):
+        env=self.e("""(apply stdenv '())""")
+        assert isinstance(env,dict)
+        assert env['setupGlobals'] is adder.runtime.setupGlobals
+
+    def testOpFuncApply(self):
+        assert self.e("""(apply apply (mk-list + '(1 2 3)))""")==6
+
+    def testOpFuncEval(self):
+        assert self.e("""(apply eval (mk-list '(+ 1 2 3)))""")==6
+
+    def testOpFuncExecPy(self):
+        assert self.e("""
+(begin
+  (defvar g (mk-dict :x 12))
+  (apply exec-py (mk-list "global x\nx=7" g))
+  ([] g "x"))
+""")==7
+
+    def testOpFuncGetScopeById(self):
+        assert self.e("""(apply getScopeById '(1))""") is self.scope
+
+    def testOpFuncGlobals(self):
+        g=self.e("""(apply globals '())""")
+        assert g is self.g
+
+    def testOpFuncLocals(self):
+        l=self.e("""(apply locals '())""")
+        assert isinstance(l,dict)
+        assert l['S'] is S
+
+    def _testOpFuncLoad(self):
+        thisFile=self.__class__.testOpFuncLoad.__code__.co_filename
+        thisDir=os.path.split(thisFile)[0]
+        codeFile=os.path.join(thisDir,'test-load.+')
+        assert self.e("""(apply load '("%s"))""" % codeFile)==13
+        assert self['x7-1']==5040
+
 class LoadTestCase(unittest.TestCase):
     def setUp(self):
         adder.runtime.getScopeById.scopes={}
@@ -1880,6 +1927,8 @@ class ContextTestCase(CompileAndEvalTestCase):
         res=None
         for parsedExpr in adder.parser.parse(exprStr):
             res=self.context.eval(stripLines(parsedExpr),verbose=verbose)
+        self.g=self.context.globals
+        self.scope=self.context.scope
         return res
 
     def __getitem__(self,var):
