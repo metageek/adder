@@ -97,7 +97,8 @@ class Scope:
         def __init__(self,*,initExpr,line,
                      asConst=False,ignoreScopeId=False,
                      macroExpander=None,
-                     isBuiltinFunc=False):
+                     isBuiltinFunc=False,
+                     nativeFunc=None):
             self.initExpr=initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
@@ -108,6 +109,7 @@ class Scope:
             self.ignoreScopeId=ignoreScopeId
             self.macroExpander=macroExpander
             self.isBuiltinFunc=isBuiltinFunc
+            self.nativeFunc=nativeFunc if isBuiltinFunc else None
 
     nextId=1
 
@@ -147,7 +149,8 @@ class Scope:
                ignoreScopeId=False,
                macroExpander=None,
                redefPermitted=False,
-               isBuiltinFunc=False):
+               isBuiltinFunc=False,
+               nativeFunc=None):
         if self.isClassScope:
             ignoreScopeId=True
         assert not self.readOnly
@@ -158,7 +161,8 @@ class Scope:
                                        asConst=asConst,
                                        ignoreScopeId=ignoreScopeId,
                                        macroExpander=macroExpander,
-                                       isBuiltinFunc=isBuiltinFunc)
+                                       isBuiltinFunc=isBuiltinFunc,
+                                       nativeFunc=nativeFunc)
 
     def addConst(self,name,value,line,*,
                  ignoreScopeId=False):
@@ -217,12 +221,16 @@ for name in ['not',
              '+','-','*','/','//','%','in',
              'print','gensym','[]','getattr','slice','isinstance',
              'list','tuple','set','dict',
-             'mk-list','mk-tuple','mk-set','mk-dict','mk-symbol',
+             'mk-list','mk-tuple','mk-set','mk-symbol',
              'reverse','stdenv','apply','eval','exec-py',
              'getScopeById','globals','locals',
              'load','adder_function_wrapper'
              ]:
     Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True)
+
+Scope.root.addDef(S('mk-dict'),None,0,redefPermitted=True,isBuiltinFunc=True,
+                  nativeFunc='nativeMkDict')
+
 for name in ['and','or',':=','.',
              'adder','python',
              'class','defun','lambda','defvar','scope','try',
@@ -250,7 +258,13 @@ class Annotator:
             s=Annotator.pynamesForSymbols[s]
         return 'annotate_%s' % s.replace('-','_')
 
-    def wrapForApply(self,expr,line,scope):
+    def wrapForApply(self,expr,line,scope,entry):
+        if entry.nativeFunc:
+            return ([(S('.'),line,),
+                     (S('adder'),line),
+                     (S('runtime'),line),
+                     (S(entry.nativeFunc),line)],
+                     line)
         adder.runtime.setupGlobals(adder.gomer.mkGlobals)
         adder.runtime.getScopeById.scopes[scope.id]=scope
         return ([(S('lambda'),line),
@@ -313,7 +327,7 @@ class Annotator:
                 entry=required[expr]
 
                 if entry.isBuiltinFunc and not asFunc:
-                    return self(self.wrapForApply(expr,line,scope),
+                    return self(self.wrapForApply(expr,line,scope,entry),
                                 scope,globalDict,localDict)
 
                 if (entry.asConst

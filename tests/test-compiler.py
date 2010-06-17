@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import unittest,pdb,sys,os
+import unittest,pdb,sys,os,re
 from adder.compiler import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval,loadFile,Context,stripLines
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
@@ -1612,6 +1612,8 @@ class EvalTestCase(EmptyStripTestCase):
 def lookup(g,var):
     return g[S(var).toPython()]
 
+gensymXRe=re.compile('^#<gensym-x #[0-9]+>$')
+
 class CompileAndEvalTestCase(EmptyStripTestCase):
     def e(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
         if isinstance(exprStr,tuple):
@@ -1789,16 +1791,14 @@ y
         assert self.e("""(apply print (mk-list 9))""") is 9
 
     def testGensym(self):
-        gensym.nextId=4
-        x=gensym('x')
-        gensym.nextId=1
-        assert self.e("""(gensym 'x)""") is x
+        g=self.e("""(gensym 'x)""")
+        assert isinstance(g,S)
+        assert gensymXRe.match(str(g))
         
     def testOpFuncGensym(self):
-        gensym.nextId=10
-        x=gensym('x')
-        gensym.nextId=1
-        assert self.e("""(apply gensym (mk-list 'x))""") is x
+        g=self.e("""(apply gensym (mk-list 'x))""")
+        assert isinstance(g,S)
+        assert gensymXRe.match(str(g))
 
     def testOpFuncGetitem(self):
         assert self.e("""(apply [] (mk-list '(3 5 7) 1))""") is 5
@@ -1821,6 +1821,40 @@ y
 
     def testOpFuncIsinstanceNot(self):
         assert not self.e("""(apply isinstance (mk-list 'x int))""",int=int)
+
+    def testOpFuncList(self):
+        assert self.e("""(apply list (mk-list (mk-tuple 1 2 3)))""")==[1,2,3]
+
+    def testOpFuncTuple(self):
+        assert self.e("""(apply tuple (mk-list (mk-list 1 2 3)))""")==(1,2,3)
+
+    def testOpFuncSet(self):
+        assert self.e("""(apply set (mk-list (mk-list 1 2 3)))""")=={1,2,3}
+
+    def testOpFuncDict(self):
+        assert self.e("""
+(apply dict
+ (mk-list (mk-list (mk-tuple 'a 3)
+                   (mk-tuple "b" 7)
+                   (mk-tuple 'q 9)))
+)
+""")=={S("a"): 3, "b": 7, S("q"): 9}
+
+    def testOpFuncMkList(self):
+        assert self.e("""(apply mk-list (mk-list 1 2 3))""")==[1,2,3]
+
+    def testOpFuncMkTuple(self):
+        assert self.e("""(apply mk-tuple (mk-list 1 2 3))""")==(1,2,3)
+
+    def testOpFuncMkSet(self):
+        assert self.e("""(apply mk-set (mk-list 1 2 3))""")=={1,2,3}
+
+    def testOpFuncMkDict(self):
+        assert self.e("""
+(apply mk-dict '()
+               (mk-dict :a 3
+                        :b 7
+                        :q 9))""")=={"a": 3, "b": 7, "q": 9}
 
 class LoadTestCase(unittest.TestCase):
     def setUp(self):
@@ -2117,14 +2151,14 @@ z
 
 suite=unittest.TestSuite(
     ( 
-      #unittest.makeSuite(AnnotateTestCase,'test'),
-      #unittest.makeSuite(StripTestCase,'test'),
-      #unittest.makeSuite(ParseAndStripTestCase,'test'),
-      #unittest.makeSuite(EvalTestCase,'test'),
+      unittest.makeSuite(AnnotateTestCase,'test'),
+      unittest.makeSuite(StripTestCase,'test'),
+      unittest.makeSuite(ParseAndStripTestCase,'test'),
+      unittest.makeSuite(EvalTestCase,'test'),
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
-      #unittest.makeSuite(LoadTestCase,'test'),
-      #unittest.makeSuite(ContextTestCase,'test'),
-      #unittest.makeSuite(PreludeTestCase,'test'),
+      unittest.makeSuite(LoadTestCase,'test'),
+      unittest.makeSuite(ContextTestCase,'test'),
+      unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 

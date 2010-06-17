@@ -35,3 +35,6 @@ adder_function_wrapper.globals=None
 def setupGlobals(f):
     if adder_function_wrapper.globals is None:
         adder_function_wrapper.globals=f()
+
+def nativeMkDict(**d):
+    return d

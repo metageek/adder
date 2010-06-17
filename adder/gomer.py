@@ -645,6 +645,7 @@ def mkGlobals():
     a=O()
     a.common=adder.common
     g['adder']=a
+    a.runtime=adder.runtime
     g['none']=None
     return g
 
