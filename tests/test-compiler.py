@@ -2233,6 +2233,21 @@ z
 )
 """)==84
 
+    # Tests that, if we force the promise twice, we don't run the
+    #  expression twice.
+    def testDelayCache(self):
+        assert self.e("""(begin
+  (define y 9)
+  (define p (delay (begin
+                    (:= y (+ y 1))
+                    (* y 7)
+                    )
+             )
+   )
+  (mk-tuple (force p) (force p))
+)
+""")==(70,70)
+
 suite=unittest.TestSuite(
     (
       unittest.makeSuite(AnnotateTestCase,'test'),
