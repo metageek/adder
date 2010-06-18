@@ -167,3 +167,24 @@
            (let ((,var (try (next ,i)
                         (:StopIteration ,e (break)))))
              ,@body))))))
+
+(defmacro if-bind (var-and-cond then else)
+  (let ((var ([] var-and-cond 0))
+        (cond ([] var-and-cond 1)))
+    `(let ((,var ,cond))
+       (if ,var
+           ,then
+           ,else))))
+
+(defmacro when-bind (var-and-cond then)
+  (let ((var ([] var-and-cond 0))
+        (cond ([] var-and-cond 1)))
+    `(let ((,var ,cond))
+       (when ,var
+             ,then))))
+
+;; The lack of yield* in Python was part of my motivation for writing Adder.
+(defmacro yield* (subseq)
+  (with-macro-vars (x)
+    `(for ((,x ,subseq))
+       (yield ,x))))

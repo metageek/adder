@@ -2257,6 +2257,32 @@ z
 )
 """)==6
 
+    def testIfBindFalse(self):
+        assert self.e("""
+(if-bind (foo "")
+  (+ foo "bar")
+  7)
+""")==7
+
+    def testIfBindTrue(self):
+        assert self.e("""
+(if-bind (foo "foo")
+  (+ foo "bar")
+  7)
+""")=="foobar"
+
+    def testWhenBindFalse(self):
+        assert self.e("""
+(when-bind (foo "")
+  (+ foo "bar"))
+""") is None
+
+    def testWhenBindTrue(self):
+        assert self.e("""
+(when-bind (foo "foo")
+  (+ foo "bar"))
+""")=="foobar"
+
 suite=unittest.TestSuite(
     (
       unittest.makeSuite(AnnotateTestCase,'test'),
