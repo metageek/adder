@@ -2248,6 +2248,15 @@ z
 )
 """)==(70,70)
 
+    def testFor(self):
+        assert self.e("""(begin
+  (define x 0)
+  (for (i '(1 2 3))
+    (:= x (+ x i)))
+  x
+)
+""")==6
+
 suite=unittest.TestSuite(
     (
       unittest.makeSuite(AnnotateTestCase,'test'),
