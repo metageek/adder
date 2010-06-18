@@ -15,8 +15,7 @@ def readEvalGenerator(context,instream,exceptionHandler):
         except Exception as e:
             if exceptionHandler:
                 exceptionHandler(e)
-            else:
-                raise
+            raise
 
 class Repl:
     def __init__(self,*,context=None,prompt='> ',

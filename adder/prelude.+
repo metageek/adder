@@ -94,6 +94,10 @@
           ,@decl-vars)
      ,@body))
 
+(defmacro with-macro-vars (vars &rest body)
+  `(let ,(list (map (lambda (v) `(,v (quote ,(gensym v)))) vars))
+     ,@body))
+
 (defmacro define (name-and-maybe-args &rest body-or-value)
   (if (list? name-and-maybe-args)
       (let ((name (head name-and-maybe-args))
@@ -105,20 +109,21 @@
   (raise ((. python Exception) msg)))
 
 (defmacro case (key &rest cases)
-  (define value-var (gensym "value"))
-  `(scope
-    (define ,value-var ,key)
-    (cond ,@(map (lambda (values-and-body)
-                   (define values (head values-and-body))
-                   (define body (tail values-and-body))
-                   `(,(cond
-                       ((list? values)
-                        `(in ,value-var (quote ,values)))
-                       ((== values (quote otherwise)) true)
-                       (true `(== ,value-var ,values)))
-                     ,@body))
-                 cases)
-          )
+  (with-macro-vars (value)
+    `(scope
+      (define ,value ,key)
+      (cond ,@(map (lambda (values-and-body)
+                     (define values (head values-and-body))
+                     (define body (tail values-and-body))
+                     `(,(cond
+                         ((list? values)
+                          `(in ,value (quote ,values)))
+                         ((== values (quote otherwise)) true)
+                         (true `(== ,value ,values)))
+                       ,@body))
+                   cases)
+            )
+      )
     )
   )
 
@@ -142,14 +147,13 @@
        (begin ,@body)))
 
 (defmacro delay (expr)
-  (let ((cache-sym (gensym "cache"))
-        (cache-valid-p-sym (gensym "cache-valid-p")))
-    `(let ((,cache-sym none) (,cache-valid-p-sym false))
+  (with-macro-vars (cache cache-valid-p)
+    `(let ((,cache none) (,cache-valid-p false))
        (lambda ()
-         (unless ,cache-valid-p-sym
-           (:= ,cache-sym ,expr)
-           (:= ,cache-valid-p-sym true))
-         ,cache-sym))))
+         (unless ,cache-valid-p
+           (:= ,cache ,expr)
+           (:= ,cache-valid-p true))
+         ,cache))))
 
 (define (force promise)
   (promise))
