@@ -223,6 +223,41 @@ class AnnotateTestCase(unittest.TestCase):
         assert sorted(scopes[2])==[S('current-scope'),S('r'),S('x'),S('y')]
         assert scopes[2].parent is scopes[1]
 
+    def testDefunKw(self):
+        (scoped,scopes)=self.annotate(([(S('defun'),1),
+                                        (S('foo'),1),
+                                        ([(S('x'),1),
+                                          (S('y'),1),
+                                          (S('&key'),1),
+                                          (S('a'),1),
+                                          (S('b'),1),
+                                          ],1),
+                                        ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                                         2)
+                                        ],
+                                       1))
+        expected=([(S('defun'),1,0),
+                   (S('foo'),1,1),
+                   ([(S('x'),1,2),
+                     (S('y'),1,2),
+                     (S('&key'),1,1),
+                     (S('a'),1,None),
+                     (S('b'),1,None),
+                     ],1,1),
+                   ([(S(':='),1,0),(S('a'),1,2),(S('a'),1,None)],1,2),
+                   ([(S(':='),1,0),(S('b'),1,2),(S('b'),1,None)],1,2),
+                   ([(S('*'),2,0),(S('x'),2,2),(S('y'),2,2)],2,2)
+                   ],
+                  1,1)
+        assert scoped==expected
+        assert isinstance(scopes,dict)
+        assert len(scopes)==3
+        assert scopes[0] is Scope.root
+        assert sorted(scopes[1])==[S('current-scope'),S('foo')]
+        assert sorted(scopes[2])==[S('a'),S('b'),S('current-scope'),
+                                   S('x'),S('y')]
+        assert scopes[2].parent is scopes[1]
+
     def testLambda(self):
         (scoped,scopes)=self.annotate(([(S('lambda'),1),
                                         ([(S('x'),1),
@@ -544,6 +579,25 @@ class StripTestCase(EmptyStripTestCase):
                                    [S('*'),S('x-2'),S('y-2')]
                                    ]
 
+    def testDefunKw(self):
+        actual=self.clarify(([(S('defun'),1),
+                              (S('foo'),1),
+                              ([(S('x'),1),
+                                (S('y'),1),
+                                (S('&key'),1),
+                                (S('r'),1)
+                                ],1),
+                              ([(S('*'),2),(S('x'),2),(S('y'),2)],
+                               2)
+                              ],
+                             1))
+        expected=[S('defun'),S('foo-1'),
+                  [S('x-2'),S('y-2'),S('&key'),S('r')],
+                  [S(':='),S('r-2'),S('r')],
+                  [S('*'),S('x-2'),S('y-2')]
+                  ]
+        assert actual==expected
+
     def testLambda(self):
         assert self.clarify(([(S('lambda'),1),
                               ([(S('x'),1),
@@ -741,6 +795,15 @@ class ParseAndStripTestCase(EmptyStripTestCase):
   (* x y))
 """)==[S('defun'),S('foo-1'),
        [S('x-2'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
+    def testDefunKw(self):
+        assert self.clarify("""(defun foo (x &key y)
+  (* x y))
+""")==[S('defun'),S('foo-1'),
+       [S('x-2'),S('&key'),S('y')],
+       [S(':='),S('y-2'),S('y')],
        [S('*'),S('x-2'),S('y-2')]
        ]
 
@@ -1711,6 +1774,12 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 (f 9)
 """)==63
         assert self['f-1'](12)==84
+
+    def testDefunKw(self):
+        assert self.e("""(defun f (x &key y) (* x y))
+(f 9 :y 7)
+""")==63
+        assert self['f-1'](12,y=9)==108
 
     def testDefunReturnBlank(self):
         assert self.e("""(defun f (x) (return) (* x 7))

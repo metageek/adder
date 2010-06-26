@@ -640,12 +640,20 @@ class Annotator:
     def defunOrLambda(self,opPE,namePE,argsPE,bodyPEs,
                       line,scope,globalDict,localDict):
         childScope=Scope(scope,isFuncScope=True)
+        keyArgs=[]
+        inKeys=False
         def doArg(arg):
+            nonlocal keyArgs,inKeys
             (argExpr,argLine)=arg
             if argExpr[0]=='&':
+                inKeys=(argExpr is S('&key'))
                 return (argExpr,argLine,scope)
             childScope.addDef(argExpr,argLine,None)
-            return (argExpr,argLine,childScope)
+            if inKeys:
+                keyArgs.append((argExpr,argLine))
+                return (argExpr,argLine,None)
+            else:
+                return (argExpr,argLine,childScope)
 
         def seekAssignments(scopedExpr):
             (expr,_,scope)=scopedExpr
@@ -680,6 +688,13 @@ class Annotator:
             scopedArgs.append(doArg(a))
 
         bodyScoped=[]
+        for (keyArg,keyLine) in keyArgs:
+            bodyScoped.append(([(S(':='),keyLine,Scope.root),
+                                (keyArg,keyLine,childScope),
+                                (keyArg,keyLine,None)],
+                               keyLine,childScope))
+
+
         nonlocalVars=set()
         globalVars=set()
         for parsedExpr in bodyPEs:
@@ -723,10 +738,12 @@ def stripAnnotations(annotated,*,quoted=False):
     except ValueError as ve:
         print(ve,annotated)
         raise
+    if (not scope) and isinstance(expr,S):
+        return expr
     if (not quoted
         and isinstance(expr,S)
         and not expr.isKeyword()):
-        if expr is S('&rest'):
+        if expr is S('&rest') or expr is S('&key'):
             return expr
         if (scope.id>0
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):

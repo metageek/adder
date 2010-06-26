@@ -400,6 +400,45 @@ class ReduceTestCase(unittest.TestCase):
             ]
         assert self.stmts==expected
 
+    def testDefunStmtKey(self):
+        x=self.r([S('defun'),S('fact'),[S('n'),S('&key'),S('r')],
+                  [S('if'),
+                   [S('<'),S('n'),2],
+                   1,
+                   [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                   ]
+                  ],
+                 True)
+        assert x is None
+
+        gensym.nextId=1
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch2=gensym('scratch')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+
+        expected=[
+            [S('def'),S('fact'),[S('n'),S('&key'),S('r')],
+             [S('begin'),
+              [S(':='),condScratch,[S('binop'),S('<'),S('n'),2]],
+              [S('if'),
+               condScratch,
+               [S(':='),ifScratch,1],
+               [S('begin'),
+                [S(':='),scratch2,[S('binop'),S('-'),S('n'),1]],
+                [S(':='),scratch3,[S('call'),S('fact'),[scratch2],[]]],
+                [S(':='),scratch4,[S('binop'),S('*'),S('n'),scratch3]],
+                [S(':='),ifScratch,scratch4]
+                ]
+               ],
+              [S('return'),ifScratch],
+              ]
+             ]
+            ]
+        assert self.stmts==expected
+
     def testLambdaExpr(self):
         x=self.r([S('lambda'),[S('n')],
                   [S('if'),
