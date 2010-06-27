@@ -38,6 +38,14 @@ class ReduceTestCase(unittest.TestCase):
         assert self.r(S('fred'),True) is None
         assert not self.stmts
 
+    def testKeywordExpr(self):
+        assert self.r(S(':fred'),False)==[S('quote'),S(':fred')]
+        assert not self.stmts
+
+    def testKeywordStmt(self):
+        assert self.r(S(':fred'),True) is None
+        assert not self.stmts
+
     def testSimpleFuncExpr(self):
         scratch=gensym('scratch')
         gensym.nextId=1

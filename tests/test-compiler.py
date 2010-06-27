@@ -1283,6 +1283,9 @@ class EvalTestCase(EmptyStripTestCase):
     def testVar(self):
         assert self.evalAdder("foo",foo=17)==17
 
+    def testKeyword(self):
+        assert self.evalAdder(":foo") is S(':foo')
+
     def testClass(self):
         class Base1:
             pass

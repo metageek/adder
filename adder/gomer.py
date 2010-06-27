@@ -620,6 +620,12 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False,inClass=False):
         assert gomer
         reducer=getReducer(gomer[0])
         gomer=reducer.reduce(gomer,isStmt,stmtCollector,inClass)
+    else:
+        if isinstance(gomer,S) and gomer.isKeyword():
+            if isStmt:
+                return
+            else:
+                return [S('quote'),gomer]
     if isStmt:
         if isinstance(gomer,list):
             stmtCollector(gomer)
