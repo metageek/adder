@@ -13,6 +13,7 @@
 (defconst type-dict (. python dict))
 (defconst type-symbol (. adder common Symbol))
 (defconst type-int (. python int))
+(defconst type-str (. python str))
 (defconst gensym (. adder common gensym))
 
 (defmacro dp (expr)
@@ -60,6 +61,7 @@
 (defun dict? (x) (isinstance x type-dict))
 (defun symbol? (x) (isinstance x type-symbol))
 (defun int? (x) (isinstance x type-int))
+(defun str? (x) (isinstance x type-str))
 
 (defmacro let* (decls &rest body)
   `(scope

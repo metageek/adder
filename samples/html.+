@@ -1,0 +1,23 @@
+(defmacro define-element (tag attrs self-closing-p)
+  `(defun ,tag (&rest text-and-children &key ,@attrs)
+     (yield "<")
+     (yield ,(str tag))
+     ,@(map (lambda (a) `(when ,a
+                               (yield " ")
+                               (yield ,a)))
+            attrs)
+     (yield ">")
+     (if text-and-children
+         (for (text-or-child text-and-children)
+              (if (str? text-or-child)
+                  (yield text-or-child)
+                  (yield* text-and-children)))
+         ,@(if self-closing-p
+               '()
+               `((begin
+                   (yield "</")
+                   (yield ,(str tag))
+                   (yield ">")))))))
+
+(define-element html (lang dir) nil)
+
