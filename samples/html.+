@@ -6,33 +6,40 @@
      (yield ,(str tag))
      ,@(map (lambda (a) `(when ,a
                                (yield " ")
-                               (yield ,a)))
+                               (yield ,(str a))
+                               (yield "=\"")
+                               (yield ,a)
+                               (yield "\"")))
             attrs)
      (yield ">")
-     (if text-and-children
-         (for (text-or-child text-and-children)
-              (if (str? text-or-child)
-                  (yield text-or-child)
-                  (yield* text-and-children)))
-         ,@(if self-closing-p
-               '()
-               `((begin
-                   (yield "</")
-                   (yield ,(str tag))
-                   (yield ">")))))))
+     (for (text-or-child text-and-children)
+          (if (str? text-or-child)
+              (yield text-or-child)
+              (yield* text-or-child)))
+     (unless ,self-closing-p
+             (yield "</")
+             (yield ,(str tag))
+             (yield ">"))))
 
 (define (write doc)
   (for (s doc)
-       ((. stdout write) s)))
+       ((. stdout write) s))
+  ((. stdout write) "\n"))
 
-(define-element html (lang dir) nil)
+(define-element html (lang dir) false)
 (define-element body (background text link vlink alink
-                      lang title style bgcolor onload onunload
+                      lang dir title style bgcolor onload onunload
                       onclick ondblclick onmousedown onmouseup
                       onmouseover onmousemove onmouseout
                       onkeypress onkeydown onkeyup
-                      ) nil)
+                      ) false)
+(define-element p (lang dir title style align
+                   onclick ondblclick onmousedown onmouseup
+                   onmouseover onmousemove onmouseout
+                   onkeypress onkeydown onkeyup) false)
 
-(print "about to write")
-(write (html :lang "en_US" :id "root"
-             (body :text "red" "Hi.")))
+(defvar color "blue")
+(write (html :lang "en_US" :id "root" "fred"
+             (body :text color
+                   (p :style "font-variant: small-caps" "barney")
+                   )))
