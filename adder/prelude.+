@@ -3,6 +3,7 @@
 (defconst zip (. python zip))
 (defconst next (. python next))
 (defconst iter (. python iter))
+(defconst len (. python len))
 (defconst str (. python str))
 (defconst stdin (. python sys stdin))
 (defconst stdout (. python sys stdout))

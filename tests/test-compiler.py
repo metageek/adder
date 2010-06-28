@@ -2084,6 +2084,9 @@ class PreludeTestCase(ContextTestCase):
     def testTail(self):
         assert self.e("(tail '(1 2 3))")==[2,3]
 
+    def testLen(self):
+        assert self.e("(len '(1 2 3))")==3
+
     def testReverseBang(self):
         l=[1,2,3]
         assert self.e("(reverse! l)",l=l) is l
