@@ -15,6 +15,7 @@
 (defconst type-symbol (. adder common Symbol))
 (defconst type-int (. python int))
 (defconst type-str (. python str))
+(defconst type-generator (. python types GeneratorType))
 (defconst gensym (. adder common gensym))
 
 (defmacro dp (expr)
@@ -63,6 +64,7 @@
 (defun symbol? (x) (isinstance x type-symbol))
 (defun int? (x) (isinstance x type-int))
 (defun str? (x) (isinstance x type-str))
+(defun generator? (x) (isinstance x type-generator))
 
 (defmacro let* (decls &rest body)
   `(scope
@@ -189,6 +191,15 @@
 
 ;; The lack of yield* in Python was part of my motivation for writing Adder.
 (defmacro yield* (subseq)
-  (with-macro-vars (x)
-    `(for (,x ,subseq)
-       (yield ,x))))
+  (with-macro-vars (x i stack stop)
+    `(let ((,stack (mk-list (iter ,subseq))))
+       (while ,stack
+         (let ((,i ([] ,stack -1)))
+           (while true
+             (let ((,x (try (next ,i)
+                        (:StopIteration ,stop ((. ,stack pop)) (break)))))
+               (if (generator? ,x)
+                   (begin
+                     ((. ,stack append) ,x)
+                     (break))
+                   (yield ,x)))))))))

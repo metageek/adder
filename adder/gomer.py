@@ -1,7 +1,7 @@
 # A structured internal representation; basically an annotated form of
 #  Adder itself, with macros expanded.  Gets converted to Pyle.
 
-import itertools,functools,re,pdb,adder.pyle,sys
+import itertools,functools,re,pdb,adder.pyle,sys,types
 from adder.common import Symbol as S, gensym, mkScratch
 import adder.runtime
 
@@ -647,6 +647,7 @@ def mkGlobals():
     for (k,v) in __builtins__.items():
         setattr(python,k,v)
     python.sys=sys
+    python.types=types
     g['python']=python
     a=O()
     a.common=adder.common

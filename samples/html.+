@@ -26,6 +26,9 @@
        ((. stdout write) s))
   ((. stdout write) "\n"))
 
+(defmacro foreach (x seq expr)
+  `((lambda () (for (,x ,seq) (yield ,expr)))))
+
 (define-element html (lang dir) false)
 (define-element body (background text link vlink alink
                       lang dir title style bgcolor onload onunload
@@ -42,4 +45,6 @@
 (write (html :lang "en_US" :id "root" "fred"
              (body :text color
                    (p :style "font-variant: small-caps" "barney")
+                   (foreach x '("adder" "pyle" "gomer")
+                            (p :style "font-size: 200%" x))
                    )))
