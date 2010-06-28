@@ -189,5 +189,5 @@
 ;; The lack of yield* in Python was part of my motivation for writing Adder.
 (defmacro yield* (subseq)
   (with-macro-vars (x)
-    `(for ((,x ,subseq))
+    `(for (,x ,subseq)
        (yield ,x))))

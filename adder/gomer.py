@@ -676,11 +676,7 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
     if verbose:
         print(stmtFlat)
-    try:
-        exec(stmtFlat,globalDict,localDict)
-    except IndexError:
-        pdb.set_trace()
-        raise
+    exec(stmtFlat,globalDict,localDict)
     try:
         res=globalDict[resVar.toPython()]
     except KeyError as ke:
