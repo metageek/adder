@@ -402,7 +402,8 @@ class Def(Stmt):
         if self.kwArgs:
             if args:
                 args+=','
-            args+='*,'
+            if not self.restArg:
+                args+='*,'
             args+=','.join(map(str,self.kwArgs))
         return ('def %s(%s):' % (str(self.f),args),
                 body)

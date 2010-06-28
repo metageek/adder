@@ -1784,6 +1784,12 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 """)==63
         assert self['f-1'](12,y=9)==108
 
+    def testDefunKwRest(self):
+        assert self.e("""(defun f (x &key y &rest z) (* x y ([] z 0)))
+(f 9 3 :y 7)
+""")==189
+        assert self['f-1'](12,5,'alpha',y=9)==540
+
     def testDefunReturnBlank(self):
         assert self.e("""(defun f (x) (return) (* x 7))
 (f 9)
