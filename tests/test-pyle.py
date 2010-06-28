@@ -144,24 +144,26 @@ class StrTestCase(unittest.TestCase):
     def testDef1Kw(self):
         assert str(Def(Var(S('g')),[],[Var(S('x'))],
                        [],[],[],
-                       Return(Literal(9))))=='{def g(*,x) return 9}'
+                       Return(Literal(9))))=='{def g(*,x=None) return 9}'
 
     def testDef1Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],
                        [],[],[],
-                       Return(Literal(9))))=='{def g(x,*,y) return 9}'
+                       Return(Literal(9))))=='{def g(x,*,y=None) return 9}'
 
     def testDef2Pos1Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('z'))],
                        [],[],[],
-                       Return(Literal(9))))=='{def g(x,y,*,z) return 9}'
+                       Return(Literal(9)))
+                   )=='{def g(x,y,*,z=None) return 9}'
 
     def testDef2Pos2Kw(self):
         assert str(Def(Var(S('g')),[Var(S('x')),Var(S('y'))],
                        [Var(S('a')),Var(S('b'))],
                        [],[],[],
-                       Return(Literal(9))))=='{def g(x,y,*,a,b) return 9}'
+                       Return(Literal(9)))
+                   )=='{def g(x,y,*,a=None,b=None) return 9}'
 
     def testBreak(self):
         assert str(Break())=='break'
@@ -505,8 +507,9 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x')),Var(S('y'))],
                             [Var(S('z'))],[],[],[],
-                            Return(Var(S('x')))))==(("def f(x,y,*,z):",["return x"]),
-                                                    """def f(x,y,*,z):
+                            Return(Var(S('x')))))==(
+            ("def f(x,y,*,z=None):",["return x"]),
+            """def f(x,y,*,z=None):
     return x
 """)
 
@@ -514,8 +517,9 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x')),Var(S('y'))],
                             [Var(S('z')),Var(S('a'))],[],[],[],
-                            Return(Var(S('x')))))==(("def f(x,y,*,z,a):",["return x"]),
-                                                    """def f(x,y,*,z,a):
+                            Return(Var(S('x')))))==(
+            ("def f(x,y,*,z=None,a=None):",["return x"]),
+            """def f(x,y,*,z=None,a=None):
     return x
 """)
 
@@ -523,8 +527,9 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [],
                             [Var(S('z')),Var(S('a'))],[],[],[],
-                            Return(Var(S('z')))))==(("def f(*,z,a):",["return z"]),
-                                                    """def f(*,z,a):
+                            Return(Var(S('z'))))
+                        )==(("def f(*,z=None,a=None):",["return z"]),
+                            """def f(*,z=None,a=None):
     return z
 """)
 
@@ -532,8 +537,9 @@ else:
         assert self.toP(Def(Var(S('f')),
                             [Var(S('x'))],
                             [Var(S('z')),Var(S('a'))],[],[],[],
-                            Return(Var(S('x')))))==(("def f(x,*,z,a):",["return x"]),
-                                                    """def f(x,*,z,a):
+                            Return(Var(S('x')))))==(
+            ("def f(x,*,z=None,a=None):",["return x"]),
+            """def f(x,*,z=None,a=None):
     return x
 """)
 
@@ -544,11 +550,12 @@ else:
                             [],
                             [Var(S('g1')),Var(S('g2'))],
                             [],
-                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
-                                                     ["global g1,g2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                            Return(Var(S('x')))))==(
+            ("def f(x,*,z=None,a=None):",
+             ["global g1,g2",
+              "return x"
+              ]),
+            """def f(x,*,z=None,a=None):
     global g1,g2
     return x
 """)
@@ -559,11 +566,12 @@ else:
                             [Var(S('z')),Var(S('a'))],
                             [],[],
                             [Var(S('nl1')),Var(S('nl2'))],
-                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
-                                                     ["nonlocal nl1,nl2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                            Return(Var(S('x'))))
+                        )==(("def f(x,*,z=None,a=None):",
+                             ["nonlocal nl1,nl2",
+                              "return x"
+                              ]),
+                            """def f(x,*,z=None,a=None):
     nonlocal nl1,nl2
     return x
 """)
@@ -575,12 +583,13 @@ else:
                             [],
                             [Var(S('g1')),Var(S('g2'))],
                             [Var(S('nl1')),Var(S('nl2'))],
-                            Return(Var(S('x')))))==(("def f(x,*,z,a):",
-                                                     ["global g1,g2",
-                                                      "nonlocal nl1,nl2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                            Return(Var(S('x'))))
+                        )==(("def f(x,*,z=None,a=None):",
+                             ["global g1,g2",
+                              "nonlocal nl1,nl2",
+                              "return x"
+                              ]),
+                            """def f(x,*,z=None,a=None):
     global g1,g2
     nonlocal nl1,nl2
     return x
@@ -1049,8 +1058,8 @@ else:
                          S('f'),
                          [S('x'),S('y'),S('&key'),S('z')],
                          [S('return'),S('x')]
-                         ])==(("def f(x,y,*,z):",["return x"]),
-                                                    """def f(x,y,*,z):
+                         ])==(("def f(x,y,*,z=None):",["return x"]),
+                                                    """def f(x,y,*,z=None):
     return x
 """)
 
@@ -1059,8 +1068,8 @@ else:
                          S('f'),
                          [S('x'),S('y'),S('&key'),S('z'),S('a')],
                          [S('return'),S('x')]
-                         ])==(("def f(x,y,*,z,a):",["return x"]),
-                                                    """def f(x,y,*,z,a):
+                         ])==(("def f(x,y,*,z=None,a=None):",["return x"]),
+                              """def f(x,y,*,z=None,a=None):
     return x
 """)
 
@@ -1069,8 +1078,8 @@ else:
                          S('f'),
                          [S('&key'),S('z'),S('a')],
                          [S('return'),S('z')]
-                         ])==(("def f(*,z,a):",["return z"]),
-                              """def f(*,z,a):
+                         ])==(("def f(*,z=None,a=None):",["return z"]),
+                              """def f(*,z=None,a=None):
     return z
 """)
 
@@ -1079,8 +1088,8 @@ else:
                          S('f'),
                          [S('x'),S('&key'),S('z'),S('a')],
                          [S('return'),S('x')]
-                         ])==(("def f(x,*,z,a):",["return x"]),
-                                                    """def f(x,*,z,a):
+                         ])==(("def f(x,*,z=None,a=None):",["return x"]),
+                              """def f(x,*,z=None,a=None):
     return x
 """)
 
@@ -1092,11 +1101,11 @@ else:
                           S('&global'),S('g1'),S('g2')
                           ],
                          [S('return'),S('x')]
-                         ])==(("def f(x,*,z,a):",
-                                                     ["global g1,g2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                         ])==(("def f(x,*,z=None,a=None):",
+                               ["global g1,g2",
+                                "return x"
+                                ]),
+                              """def f(x,*,z=None,a=None):
     global g1,g2
     return x
 """)
@@ -1109,11 +1118,11 @@ else:
                           S('&nonlocal'),S('nl1'),S('nl2'),
                           ],
                          [S('return'),S('x')]
-                         ])==(("def f(x,*,z,a):",
-                                                     ["nonlocal nl1,nl2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                         ])==(("def f(x,*,z=None,a=None):",
+                               ["nonlocal nl1,nl2",
+                                "return x"
+                                ]),
+                              """def f(x,*,z=None,a=None):
     nonlocal nl1,nl2
     return x
 """)
@@ -1127,12 +1136,12 @@ else:
                           S('&nonlocal'),S('nl1'),S('nl2'),
                           ],
                          [S('return'),S('x')]
-                         ])==(("def f(x,*,z,a):",
-                                                     ["global g1,g2",
-                                                      "nonlocal nl1,nl2",
-                                                      "return x"
-                                                      ]),
-                                                    """def f(x,*,z,a):
+                         ])==(("def f(x,*,z=None,a=None):",
+                               ["global g1,g2",
+                                "nonlocal nl1,nl2",
+                                "return x"
+                                ]),
+                              """def f(x,*,z=None,a=None):
     global g1,g2
     nonlocal nl1,nl2
     return x

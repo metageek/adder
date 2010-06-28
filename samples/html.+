@@ -21,6 +21,10 @@
                    (yield ,(str tag))
                    (yield ">")))))))
 
+(define (write doc)
+  (for (s doc)
+       ((. stdout write) s)))
+
 (define-element html (lang dir) nil)
 (define-element body (background text link vlink alink
                       lang title style bgcolor onload onunload
@@ -28,3 +32,7 @@
                       onmouseover onmousemove onmouseout
                       onkeypress onkeydown onkeyup
                       ) nil)
+
+(print "about to write")
+(write (html :lang "en_US" :id "root"
+             (body :text "red" "Hi.")))

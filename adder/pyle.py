@@ -380,7 +380,9 @@ class Def(Stmt):
                                                         )
                                                       +(['*'] if self.kwArgs
                                                         else [])
-                                                      +self.kwArgs
+                                                      +list(map(lambda k:
+                                                                    str(k)+'=None',
+                                                                self.kwArgs))
                                                       ))),
                                         globalDecl,nonlocalDecl,
                                         str(self.body))
@@ -404,7 +406,7 @@ class Def(Stmt):
                 args+=','
             if not self.restArg:
                 args+='*,'
-            args+=','.join(map(str,self.kwArgs))
+            args+=','.join(map(lambda k: str(k)+'=None',self.kwArgs))
         return ('def %s(%s):' % (str(self.f),args),
                 body)
 
