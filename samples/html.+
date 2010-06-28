@@ -1,4 +1,6 @@
 (defmacro define-element (tag attrs self-closing-p)
+  ((. attrs append) 'id)
+  ((. attrs append) 'class)
   `(defun ,tag (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
@@ -20,4 +22,9 @@
                    (yield ">")))))))
 
 (define-element html (lang dir) nil)
-
+(define-element body (background text link vlink alink
+                      lang title style bgcolor onload onunload
+                      onclick ondblclick onmousedown onmouseup
+                      onmouseover onmousemove onmouseout
+                      onkeypress onkeydown onkeyup
+                      ) nil)
