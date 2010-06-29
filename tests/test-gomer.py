@@ -2602,6 +2602,62 @@ while %s:
             None
             )
 
+    def testDefunStmtOptionalD(self):
+        condScratch=gensym('scratch')
+        ifScratch=gensym('if')
+        scratch3=gensym('scratch')
+        scratch4=gensym('scratch')
+        scratch5=gensym('scratch')
+        condScratchP=condScratch.toPython()
+        ifScratchP=ifScratch.toPython()
+        scratch3P=scratch3.toPython()
+        scratch4P=scratch4.toPython()
+        scratch5P=scratch5.toPython()
+
+        gensym.nextId=1
+        assert self.toP([S('defun'),S('fact'),[S('n'),
+                                               S('&optional'),[S('o'),9]
+                                               ],
+                         [S('if'),
+                          [S('<'),S('n'),2],
+                          1,
+                          [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
+                          ]
+                         ],
+                        True)==(
+            [("def fact(n,o=9):",
+              [("%s=n<2" % condScratchP,
+                ("if %s:" % condScratchP,
+                 ["%s=1" % ifScratchP],
+                 "else:",
+                 [("%s=n-1" % scratch3P,
+                   "%s=fact(%s)" % (scratch4P,scratch3P),
+                   "%s=n*%s" % (scratch5P,scratch4P),
+                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ),
+                "return %s" % ifScratchP
+                )]
+              )],"""def fact(n,o=9):
+    %s=n<2
+    if %s:
+        %s=1
+    else:
+        %s=n-1
+        %s=fact(%s)
+        %s=n*%s
+        %s=%s
+    return %s
+""" % (condScratchP,
+       condScratchP,
+       ifScratchP,
+       scratch3P,
+       scratch4P,scratch3P,
+       scratch5P,scratch4P,
+       ifScratchP,scratch5P,
+       ifScratchP),
+            None
+            )
+
     def testLambdaExpr(self):
         lambdaScratch=gensym('lambda')
         condScratch=gensym('scratch')
@@ -4390,6 +4446,13 @@ class EvalTestCase(unittest.TestCase):
         assert val is g['f']
         assert g['f'](3,4)==[3,4]
         assert g['f'](3)==[3,None]
+
+    def testDefunOptionalD(self):
+        (val,g)=self.e([S('defun'),S('f'),[S('a'),S('&optional'),[S('b'),9]],
+                        [S('mk-list'),S('a'),S('b')]])
+        assert val is g['f']
+        assert g['f'](3,4)==[3,4]
+        assert g['f'](3)==[3,9]
 
     def testDefunRecursive(self):
         (val,g)=self.e([S('defun'),S('fact'),[S('n')],

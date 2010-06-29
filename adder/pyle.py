@@ -377,7 +377,7 @@ class Def(Stmt):
                 % (str(self.f),
                    ','.join(map(str,
                                 (self.posArgs
-                                 +list(map(lambda a: '%s=None' % a,
+                                 +list(map(lambda a: '%s=%s' % (a[0],a[1]),
                                            self.optionalArgs))
                                  +(['*'+str(self.restArg)
                                     ] if self.restArg
@@ -402,7 +402,7 @@ class Def(Stmt):
         body.append(self.body.toPythonTree())
 
         args=','.join(list(map(str,self.posArgs))
-                      +list(map(lambda a: '%s=None' % a,
+                      +list(map(lambda a: '%s=%s' % (a[0],a[1]),
                                 self.optionalArgs))
                       )
         if self.restArg:
@@ -612,11 +612,23 @@ def build(pyle):
                 '&nonlocal': nonlocals}
         cur=posArgs
         for arg in pyle[2]:
-            assert isinstance(arg,S)
+            if cur is optionalArgs:
+                assert isinstance(arg,S) or (isinstance(arg,list)
+                                             and len(arg)==2
+                                             and isinstance(arg[0],S))
+            else:
+                assert isinstance(arg,S)
             if arg[0]=='&':
                 cur=states[str(arg)]
             else:
-                cur.append(build(arg))
+                if cur is optionalArgs:
+                    if isinstance(arg,list):
+                        (arg,default)=arg
+                    else:
+                        default=None
+                    cur.append((build(arg),build(default)))
+                else:
+                    cur.append(build(arg))
 
         return Def(name,posArgs,optionalArgs,kwArgs,restArgs,
                    globals,nonlocals,body)

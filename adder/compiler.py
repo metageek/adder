@@ -645,15 +645,26 @@ class Annotator:
         def doArg(arg):
             nonlocal keyArgs,inKeys
             (argExpr,argLine)=arg
+            if isinstance(argExpr,list):
+                (argExprPE,argDefaultPE)=argExpr
+                argExpr=argExprPE[0]
+            else:
+                argDefaultPE=None
             if argExpr[0]=='&':
                 inKeys=(argExpr is S('&key'))
                 return (argExpr,argLine,scope)
             childScope.addDef(argExpr,argLine,None)
             if inKeys:
                 keyArgs.append((argExpr,argLine))
-                return (argExpr,argLine,None)
+                scopeToUse=None
             else:
-                return (argExpr,argLine,childScope)
+                scopeToUse=childScope
+            if argDefaultPE:
+                return ([(argExpr,argLine,scopeToUse),
+                         self(argDefaultPE,scope,globalDict,localDict)],
+                        argLine,scope)
+            else:
+                return (argExpr,argLine,scopeToUse)
 
         def seekAssignments(scopedExpr):
             (expr,_,scope)=scopedExpr

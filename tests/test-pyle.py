@@ -142,9 +142,14 @@ class StrTestCase(unittest.TestCase):
                        Return(Literal(9))))=='{def g(x) return 9}'
 
     def testDef1Pos1Opt(self):
-        assert str(Def(Var(S('g')),[Var(S('x'))],[Var(S('y'))],[],
+        assert str(Def(Var(S('g')),[Var(S('x'))],[(Var(S('y')),None)],[],
                        [],[],[],
                        Return(Literal(9))))=='{def g(x,y=None) return 9}'
+
+    def testDef1Pos1OptD(self):
+        assert str(Def(Var(S('g')),[Var(S('x'))],[(Var(S('y')),Literal(12))],[],
+                       [],[],[],
+                       Return(Literal(9))))=='{def g(x,y=12) return 9}'
 
     def testDef1Kw(self):
         assert str(Def(Var(S('g')),[],[],[Var(S('x'))],

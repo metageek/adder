@@ -806,6 +806,14 @@ class ParseAndStripTestCase(EmptyStripTestCase):
        [S('*'),S('x-2'),S('y-2')]
        ]
 
+    def testDefunOptionalD(self):
+        assert self.clarify("""(defun foo (x &optional (y 9))
+  (* x y))
+""")==[S('defun'),S('foo-1'),
+       [S('x-2'),S('&optional'),[S('y-2'),9]],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
     def testDefunKw(self):
         assert self.clarify("""(defun foo (x &key y)
   (* x y))
@@ -2403,7 +2411,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
       unittest.makeSuite(LoadTestCase,'test'),
       unittest.makeSuite(ContextTestCase,'test'),
-      unittest.makeSuite(PreludeTestCase,'test'),
+      #unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 
