@@ -1336,6 +1336,14 @@ class EvalTestCase(EmptyStripTestCase):
 )
 """)==[(9,7),(12,None)]
 
+    def testDefunOptionalD(self):
+        assert self.evalAdder("""(begin
+(defun foo (x &optional (y 'q))
+  (mk-tuple x y))
+(mk-list (foo 9 7) (foo 12))
+)
+""")==[(9,7),(12,S("q"))]
+
     def testLambda(self):
         assert self.evalAdder("""((lambda (x y)
 (* x y)) 9 7)
@@ -1809,6 +1817,13 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         assert self['f-1'](12)==(12,None)
         assert self['f-1'](12,S('q'))==(12,S('q'))
 
+    def testDefunOptionalD(self):
+        assert self.e("""(defun f (x &optional (y 23)) (mk-tuple x y))
+(mk-list (f 9 7) (f 19))
+""")==[(9,7),(19,23)]
+        assert self['f-1'](12)==(12,23)
+        assert self['f-1'](12,S('q'))==(12,S('q'))
+
     def testDefunKw(self):
         assert self.e("""(defun f (x &key y) (* x y))
 (f 9 :y 7)
@@ -2220,6 +2235,13 @@ class PreludeTestCase(ContextTestCase):
   (* x x (if (not q) 1 q))
 )""") is self['sq-1']
         assert self['sq-1'](17)==289
+        assert self['sq-1'](17,5)==1445
+
+    def testDefineFuncOptionalD(self):
+        assert self.e("""(define (sq x &optional (q 2))
+  (* x x (if (not q) 1 q))
+)""") is self['sq-1']
+        assert self['sq-1'](17)==578
         assert self['sq-1'](17,5)==1445
 
     def testError(self):
