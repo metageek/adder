@@ -45,9 +45,13 @@
 (defmacro foreach (x seq expr)
   `((lambda () (for (,x ,seq) (yield ,expr)))))
 
-(define-element html (%i18n version) false)
+(define-element a (%attrs charset type name href hreflang
+                   rel rev accesskey shape coords tabindex
+                   onfocus onblur) false)
+
 (define-element body (%attrs onload onunload
                       background text link vlink alink) false)
+(define-element html (%i18n version) false)
 (define-element p (%attrs align) false)
 
 (defvar color "blue")
