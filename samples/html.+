@@ -15,7 +15,7 @@
        (for (x (lookup-attr-group attr))
             (yield x))))
 
-(defmacro define-element (tag attrs self-closing-p)
+(defmacro define-element (tag attrs &optional (self-closing-p false))
   (:= attrs (list (expand-attr-groups attrs)))
   `(defun ,tag (&rest text-and-children &key ,@attrs)
      (yield "<")
@@ -47,12 +47,12 @@
 
 (define-element a (%attrs charset type name href hreflang
                    rel rev accesskey shape coords tabindex
-                   onfocus onblur) false)
+                   onfocus onblur))
 
 (define-element body (%attrs onload onunload
-                      background text link vlink alink) false)
-(define-element html (%i18n version) false)
-(define-element p (%attrs align) false)
+                      background text link vlink alink))
+(define-element html (%i18n version))
+(define-element p (%attrs align))
 
 (defvar color "blue")
 (write (html :lang "en_US" "fred"
