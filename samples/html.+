@@ -1,6 +1,22 @@
+(define (lookup-attr-group attr-or-group)
+  (case attr-or-group
+    ('%coreattrs '(id class style title))
+    ('%i18n '(lang dir))
+    ('%events '(onclick ondblclick onmousedown onmouseup
+                onmouseover onmousemove onmouseout
+                onkeypress onkeydown onkeyup))
+    ('%attrs (+ (lookup-attr-group '%coreattrs)
+                (lookup-attr-group '%i18n)
+                (lookup-attr-group '%events)))
+    (otherwise (mk-list attr-or-group))))
+
+(define (expand-attr-groups attrs)
+  (for (attr attrs)
+       (for (x (lookup-attr-group attr))
+            (yield x))))
+
 (defmacro define-element (tag attrs self-closing-p)
-  ((. attrs append) 'id)
-  ((. attrs append) 'class)
+  (:= attrs (list (expand-attr-groups attrs)))
   `(defun ,tag (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
@@ -29,20 +45,13 @@
 (defmacro foreach (x seq expr)
   `((lambda () (for (,x ,seq) (yield ,expr)))))
 
-(define-element html (lang dir) false)
-(define-element body (background text link vlink alink
-                      lang dir title style bgcolor onload onunload
-                      onclick ondblclick onmousedown onmouseup
-                      onmouseover onmousemove onmouseout
-                      onkeypress onkeydown onkeyup
-                      ) false)
-(define-element p (lang dir title style align
-                   onclick ondblclick onmousedown onmouseup
-                   onmouseover onmousemove onmouseout
-                   onkeypress onkeydown onkeyup) false)
+(define-element html (%i18n version) false)
+(define-element body (%attrs onload onunload
+                      background text link vlink alink) false)
+(define-element p (%attrs align) false)
 
 (defvar color "blue")
-(write (html :lang "en_US" :id "root" "fred"
+(write (html :lang "en_US" "fred"
              (body :text color
                    (p :style "font-variant: small-caps" "barney")
                    (foreach x '("adder" "pyle" "gomer")
