@@ -743,7 +743,7 @@ def stripAnnotations(annotated,*,quoted=False):
     if (not quoted
         and isinstance(expr,S)
         and not expr.isKeyword()):
-        if expr is S('&rest') or expr is S('&key'):
+        if expr is S('&rest') or expr is S('&key') or expr is S('&optional'):
             return expr
         if (scope.id>0
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):

@@ -798,6 +798,14 @@ class ParseAndStripTestCase(EmptyStripTestCase):
        [S('*'),S('x-2'),S('y-2')]
        ]
 
+    def testDefunOptional(self):
+        assert self.clarify("""(defun foo (x &optional y)
+  (* x y))
+""")==[S('defun'),S('foo-1'),
+       [S('x-2'),S('&optional'),S('y-2')],
+       [S('*'),S('x-2'),S('y-2')]
+       ]
+
     def testDefunKw(self):
         assert self.clarify("""(defun foo (x &key y)
   (* x y))
@@ -1312,6 +1320,14 @@ class EvalTestCase(EmptyStripTestCase):
 )
 """)==63
 
+    def testDefunOptional(self):
+        assert self.evalAdder("""(begin
+(defun foo (x &optional y)
+  (mk-tuple x y))
+(mk-list (foo 9 7) (foo 12))
+)
+""")==[(9,7),(12,None)]
+
     def testLambda(self):
         assert self.evalAdder("""((lambda (x y)
 (* x y)) 9 7)
@@ -1778,6 +1794,13 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 """)==63
         assert self['f-1'](12)==84
 
+    def testDefunOptional(self):
+        assert self.e("""(defun f (x &optional y) (mk-tuple x y))
+(mk-list (f 9 7) (f 19))
+""")==[(9,7),(19,None)]
+        assert self['f-1'](12)==(12,None)
+        assert self['f-1'](12,S('q'))==(12,S('q'))
+
     def testDefunKw(self):
         assert self.e("""(defun f (x &key y) (* x y))
 (f 9 :y 7)
@@ -2183,6 +2206,13 @@ class PreludeTestCase(ContextTestCase):
     def testDefineFunc(self):
         assert self.e("(define (sq x) (* x x))") is self['sq-1']
         assert self['sq-1'](17)==289
+
+    def testDefineFuncOptional(self):
+        assert self.e("""(define (sq x &optional q)
+  (* x x (if (not q) 1 q))
+)""") is self['sq-1']
+        assert self['sq-1'](17)==289
+        assert self['sq-1'](17,5)==1445
 
     def testError(self):
         try:

@@ -344,7 +344,8 @@ class While(Stmt):
                 [self.body.toPythonTree()])
 
 class Def(Stmt):
-    def __init__(self,f,posArgs,kwArgs,restArgs,globals,nonlocals,body):
+    def __init__(self,f,posArgs,optionalArgs,kwArgs,restArgs,
+                 globals,nonlocals,body):
         assert isinstance(f,Var)
         assert len(restArgs)<=1
         for varList in [posArgs,kwArgs,restArgs,globals,nonlocals]:
@@ -355,6 +356,7 @@ class Def(Stmt):
         self.f=f
         self.body=body
         self.posArgs=list(posArgs)
+        self.optionalArgs=list(optionalArgs)
         self.kwArgs=list(kwArgs)
         self.globals=list(globals)
         self.nonlocals=list(nonlocals)
@@ -371,21 +373,24 @@ class Def(Stmt):
         else:
             nonlocalDecl=''
 
-        return '{def %s(%s)%s%s %s}' % (str(self.f),
-                                        ','.join(map(str,
-                                                     (self.posArgs
-                                                      +(['*'+str(self.restArg)
-                                                         ] if self.restArg
-                                                        else []
-                                                        )
-                                                      +(['*'] if self.kwArgs
-                                                        else [])
-                                                      +list(map(lambda k:
-                                                                    str(k)+'=None',
-                                                                self.kwArgs))
-                                                      ))),
-                                        globalDecl,nonlocalDecl,
-                                        str(self.body))
+        return ('{def %s(%s)%s%s %s}'
+                % (str(self.f),
+                   ','.join(map(str,
+                                (self.posArgs
+                                 +list(map(lambda a: '%s=None' % a,
+                                           self.optionalArgs))
+                                 +(['*'+str(self.restArg)
+                                    ] if self.restArg
+                                   else []
+                                   )
+                                 +(['*'] if self.kwArgs
+                                   else [])
+                                 +list(map(lambda k:
+                                               str(k)+'=None',
+                                           self.kwArgs))
+                                 ))),
+                   globalDecl,nonlocalDecl,
+                   str(self.body)))
 
     def toPythonTree(self):
         body=[]
@@ -396,7 +401,10 @@ class Def(Stmt):
             body.append('nonlocal %s' % (','.join(map(str,self.nonlocals))))
         body.append(self.body.toPythonTree())
 
-        args=','.join(map(str,self.posArgs))
+        args=','.join(list(map(str,self.posArgs))
+                      +list(map(lambda a: '%s=None' % a,
+                                self.optionalArgs))
+                      )
         if self.restArg:
             if args:
                 args+=','
@@ -591,12 +599,14 @@ def build(pyle):
         body=build(pyle[3])
 
         posArgs=[]
+        nonlocals=[]
+        optionalArgs=[]
         kwArgs=[]
         restArgs=[]
         globals=[]
-        nonlocals=[]
 
-        states={'&key': kwArgs,
+        states={'&optional': optionalArgs,
+                '&key': kwArgs,
                 '&rest': restArgs,
                 '&global': globals,
                 '&nonlocal': nonlocals}
@@ -608,7 +618,8 @@ def build(pyle):
             else:
                 cur.append(build(arg))
 
-        return Def(name,posArgs,kwArgs,restArgs,globals,nonlocals,body)
+        return Def(name,posArgs,optionalArgs,kwArgs,restArgs,
+                   globals,nonlocals,body)
     if f==S('class'):
         assert len(pyle)>=3
         name=build(pyle[1])
