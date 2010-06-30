@@ -169,9 +169,66 @@
 (define-element ul (%attrs))
 
 (defvar color "blue")
-(write (<html> :lang "en_US" "fred"
-               (<body> :text color
-                       (<p> :style "font-variant: small-caps" "barney")
-                       (foreach x '("adder" "pyle" "gomer")
-                                (<p> :style "font-size: 200%" x))
-                       )))
+(write 
+ (<html> 
+  (<head> 
+   (<title> "Adder: Python with a Lisp")
+   )
+  (<body> 
+   (<h1> "Adder: Python with a Lisp")
+
+   (<h2> "By " (<a> :href "/" "John Stracke"))
+
+   (<p> "Adder : " (<a> :href "http://www.python.org" "Python") " :: "
+
+        (<a> :href "http://clojure.org" "Clojure") " : "
+        (<a> :href "http://www.java.com" "Java")
+        )
+
+   (<p> "Adder is a Lisp-1 which compiles to Python bytecode.  It aims to
+integrate seamlessly into Python: every Adder function is a Python
+function, every Adder list is a Python list, etc.
+")
+
+   (<p> "Python-on-Lisp has been tried before; I think Adder has two advantages
+that previous attempts did not.  The first is technical: Python's
+metaprogramming has gotten better in the past few years, which allows
+Adder to integrate more smoothly.  The second is social: Clojure has
+prepared the ground for the notion of a Lisp that integrates into an
+existing language.
+")
+
+   (<p> "It has one bit of non-Lispy syntax: " (<code> "foo.bar.baz")
+        " means exactly what
+        it does in Python, and " (<code> ".bar.baz") " is a function,
+        defined so that "
+
+        (<code> "(.bar.baz foo)") " is identical to " (<code> "foo.bar.baz")".
+        (There are also accessor
+               functions " (<code> "(get-attribute)") " and "
+               (<code> "(set-attribute)")".)"
+        )
+
+   (<p> "There is one impedance mismatch: Python supports only two levels of
+lexical scope.  This turns out to be hardwired into the Python VM, not
+just the language.  So Adder's generated code can't use Python's
+fast access for local variables; it has to store a reference to an
+environment object into a local variable, and access that object's
+fields.  (Obviously, this can be optimized.)
+")
+
+   (<p> "Status: as of 25 March 2009,
+the compiler works, but needs a few extra bits to be useful
+enough.
+In about a week, I'll have both of these ready,
+and I'll release the code here.
+")
+
+   (<p> (<a> :href "presentation.pdf" "The slides from the lightning
+talk I gave at ILC09."))
+
+   )
+  )
+
+
+ )
