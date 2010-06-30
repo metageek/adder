@@ -21,11 +21,7 @@
   (mk-symbol (% "<%s>" (str tag))))
 
 (defmacro define-element (tag attrs &optional (self-closing-p false))
-  (when (== tag 'label')
-        (dp attrs))
   (:= attrs (list (expand-attr-groups attrs)))
-  (when (== tag 'label')
-        (dp attrs))
   `(defun ,(tag-to-sym tag) (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
@@ -79,8 +75,8 @@
 (define-element area (%attrs shape coords href nohref
                              alt tabindex accesskey onfocus onblur)
   true)
-(define-element base (href))
-(define-element basefont (%coreattrs %i18n size color face))
+(define-element base (href) true)
+(define-element basefont (%coreattrs %i18n size color face) true)
 (define-element bdo (%coreattrs %i18n))
 (define-element blockquote (%attrs cite))
 (define-element body (%attrs onload onunload
@@ -91,7 +87,7 @@
                                onfocus onblur))
 (define-element caption (%attrs align))
 (define-element center (%coreattrs))
-(define-element col (%attrs span width %cellhalign %cellvalign))
+(define-element col (%attrs span width %cellhalign %cellvalign) true)
 (define-element colgroup (%attrs span width %cellhalign %cellvalign))
 (define-element dd (%attrs))
 (define-element del (%attrs cite datetime))
@@ -105,7 +101,7 @@
                              accept name onsubmit onreset accept-charset))
 (define-element frame (%coreattrs longdesc name src
                                   frameborder marginwidth marginheight
-                                  noresize scrolling))
+                                  noresize scrolling) true)
 (define-element frameset (%coreattrs rows cols onload onunload))
 (define-element h1 (%attrs))
 (define-element h2 (%attrs))
@@ -114,7 +110,7 @@
 (define-element h5 (%attrs))
 (define-element h6 (%attrs))
 (define-element head (%i18n profile))
-(define-element hr (%attrs align noshade size width))
+(define-element hr (%attrs align noshade size width) true)
 (define-element html (%i18n version))
 (define-element iframe (%coreattrs longdesc name src
                                    frameborder marginwidth marginheight
@@ -127,7 +123,7 @@
                               src alt usemap ismap
                               tabindex accesskey
                               onfocus onblur onselect onchange
-                              accept))
+                              accept) true)
 (define-element ins (%attrs cite datetime))
 (define-element isindex (%coreattrs %i18n prompt) true)
 (define-element label (%attrs _for accesskey onfocus onblur))
@@ -138,15 +134,38 @@
 (define-element menu (%attrs compact))
 (define-element meta (%i18n http-equiv name content scheme) true)
 (define-element noframes (%attrs))
-
+(define-element noscript (%attrs))
+(define-element object (%attrs declare classid
+                               codebase data type codetype archive standby
+                               height width usemap name tabindex))
 (define-element ol (%attrs))
-
+(define-element optgroup (%attrs disabled label))
+(define-element option (%attrs selected disabled label value))
 (define-element p (%attrs align))
-
+(define-element param (%attrs name value valuetype type) true)
+(define-element pre (%attrs))
 (define-element q (%attrs cite))
-
+(define-element script (charset type src defer))
+(define-element select (%attrs name size multiple disabled tabindex
+                               onfocus onblur onchange))
 (define-element span (%attrs))
-
+(define-element style (%i18n type media title))
+(define-element sub (%attrs))
+(define-element sup (%attrs))
+(define-element table (%attrs summary width border frame
+                              rules cellspacing cellpadding))
+(define-element tbody (%attrs %cellhalign %cellvalign))
+(define-element td (%attrs abbr axis headers scope
+                           rowspan colspan %cellhalign %cellvalign))
+(define-element textarea (%attrs name rows cols disabled readonly
+                                 tabindex accesskey
+                                 onfocus onblur onselect onchange))
+(define-element tfoot (%attrs %cellhalign %cellvalign))
+(define-element th (%attrs abbr axis headers scope
+                           rowspan colspan %cellhalign %cellvalign))
+(define-element thead (%attrs %cellhalign %cellvalign))
+(define-element title (%i18n))
+(define-element tr (%attrs %cellhalign %cellvalign))
 (define-element ul (%attrs))
 
 (defvar color "blue")
