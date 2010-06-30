@@ -22,7 +22,7 @@
   (defvar scratch (gensym))
   `(scope
     (defvar ,scratch ,expr)
-    (print (quote ,expr) ":" ,scratch)
+    (print (quote ,expr) ":" ((. adder common adderStr) ,scratch))
     ,scratch))
 
 (defun head (l)

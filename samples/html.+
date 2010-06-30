@@ -17,9 +17,16 @@
        (for (x (lookup-attr-group attr))
             (yield x))))
 
+(define (tag-to-sym tag)
+  (mk-symbol (% "<%s>" (str tag))))
+
 (defmacro define-element (tag attrs &optional (self-closing-p false))
+  (when (== tag 'label')
+        (dp attrs))
   (:= attrs (list (expand-attr-groups attrs)))
-  `(defun ,tag (&rest text-and-children &key ,@attrs)
+  (when (== tag 'label')
+        (dp attrs))
+  `(defun ,(tag-to-sym tag) (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
      ,@(map (lambda (a) `(when ,a
@@ -106,8 +113,6 @@
 (define-element h4 (%attrs))
 (define-element h5 (%attrs))
 (define-element h6 (%attrs))
-(define-element h1 (%attrs))
-(define-element h1 (%attrs))
 (define-element head (%i18n profile))
 (define-element hr (%attrs align noshade size width))
 (define-element html (%i18n version))
@@ -125,7 +130,7 @@
                               accept))
 (define-element ins (%attrs cite datetime))
 (define-element isindex (%coreattrs %i18n prompt) true)
-(define-element label (%attrs for accesskey onfocus onblur))
+(define-element label (%attrs _for accesskey onfocus onblur))
 (define-element legend (%attrs accesskey))
 (define-element li (%attrs))
 (define-element link (%attrs charset href hreflang type rel rev media) true)
@@ -145,9 +150,9 @@
 (define-element ul (%attrs))
 
 (defvar color "blue")
-(write (html :lang "en_US" "fred"
-             (body :text color
-                   (p :style "font-variant: small-caps" "barney")
-                   (foreach x '("adder" "pyle" "gomer")
-                            (p :style "font-size: 200%" x))
-                   )))
+(write (<html> :lang "en_US" "fred"
+               (<body> :text color
+                       (<p> :style "font-variant: small-caps" "barney")
+                       (foreach x '("adder" "pyle" "gomer")
+                                (<p> :style "font-size: 200%" x))
+                       )))

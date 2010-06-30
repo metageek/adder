@@ -798,8 +798,12 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
 
     if not hasLines:
         expr=addLines(expr,defLine)
-    annotated=annotate(expr,scope,globalDict,localDict)
-    gomer=stripAnnotations(annotated)
+    try:
+        annotated=annotate(expr,scope,globalDict,localDict)
+        gomer=stripAnnotations(annotated)
+    except Exception as e:
+        print('Compilation exception in',expr)
+        raise
     return adder.gomer.geval(gomer,
                              globalDict=globalDict,
                              localDict=localDict,

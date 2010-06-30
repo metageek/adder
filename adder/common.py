@@ -31,6 +31,15 @@ class Symbol:
             return Symbol.registry[s]
 
     def __init__(self,s):
+        if hasattr(self,'s'):
+            assert isinstance(s,Symbol) or isinstance(s,str)
+            if isinstance(s,Symbol):
+                assert self.s==s.s
+            else:
+                if isinstance(s,str):
+                    assert self.s==s
+            return
+        assert isinstance(s,str)
         self.s=s
         self.isScratch=False
 
