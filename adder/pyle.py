@@ -38,7 +38,10 @@ def toPythonFlat(il):
 class Any(IL):
     pass
 
-class Simple(Any):
+class RValue(Any):
+    pass
+
+class Simple(RValue):
     pass
 
 class LValue:
@@ -69,7 +72,7 @@ class Literal(Simple):
     def toPythonTree(self):
         return repr(self.value)
 
-class List(Any):
+class List(RValue):
     def __init__(self,value):
         assert isinstance(value,list)
         for v in value:
@@ -85,19 +88,19 @@ class List(Any):
 class Stmt(IL):
     pass
 
-class Call(Stmt):
+class Call(Stmt,RValue):
     def __init__(self,f,posArgs,kwArgs):
-        assert isinstance(f,Var)
+        assert isinstance(f,RValue)
         if isinstance(posArgs,list):
             for arg in posArgs:
-                assert isinstance(arg,Simple)
+                assert isinstance(arg,RValue)
         else:
             assert isinstance(posArgs,Var)
 
         if isinstance(kwArgs,list):
             for (key,value) in kwArgs:
                 assert isinstance(key,Var)
-                assert isinstance(value,Simple)
+                assert isinstance(value,RValue)
         else:
             assert isinstance(kwArgs,Var)
 
@@ -136,19 +139,7 @@ class Call(Stmt):
 class Assign(Stmt):
     def __init__(self,lhs,rhs):
         assert isinstance(lhs,LValue)
-        assert (rhs is None
-                or isinstance(rhs,Simple)
-                or isinstance(rhs,Call)
-                or isinstance(rhs,Binop)
-                or isinstance(rhs,Dot)
-                or isinstance(rhs,Subscript)
-                or isinstance(rhs,Slice)
-                or isinstance(rhs,Quote)
-                or isinstance(rhs,MkList)
-                or isinstance(rhs,MkTuple)
-                or isinstance(rhs,MkSet)
-                or isinstance(rhs,MkDict)
-                )
+        assert (rhs is None or isinstance(rhs,RValue))
         self.lhs=lhs
         self.rhs=rhs
 
@@ -162,7 +153,7 @@ class Assign(Stmt):
 
 class Return(Stmt):
     def __init__(self,value=None):
-        assert isinstance(value,Simple) or value is None
+        assert value is None or isinstance(value,RValue)
         self.value=value
 
     def __str__(self):
@@ -173,7 +164,7 @@ class Return(Stmt):
 
 class Yield(Stmt):
     def __init__(self,value):
-        assert isinstance(value,Simple)
+        assert value is None or isinstance(value,RValue)
         self.value=value
 
     def __str__(self):
@@ -228,12 +219,12 @@ class Reraise(Stmt):
     def __str__(self):
         return 'raise'
 
-class Binop(IL):
+class Binop(RValue):
     allLetters=re.compile('^[a-z]+$',re.IGNORECASE)
     def __init__(self,op,left,right):
         assert isinstance(op,Var)
-        assert isinstance(left,Simple)
-        assert isinstance(right,Simple)
+        assert isinstance(left,RValue)
+        assert isinstance(right,RValue)
 
         self.op=op
         self.left=left
@@ -247,9 +238,9 @@ class Binop(IL):
                            self.opStr,
                            str(self.right))
 
-class Dot(IL,LValue):
+class Dot(LValue,RValue):
     def __init__(self,obj,members):
-        assert isinstance(obj,Simple)
+        assert isinstance(obj,RValue)
         assert isinstance(members,list)
         for m in members:
             assert isinstance(m,Var)
@@ -260,10 +251,10 @@ class Dot(IL,LValue):
     def __str__(self):
         return '.'.join(map(str,[self.obj]+self.members))
 
-class Subscript(IL,LValue):
+class Subscript(LValue,RValue):
     def __init__(self,obj,key):
-        assert isinstance(obj,Simple)
-        assert isinstance(key,Simple)
+        assert isinstance(obj,RValue)
+        assert isinstance(key,RValue)
 
         self.obj=obj
         self.key=key
@@ -271,11 +262,11 @@ class Subscript(IL,LValue):
     def __str__(self):
         return '%s[%s]' % (str(self.obj),str(self.key))
 
-class Slice(IL):
+class Slice(RValue):
     def __init__(self,obj,left,right):
-        assert isinstance(obj,Simple)
-        assert left is None or isinstance(left,Simple)
-        assert right is None or isinstance(right,Simple)
+        assert isinstance(obj,RValue)
+        assert left is None or isinstance(left,RValue)
+        assert right is None or isinstance(right,RValue)
 
         self.obj=obj
         if isinstance(left,Literal) and left.value is None:
@@ -293,7 +284,7 @@ class Slice(IL):
                               '' if (self.right is None) else str(self.right),
                               )
 
-class Quote(Stmt):
+class Quote(RValue):
     def __init__(self,value):
         assert isinstance(value,Any)
         self.value=value
@@ -306,7 +297,7 @@ class Quote(Stmt):
 
 class If(Stmt):
     def __init__(self,cond,thenBody,elseBody):
-        assert isinstance(cond,Simple)
+        assert isinstance(cond,RValue)
         assert isinstance(thenBody,Stmt)
         assert (elseBody is None) or isinstance(elseBody,Stmt)
         self.cond=cond
@@ -331,7 +322,7 @@ class If(Stmt):
 
 class While(Stmt):
     def __init__(self,cond,body):
-        assert isinstance(cond,Simple)
+        assert isinstance(cond,RValue)
         assert isinstance(body,Stmt)
         self.cond=cond
         self.body=body
@@ -477,21 +468,21 @@ class Import(Stmt):
     def __str__(self):
         return 'import %s' % str(self.module)
 
-class MkList(Stmt):
+class MkList(RValue):
     def __init__(self,items):
         self.items=items
 
     def __str__(self):
         return '[%s]' % (', '.join(map(str,self.items)))
 
-class MkTuple(Stmt):
+class MkTuple(RValue):
     def __init__(self,items):
         self.items=items
 
     def __str__(self):
         return '(%s)' % (', '.join(map(str,self.items)))
 
-class MkSet(Stmt):
+class MkSet(RValue):
     def __init__(self,items):
         self.items=items
 
@@ -501,7 +492,7 @@ class MkSet(Stmt):
         else:
             return 'set()'
 
-class MkDict(Stmt):
+class MkDict(RValue):
     def __init__(self,kvPairs):
         self.kvPairs=kvPairs
 
@@ -553,7 +544,7 @@ def collapseCallScratches(pyle):
                 else:
                     usages[var].usagePath=path
 
-    for var in usages:
+    for var in sorted(usages):
         usage=usages[var]
         if usage.tooComplex:
             continue
@@ -579,11 +570,25 @@ def collapseCallScratches(pyle):
         if interveningTooComplex(usage.creationPath,usage.usagePath):
             continue
 
-        rhs=pathToStmt[tuple(usage.creationPath)][2]
+        creationStmt=pathToStmt[tuple(usage.creationPath)]
+        rhs=creationStmt[2]
         usageStmt=pathToStmt[tuple(usage.usagePath)]
-        rewrites.append((var,rhs,usageStmt))
+        rewrites.append((var,creationStmt,rhs,usageStmt))
     if rewrites:
-        print(rewrites)
+        for (var,creationStmt,rhs,stmt) in rewrites:
+            assert replaceChildVar(var,creationStmt,rhs,stmt)
+
+def replaceChildVar(var,creationStmt,rhs,stmt):
+    if not isinstance(stmt,list):
+        return False
+    for (i,p) in enumerate(stmt):
+        if p is var:
+            stmt[i]=rhs
+            creationStmt[0]=S('nop')
+            return True
+        if replaceChildVar(var,creationStmt,rhs,p):
+            return True
+    return False
 
 def build(pyle):
     collapseCallScratches(pyle)
@@ -722,6 +727,8 @@ def build(pyle):
         return Continue()
     if f==S('pass'):
         assert len(pyle)==1
+        return Pass()
+    if f==S('nop'):
         return Pass()
     if f==S('begin'):
         return Begin(list(map(build,pyle[1:])))

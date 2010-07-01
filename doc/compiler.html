@@ -244,10 +244,13 @@
 </ul>
 </li>
 
+<li>nop ::= LIST(nop $anything*)
+</li>
+
 <li>stmt ::= $return | $yield | $try | $raise | $reraise
       | $if | $while | $break | $continue | $def | $class
       | $assign | $import | $pass | $begin
-      | $fcall
+      | $fcall | $nop
 </li>
 </ul>
 
