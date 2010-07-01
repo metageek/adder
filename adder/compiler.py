@@ -788,7 +788,8 @@ def stripLines(parsedExpr):
 
 def compileAndEval(expr,scope,globalDict,localDict,*,
                    hasLines=False,defLine=0,
-                   verbose=False):
+                   verbose=False,
+                   printCompilationException=True):
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
@@ -802,7 +803,8 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
         annotated=annotate(expr,scope,globalDict,localDict)
         gomer=stripAnnotations(annotated)
     except Exception as e:
-        print('Compilation exception in',expr)
+        if printCompilationException:
+            print('Compilation exception in',expr)
         raise
     return adder.gomer.geval(gomer,
                              globalDict=globalDict,
@@ -837,12 +839,14 @@ class Context:
     def load(self,f,*,inSrcDir=False):
         loadFile(f,self.scope,self.globals,inSrcDir=inSrcDir)
 
-    def eval(self,expr,*,verbose=False,hasLines=False,defLine=0):
+    def eval(self,expr,*,verbose=False,hasLines=False,defLine=0,
+             printCompilationException=True):
         return compileAndEval(expr,
                               self.scope,self.globals,
                               None,
                               hasLines=hasLines,defLine=defLine,
-                              verbose=verbose)
+                              verbose=verbose,
+                              printCompilationException=printCompilationException)
 
     def define(self,name,value):
         self.scope.addDef(S(name),value,0,redefPermitted=True)

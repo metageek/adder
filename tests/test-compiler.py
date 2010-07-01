@@ -1715,7 +1715,8 @@ def lookup(g,var):
 gensymXRe=re.compile('^#<gensym-x #[0-9]+>$')
 
 class CompileAndEvalTestCase(EmptyStripTestCase):
-    def e(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
+    def e(self,exprStr,*,scope=None,verbose=False,
+          printCompilationException=True,**globalsToSet):
         if isinstance(exprStr,tuple):
             exprs=[exprStr]
             hasLines=True
@@ -2055,13 +2056,17 @@ class ContextTestCase(CompileAndEvalTestCase):
     def loadPrelude(self):
         return False
 
-    def e(self,exprStr,*,verbose=False,**globalsToSet):
+    def e(self,exprStr,*,verbose=False,printCompilationException=True,
+          **globalsToSet):
         self.context=Context(loadPrelude=self.loadPrelude())
         for (k,v) in globalsToSet.items():
             self.context.define(k,v)
         res=None
         for parsedExpr in adder.parser.parse(exprStr):
-            res=self.context.eval(stripLines(parsedExpr),verbose=verbose)
+            res=self.context.eval(stripLines(parsedExpr),
+                                  verbose=verbose,
+                                  printCompilationException=
+                                  printCompilationException)
         self.g=self.context.globals
         self.scope=self.context.scope
         return res
@@ -2217,7 +2222,7 @@ class PreludeTestCase(ContextTestCase):
  ((x 9)
   (y (* x 7)))
 (mk-list x y)
-)""")
+)""",printCompilationException=False)
             assert False
         except adder.compiler.Undefined as u:
             assert u.args==(S("x"),)
@@ -2433,7 +2438,7 @@ suite=unittest.TestSuite(
       unittest.makeSuite(CompileAndEvalTestCase,'test'),
       unittest.makeSuite(LoadTestCase,'test'),
       unittest.makeSuite(ContextTestCase,'test'),
-      #unittest.makeSuite(PreludeTestCase,'test'),
+      unittest.makeSuite(PreludeTestCase,'test'),
      )
     )
 
