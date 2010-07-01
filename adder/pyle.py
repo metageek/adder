@@ -512,13 +512,81 @@ class MkDict(Stmt):
         return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
 
 def findBeginStmts(pyleStmt):
-    return filter(lambda s: s[0] is S('begin'),descendantStmts(pyleStmt))
+    return filter(lambda s: s[0] is S('begin'),
+                  map(lambda pathAndStmt: pathAndStmt[1],
+                      descendantStmts(pyleStmt)))
 
 def collapseCallScratches(pyle):
-    for beginStmt in findBeginStmts(pyle):
-        pass
+    if not isinstance(pyle,list):
+        return
+
+    class ScratchUsage:
+        def __init__(self,var,creationPath):
+            self.var=var
+            self.creationPath=creationPath
+            self.usagePath=None
+            self.tooComplex=False
+
+    usages={}
+    pathToStmt={}
+    rewrites=[]
+
+    for (path,stmt) in descendantStmts(pyle):
+        pathToStmt[tuple(path)]=stmt
+        varToSkip=None
+        if stmt[0] is S(':='):
+            var=stmt[1]
+            if not isinstance(var,S):
+                continue
+            if var.isScratch:
+                if var in usages:
+                    usages[var].tooComplex=True
+                else:
+                    usages[var]=ScratchUsage(var,path)
+            varToSkip=var
+        for var in childVars(stmt):
+            if var is varToSkip:
+                continue
+            if var.isScratch and var in usages:
+                if usages[var].usagePath:
+                    usages[var].tooComplex=True
+                else:
+                    usages[var].usagePath=path
+
+    for var in usages:
+        usage=usages[var]
+        if usage.tooComplex:
+            continue
+
+        def interveningTooComplex(firstPath,lastPath):
+            if lastPath is None:
+                return True
+
+            if not ((len(firstPath)==len(lastPath))
+                    and (firstPath[:-1]==lastPath[:-1])):
+                return True
+
+            prefix=firstPath[:-1]
+            path=prefix+[0]
+            for i in range(firstPath[-1]+1,lastPath[-1]):
+                path[-1]=i
+                nonlocal pathToStmt
+                stmt=pathToStmt[tuple(path)]
+                if not ((stmt[0] is S(':=')) or (stmt[0] is S('call'))):
+                    return True
+            return False
+
+        if interveningTooComplex(usage.creationPath,usage.usagePath):
+            continue
+
+        rhs=pathToStmt[tuple(usage.creationPath)][2]
+        usageStmt=pathToStmt[tuple(usage.usagePath)]
+        rewrites.append((var,rhs,usageStmt))
+    if rewrites:
+        print(rewrites)
 
 def build(pyle):
+    collapseCallScratches(pyle)
     def buildPair(varAndVal):
         (var,val)=varAndVal
         return (build(var),build(val))
