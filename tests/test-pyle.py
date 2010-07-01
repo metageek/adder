@@ -1635,7 +1635,7 @@ class ChildStmtsTestCase(unittest.TestCase):
     def testYield(self):
         assert self.c([S('yield'),1])==[]
 
-    def testReturn(self):
+    def testTry(self):
         s1=mkScratch()
         assert self.c([S('try'),
                        [S('call'),S('f'),[s1],[]],
@@ -1645,6 +1645,76 @@ class ChildStmtsTestCase(unittest.TestCase):
                        ])==[[S('call'),S('f'),[s1],[]],
                             [S('call'),S('h'),[s1,S('ve')],[]],
                             [S('call'),[S('g')],[],[]]]
+
+    def testRaise(self):
+        assert self.c([S('raise'),S('e')])==[]
+
+    def testReraise(self):
+        assert self.c([S('reraise')])==[]
+
+    def testIf(self):
+        assert self.c([S('if'),S('e'),
+                       [S('call'),S('print'),[S('e')],[]]])==[
+            [S('call'),S('print'),[S('e')],[]]
+            ]
+
+    def testIfElse(self):
+        assert self.c([S('if'),S('e'),
+                       [S('call'),S('print'),[S('e')],[]],
+                       [S('call'),S('p'),[S('q')],[]]
+                       ])==[
+            [S('call'),S('print'),[S('e')],[]],
+            [S('call'),S('p'),[S('q')],[]]
+            ]
+
+    def testWhile(self):
+        assert self.c([S('while'),S('e'),
+                       [S('call'),S('print'),[S('e')],[]]])==[
+            [S('call'),S('print'),[S('e')],[]]
+            ]
+
+    def testBreak(self):
+        assert self.c([S('break')])==[]
+
+    def testContinue(self):
+        assert self.c([S('continue')])==[]
+
+    def testDef(self):
+        assert self.c([S('def'),
+                       S('f'),
+                       [],
+                       [S('return'),9]
+                       ])==[[S('return'),9]]
+
+    def testClass(self):
+        assert self.c([S('class'),S('C'),
+                       [S('Base1'),S('Base2')],
+                       [S('def'),S('__init__'),[S('self')],
+                        [S(':='),[S('.'),S('self'),S('x')],9]
+                        ]])==[[S('def'),S('__init__'),[S('self')],
+                               [S(':='),[S('.'),S('self'),S('x')],9]
+                               ]]
+
+    def testAssign(self):
+        assert self.c([S(':='),S('e'),9])==[]
+
+    def testImport(self):
+        assert self.c([S('import'),S('e')])==[]
+
+    def testPass(self):
+        assert self.c([S('pass')])==[]
+
+    def testBegin(self):
+        assert self.c([S('begin'),
+                       [S(':='),S('x'),9],
+                       [S('call'),S('f'),[S('x')],[]]
+                       ])==[
+            [S(':='),S('x'),9],
+            [S('call'),S('f'),[S('x')],[]]
+            ]
+
+    def testCall(self):
+        assert self.c([S('call'),S('fred'),[],[]])==[]
 
 suite=unittest.TestSuite(
     ( 
