@@ -511,6 +511,25 @@ class MkDict(Stmt):
             return '%s: %s' % (repr(str(var)),str(val))
         return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
 
+def bareChildStmts(pyleStmt):
+    for (path,stmt) in childStmts(pyleStmt):
+        yield stmt
+
+def findBeginStmts(pyleStmt):
+    if not (isinstance(pyleStmt,list)
+            and pyleStmt
+            and isinstance(pyleStmt[0],S)):
+        return
+    if pyleStmt[0] is S('begin'):
+        yield pyleStmt
+    for s in childStmts(pyleStmt):
+        for b in findBeginStmts(s):
+            yield b
+
+def collapseCallScratches(pyle):
+    for beginStmt in findBeginStmts(pyle):
+        pass
+
 def build(pyle):
     def buildPair(varAndVal):
         (var,val)=varAndVal
@@ -735,6 +754,10 @@ def childStmts(pyleStmt):
     if pyleStmt[0] is S('def'):
         yield ([3],pyleStmt[3])
         return
+
+    if pyleStmt[0] is S('class'):
+        for (i,s) in enumerate(pyleStmt[3:]):
+            yield ([i+3],s)
 
     if pyleStmt[0] is S('begin'):
         for (i,stmt) in enumerate(pyleStmt[1:]):

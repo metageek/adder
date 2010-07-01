@@ -1625,12 +1625,34 @@ class TrimScratchesTestCase(unittest.TestCase):
                   [S(':='),s1,None]]
                  )
 
+class ChildStmtsTestCase(unittest.TestCase):
+    def c(self,pyleStmt):
+        return list(adder.pyle.bareChildStmts(pyleStmt))
+
+    def testReturn(self):
+        assert self.c([S('return'),1])==[]
+
+    def testYield(self):
+        assert self.c([S('yield'),1])==[]
+
+    def testReturn(self):
+        s1=mkScratch()
+        assert self.c([S('try'),
+                       [S('call'),S('f'),[s1],[]],
+                       [S(':ValueError'),S('ve'),
+                        [S('call'),S('h'),[s1,S('ve')],[]]],
+                       [S(':finally'),[S('call'),[S('g')],[],[]]]
+                       ])==[[S('call'),S('f'),[s1],[]],
+                            [S('call'),S('h'),[s1,S('ve')],[]],
+                            [S('call'),[S('g')],[],[]]]
+
 suite=unittest.TestSuite(
     ( 
       unittest.makeSuite(StrTestCase,'test'),
       unittest.makeSuite(ToPythonTestCase,'test'),
       unittest.makeSuite(BuildToPythonTestCase,'test'),
       unittest.makeSuite(TrimScratchesTestCase,'test'),
+      unittest.makeSuite(ChildStmtsTestCase,'test'),
      )
     )
 
