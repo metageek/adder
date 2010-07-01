@@ -3,7 +3,8 @@
 import sys,os,getopt
 
 interactive=False
-(opts,args)=getopt.getopt(sys.argv[1:],"h?i",["help","interactive"])
+profile=False
+(opts,args)=getopt.getopt(sys.argv[1:],"h?i",["help","interactive","profile"])
 for (opt,optval) in opts:
     if opt in ["-h","-?","--help"]:
         print("""Usage: %s [OPTIONS] [FILE]...
@@ -17,6 +18,10 @@ Options:
         sys.exit()
     if opt in ["-i","--interactive"]:
         interactive=True
+        continue
+    if opt=='--profile':
+        profile=True
+        continue
 
 progDir=os.path.dirname(__file__)
 pkgDir=os.path.join(progDir,'adder')
@@ -28,8 +33,15 @@ if not args:
 import adder.repl
 repl=adder.repl.Repl(interactive=interactive)
 
-for f in args:
-    repl.load(f)
+def doIt():
+    for f in args:
+        repl.load(f)
 
-if interactive:
-    repl.run()
+    if interactive:
+        repl.run()
+
+if profile:
+    import cProfile
+    cProfile.run('doIt()','adderprof')
+else:
+    doIt()
