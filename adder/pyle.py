@@ -511,20 +511,8 @@ class MkDict(Stmt):
             return '%s: %s' % (repr(str(var)),str(val))
         return '{%s}' % (', '.join(map(strPair,self.kvPairs)))
 
-def bareChildStmts(pyleStmt):
-    for (path,stmt) in childStmts(pyleStmt):
-        yield stmt
-
 def findBeginStmts(pyleStmt):
-    if not (isinstance(pyleStmt,list)
-            and pyleStmt
-            and isinstance(pyleStmt[0],S)):
-        return
-    if pyleStmt[0] is S('begin'):
-        yield pyleStmt
-    for s in childStmts(pyleStmt):
-        for b in findBeginStmts(s):
-            yield b
+    return filter(lambda s: s[0] is S('begin'),descendantStmts(pyleStmt))
 
 def collapseCallScratches(pyle):
     for beginStmt in findBeginStmts(pyle):

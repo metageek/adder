@@ -1627,7 +1627,8 @@ class TrimScratchesTestCase(unittest.TestCase):
 
 class ChildStmtsTestCase(unittest.TestCase):
     def c(self,pyleStmt):
-        return list(adder.pyle.bareChildStmts(pyleStmt))
+        return list(map(lambda pathAndStmt: pathAndStmt[1],
+                        adder.pyle.childStmts(pyleStmt)))
 
     def testReturn(self):
         assert self.c([S('return'),1])==[]
