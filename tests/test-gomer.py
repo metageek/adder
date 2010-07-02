@@ -2198,37 +2198,31 @@ fred(7,%s)
         ifScratchP=ifScratch.toPython()
 
         gensym.nextId=1
-        assert self.toP([S('if'),
+        actual=self.toP([S('if'),
                          [S('<'),S('n'),10],
                          [S('barney'),9,S('bam-bam')],
                          [S('fred'),7,S('pebbles')],
                          ],
-                        False)==(
+                        False)
+        expected=(
             ["%s=n<10" % scratch1P,
              ("if %s:" % scratch1P,
-              [("%s=barney(9,%s)" % (scratch2P,S('bam-bam').toPython()),
-                "%s=%s" % (ifScratchP,scratch2P)
+              [("%s=barney(9,%s)" % (ifScratchP,S('bam-bam').toPython())
                 )],
               "else:",
-              [("%s=fred(7,pebbles)" % scratch4P,
-                "%s=%s" % (ifScratchP,scratch4P)
+              [("%s=fred(7,pebbles)" % ifScratchP
                 )]
               )],
             """%s=n<10
 if %s:
     %s=barney(9,%s)
-    %s=%s
 else:
     %s=fred(7,pebbles)
-    %s=%s
-""" % (scratch1P,
-       scratch1P,
-       scratch2P,S('bam-bam').toPython(),
-       ifScratchP,scratch2P,
-       scratch4P,
-       ifScratchP,scratch4P),
+""" % (scratch1P,scratch1P,ifScratchP,S('bam-bam').toPython(),
+       ifScratchP),
             ifScratchP
             )
+        assert actual==expected
 
     def testIfWithElseStmt(self):
         scratch1=gensym('scratch')
@@ -2314,9 +2308,7 @@ while %s:
 
     def testWhileStmtWithBreak(self):
         whileCondScratch=gensym('scratch')
-        ifCondScratch=gensym('scratch')
         whileCondScratchP=whileCondScratch.toPython()
-        ifCondScratchP=ifCondScratch.toPython()
         gensym.nextId=1
 
         assert self.toP([S('while'),
@@ -2330,30 +2322,24 @@ while %s:
             ["%s=n<10" % whileCondScratchP,
              ("while %s:" % whileCondScratchP,
               [("n=n+1",
-                "%s=n==7" % ifCondScratchP,
-                ("if %s:" % ifCondScratchP,
+                ("if n==7:",
                  ["break"]),
                 "%s=n<10" % whileCondScratchP
                 )])],"""%s=n<10
 while %s:
     n=n+1
-    %s=n==7
-    if %s:
+    if n==7:
         break
     %s=n<10
 """ % (whileCondScratchP,
        whileCondScratchP,
-       ifCondScratchP,
-       ifCondScratchP,
        whileCondScratchP),
             None
             )
 
     def testWhileStmtWithContinue(self):
         whileCondScratch=gensym('scratch')
-        ifCondScratch=gensym('scratch')
         whileCondScratchP=whileCondScratch.toPython()
-        ifCondScratchP=ifCondScratch.toPython()
         gensym.nextId=1
 
         assert self.toP([S('while'),
@@ -2367,21 +2353,17 @@ while %s:
             ["%s=n<10" % whileCondScratchP,
              ("while %s:" % whileCondScratchP,
               [("n=n+1",
-                "%s=n==7" % ifCondScratchP,
-                ("if %s:" % ifCondScratchP,
+                ("if n==7:",
                  ["continue"]),
                 "%s=n<10" % whileCondScratchP
                 )])],"""%s=n<10
 while %s:
     n=n+1
-    %s=n==7
-    if %s:
+    if n==7:
         continue
     %s=n<10
 """ % (whileCondScratchP,
        whileCondScratchP,
-       ifCondScratchP,
-       ifCondScratchP,
        whileCondScratchP),
             None
             )
@@ -2682,95 +2664,64 @@ while %s:
                          ],
                         False)==(
             [("def %s(n):" % lambdaScratchP,
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 [("%s=n*fact(n-1)" % ifScratchP)]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def %s(n):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
 """ % (lambdaScratchP,
-       condScratchP,
-       condScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
+       ifScratchP,
        ifScratchP),
             lambdaScratchP
             )
 
     def testLambdaExprRest(self):
         lambdaScratch=gensym('lambda')
-        condScratch=gensym('scratch')
+        gensym('skip')
         ifScratch=gensym('if')
-        scratch3=gensym('scratch')
-        scratch4=gensym('scratch')
-        scratch5=gensym('scratch')
         lambdaScratchP=lambdaScratch.toPython()
-        condScratchP=condScratch.toPython()
         ifScratchP=ifScratch.toPython()
-        scratch3P=scratch3.toPython()
-        scratch4P=scratch4.toPython()
-        scratch5P=scratch5.toPython()
 
         gensym.nextId=1
-        assert self.toP([S('lambda'),[S('n'),S('&rest'),S('r')],
+        actual=self.toP([S('lambda'),[S('n'),S('&rest'),S('r')],
                          [S('if'),
                           [S('<'),S('n'),2],
                           1,
                           [S('*'),S('n'),[S('fact'),[S('-'),S('n'),1]]]
                           ]
                          ],
-                        False)==(
+                        False)
+        expected=(
             [("def %s(n,*r):" % lambdaScratchP,
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 [("%s=n*fact(n-1)" % ifScratchP)]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def %s(n,*r):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
 """ % (lambdaScratchP,
-       condScratchP,
-       condScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
+       ifScratchP,
        ifScratchP),
             lambdaScratchP
             )
+        assert actual==expected
 
     def testLambdaStmt(self):
         assert self.toP([S('lambda'),[S('n')],
@@ -3964,10 +3915,6 @@ except Exception as e:
     def testTry1ExnExpr(self):
         scratch1=gensym('scratch')
         scratch1P=scratch1.toPython()
-        scratch2=gensym('scratch')
-        scratch2P=scratch2.toPython()
-        scratch3=gensym('scratch')
-        scratch3P=scratch3.toPython()
         gensym.nextId=1
         actual=self.toP([S('try'),
                          [S('f'),9,7],
@@ -3980,24 +3927,20 @@ except Exception as e:
         expected=(
             [("try:",
               [("f(9,7)",
-                "%s=z(12)" % scratch3P,
-                "%s=%s" % (scratch1P,scratch3P)
+                "%s=z(12)" % scratch1P,
                 )],
               "except Exception as e:",
               [("print(e)",
-                "%s=y(e)" % scratch2P,
-                "%s=%s" % (scratch1P,scratch2P)
+                "%s=y(e)" % scratch1P,
                 )]
               )
              ],"""try:
     f(9,7)
     %s=z(12)
-    %s=%s
 except Exception as e:
     print(e)
     %s=y(e)
-    %s=%s
-""" % (scratch3P,scratch1P,scratch3P,scratch2P,scratch1P,scratch2P),
+""" % (scratch1P,scratch1P),
             scratch1P)
         assert actual==expected
 
@@ -4039,12 +3982,6 @@ except Exception as e:
     def testTry2ExnExpr(self):
         scratch1=gensym('scratch')
         scratch1P=scratch1.toPython()
-        scratch2=gensym('scratch')
-        scratch2P=scratch2.toPython()
-        scratch3=gensym('scratch')
-        scratch3P=scratch3.toPython()
-        scratch4=gensym('scratch')
-        scratch4P=scratch4.toPython()
         gensym.nextId=1
         actual=self.toP([S('try'),
                          [S('f'),9,7],
@@ -4060,35 +3997,29 @@ except Exception as e:
         expected=(
             [("try:",
               [("f(9,7)",
-                "%s=z(12)" % scratch4P,
-                "%s=%s" % (scratch1P,scratch4P)
+                "%s=z(12)" % scratch1P
                 )],
               "except KeyError as dd:",
               [("fiddle(dd)",
-                "%s=flangle(bloober)" % scratch2P,
-                "%s=%s" % (scratch1P,scratch2P)
+                "%s=flangle(bloober)" % scratch1P
                 )],
               "except Exception as e:",
               [("print(e)",
-                "%s=y(e)" % scratch3P,
-                "%s=%s" % (scratch1P,scratch3P)
+                "%s=y(e)" % scratch1P
                 )]
               )
              ],"""try:
     f(9,7)
     %s=z(12)
-    %s=%s
 except KeyError as dd:
     fiddle(dd)
     %s=flangle(bloober)
-    %s=%s
 except Exception as e:
     print(e)
     %s=y(e)
-    %s=%s
-""" % (scratch4P,scratch1P,scratch4P,
-       scratch2P,scratch1P,scratch2P,
-       scratch3P,scratch1P,scratch3P),
+""" % (scratch1P,
+       scratch1P,
+       scratch1P),
             scratch1P)
         assert actual==expected
 
@@ -4138,12 +4069,6 @@ finally:
     def testTry2ExnFinallyExpr(self):
         scratch1=gensym('scratch')
         scratch1P=scratch1.toPython()
-        scratch2=gensym('scratch')
-        scratch2P=scratch2.toPython()
-        scratch3=gensym('scratch')
-        scratch3P=scratch3.toPython()
-        scratch4=gensym('scratch')
-        scratch4P=scratch4.toPython()
         gensym.nextId=1
         actual=self.toP([S('try'),
                          [S('f'),9,7],
@@ -4162,18 +4087,15 @@ finally:
         expected=(
             [("try:",
               [("f(9,7)",
-                "%s=z(12)" % scratch4P,
-                "%s=%s" % (scratch1P,scratch4P)
+                "%s=z(12)" % scratch1P
                 )],
               "except KeyError as dd:",
               [("fiddle(dd)",
-                "%s=flangle(bloober)" % scratch2P,
-                "%s=%s" % (scratch1P,scratch2P)
+                "%s=flangle(bloober)" % scratch1P
                 )],
               "except Exception as e:",
               [("print(e)",
-                "%s=y(e)" % scratch3P,
-                "%s=%s" % (scratch1P,scratch3P)
+                "%s=y(e)" % (scratch1P)
                 )],
               "finally:",
               ["print('gibbon')"]
@@ -4181,20 +4103,17 @@ finally:
              ],"""try:
     f(9,7)
     %s=z(12)
-    %s=%s
 except KeyError as dd:
     fiddle(dd)
     %s=flangle(bloober)
-    %s=%s
 except Exception as e:
     print(e)
     %s=y(e)
-    %s=%s
 finally:
     print('gibbon')
-""" % (scratch4P,scratch1P,scratch4P,
-       scratch2P,scratch1P,scratch2P,
-       scratch3P,scratch1P,scratch3P),
+""" % (scratch1P,
+       scratch1P,
+       scratch1P),
             scratch1P)
         assert actual==expected
 

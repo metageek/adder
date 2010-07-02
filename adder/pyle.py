@@ -444,9 +444,11 @@ class Pass(Stmt):
 
 class Begin(Stmt):
     def __init__(self,stmts):
+        self.stmts=[]
         for stmt in stmts:
             assert isinstance(stmt,Stmt)
-        self.stmts=stmts
+            if not isinstance(stmt,Pass):
+                self.stmts.append(stmt)
 
     def __str__(self):
         return '{%s}' % '; '.join(map(str,self.stmts))
@@ -543,7 +545,6 @@ def collapseCallScratches(pyle):
                     usages[var].tooComplex=True
                 else:
                     usages[var].usagePath=path
-
     for var in sorted(usages):
         usage=usages[var]
         if usage.tooComplex:
