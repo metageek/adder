@@ -3581,21 +3581,18 @@ raise %s
                         False)==(
             ["%s=5==7" % scratch1P,
              ("if %s:" % scratch1P,
-              [("%s=7==9" % scratch2P,
-                "%s=%s" % (ifScratch3P,scratch2P))],
+              [("%s=7==9" % ifScratch3P)],
               "else:",
                ["%s=%s" % (ifScratch3P,scratch1P)]
               )
              ],"""%s=5==7
 if %s:
     %s=7==9
-    %s=%s
 else:
     %s=%s
 """ % (scratch1P,
      scratch1P,
-     scratch2P,
-     ifScratch3P,scratch2P,
+     ifScratch3P,
      ifScratch3P,scratch1P),
             ifScratch3P
             )
