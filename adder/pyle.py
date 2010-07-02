@@ -162,6 +162,12 @@ class Return(Stmt):
         else:
             return 'return %s' % str(self.value)
 
+    def toPythonTree(self):
+        if self.value is None:
+            return 'return'
+        else:
+            return 'return %s' % self.value.toPythonTree()
+
 class Yield(Stmt):
     def __init__(self,value):
         assert value is None or isinstance(value,RValue)
@@ -209,7 +215,7 @@ class Try(Stmt):
 
 class Raise(Stmt):
     def __init__(self,value):
-        assert isinstance(value,Var)
+        assert isinstance(value,RValue)
         self.value=value
 
     def __str__(self):
@@ -237,6 +243,11 @@ class Binop(RValue):
         return '%s%s%s' % (str(self.left),
                            self.opStr,
                            str(self.right))
+
+    def toPythonTree(self):
+        return '%s%s%s' % (self.left.toPythonTree(),
+                           self.opStr,
+                           self.right.toPythonTree())
 
 class Dot(LValue,RValue):
     def __init__(self,obj,members):
@@ -592,7 +603,7 @@ def replaceChildVar(var,creationStmt,rhs,stmt):
     return False
 
 def build(pyle):
-    collapseCallScratches(pyle)
+    #collapseCallScratches(pyle)
     def buildPair(varAndVal):
         (var,val)=varAndVal
         return (build(var),build(val))
