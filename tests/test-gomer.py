@@ -2390,34 +2390,21 @@ while %s:
                          ],
                         True)==(
             [("def fact(n):",
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ["%s=n*fact(n-1)" % ifScratchP]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def fact(n):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
-""" % (condScratchP,
-       condScratchP,
+""" % (ifScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
        ifScratchP),
             None
             )
@@ -2444,34 +2431,21 @@ while %s:
                          ],
                         False)==(
             [("def fact(n):",
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ["%s=n*fact(n-1)" % ifScratchP]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def fact(n):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
-""" % (condScratchP,
-       condScratchP,
+""" % (ifScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
        ifScratchP),
             'fact'
             )
@@ -2498,34 +2472,21 @@ while %s:
                          ],
                         True)==(
             [("def fact(n,*r):",
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 [("%s=n*fact(n-1)" % ifScratchP)]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def fact(n,*r):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
-""" % (condScratchP,
-       condScratchP,
+""" % (ifScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
        ifScratchP),
             None
             )
@@ -2552,34 +2513,21 @@ while %s:
                          ],
                         True)==(
             [("def fact(n,o=None):",
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ["%s=n*fact(n-1)" % ifScratchP]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def fact(n,o=None):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
-""" % (condScratchP,
-       condScratchP,
+""" % (ifScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
        ifScratchP),
             None
             )
@@ -2608,34 +2556,21 @@ while %s:
                          ],
                         True)==(
             [("def fact(n,o=9):",
-              [("%s=n<2" % condScratchP,
-                ("if %s:" % condScratchP,
+              [(("if n<2:",
                  ["%s=1" % ifScratchP],
                  "else:",
-                 [("%s=n-1" % scratch3P,
-                   "%s=fact(%s)" % (scratch4P,scratch3P),
-                   "%s=n*%s" % (scratch5P,scratch4P),
-                   "%s=%s" % (ifScratchP,scratch5P))]
+                 ["%s=n*fact(n-1)" % ifScratchP]
                  ),
                 "return %s" % ifScratchP
                 )]
               )],"""def fact(n,o=9):
-    %s=n<2
-    if %s:
+    if n<2:
         %s=1
     else:
-        %s=n-1
-        %s=fact(%s)
-        %s=n*%s
-        %s=%s
+        %s=n*fact(n-1)
     return %s
-""" % (condScratchP,
-       condScratchP,
+""" % (ifScratchP,
        ifScratchP,
-       scratch3P,
-       scratch4P,scratch3P,
-       scratch5P,scratch4P,
-       ifScratchP,scratch5P,
        ifScratchP),
             None
             )
