@@ -139,7 +139,7 @@ class ReduceTry(Reducer):
         for g in gomer[1:]:
             assert not finallyClause
             if isinstance(g,list) and isinstance(g[0],S) and g[0].isKeyword():
-                if g[0]==S(':finally'):
+                if g[0] is S(':finally'):
                     (finallyStmt,_)=clauseStmt(g[1:])
                     finallyClause=[S(':finally'),finallyStmt]
                 else:
@@ -148,7 +148,7 @@ class ReduceTry(Reducer):
                         assignment=[S(':='),scratch,exnScratch]
                         if (isinstance(exnStmt,list)
                             and isinstance(exnStmt[0],S)
-                            and exnStmt[0]==S('begin')):
+                            and exnStmt[0] is S('begin')):
                             exnStmt.append(assignment)
                         else:
                             exnStmt=[S('begin'),exnStmt,assignment]
@@ -295,7 +295,7 @@ class ReduceAssign(Reducer):
         assert (isinstance(lhs,S)
                 or (isinstance(lhs,list)
                     and isinstance(lhs[0],S)
-                    and (lhs[0]==S('.') or lhs[0]==S('[]'))
+                    and (lhs[0] is S('.') or lhs[0] is S('[]'))
                     ))
         rhsExpr=reduce(rhs,False,stmtCollector,inAssignment=True)
         if self.isSimple(rhs):
@@ -632,7 +632,7 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False,inClass=False):
     else:
         if ((not inAssignment)
             and isinstance(gomer,list)
-            and gomer[0]!=S(':=')
+            and gomer[0] is not S(':=')
             ):
             scratch=mkScratch()
             stmtCollector([S(':='),scratch,gomer])

@@ -11,7 +11,7 @@ def const(expr):
         if isinstance(expr,t):
             return (True,expr)
     if (isinstance(expr,list)
-        and expr[0]
+        and expr
         and isinstance(expr[0],S)
         ):
         if expr[0] in const.knownFuncs:
@@ -25,7 +25,7 @@ def const(expr):
                 return (True,const.knownFuncs[arg[0]](*args))
             except Exception:
                 return (False,None)
-        if expr[0]==S('quote'):
+        if expr[0] is S('quote'):
             assert len(expr)==2
             return (True,expr[1])
     return (False,None)
@@ -229,7 +229,7 @@ class Scope:
     def isDescendantOf(self,other):
         if self is other:
             return True
-        if self.parent:
+        if self.parent is not None:
             return self.parent.isDescendantOf(other)
         return False
 
@@ -303,7 +303,7 @@ class Annotator:
         except ValueError as ve:
             print(ve,parsedExpr)
             raise
-        if expr and isinstance(expr,list):
+        if isinstance(expr,list) and expr:
             if isinstance(expr[0][0],S):
                 f=expr[0][0]
                 required=scope.requiredScope(f)
@@ -749,7 +749,7 @@ def stripAnnotations(annotated,*,quoted=False):
     except ValueError as ve:
         print(ve,annotated)
         raise
-    if (not scope) and isinstance(expr,S):
+    if (scope is None) and isinstance(expr,S):
         return expr
     if (not quoted
         and isinstance(expr,S)
@@ -759,13 +759,14 @@ def stripAnnotations(annotated,*,quoted=False):
         if (scope.id>0
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):
             return S('%s-%d' % (str(expr),scope.id))
-    if not (expr and isinstance(expr,list)):
+    if not (isinstance(expr,list) and expr):
         return expr
-    if not quoted and expr[0][0] in [S('quote'),S('import')]:
+    if not quoted and (expr[0][0] is S('quote')
+                       or expr[0][0] is S('import')):
         return ([expr[0][0]]
                 +list(map(lambda e: stripAnnotations(e,quoted=True),expr[1:]))
                 )
-    if not quoted and expr[0][0]==S('.'):
+    if not quoted and expr[0][0] is S('.'):
         return ([expr[0][0],
                  stripAnnotations(expr[1])]
                  +list(map(lambda e: stripAnnotations(e,quoted=True),
@@ -776,14 +777,14 @@ def stripAnnotations(annotated,*,quoted=False):
 def addLines(expr,defLine):
     if literable(expr) or isinstance(expr,S):
         return (expr,defLine)
-    assert isinstance(expr,list)
+    #assert isinstance(expr,list)
     return (list(map(lambda e: addLines(e,defLine),expr)),defLine)
 
 def stripLines(parsedExpr):
     (expr,line)=parsedExpr
     if literable(expr) or isinstance(expr,S):
         return expr
-    assert isinstance(expr,list)
+    #assert isinstance(expr,list)
     return list(map(stripLines,expr))
 
 def compileAndEval(expr,scope,globalDict,localDict,*,

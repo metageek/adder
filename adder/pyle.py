@@ -614,27 +614,27 @@ def build(pyle):
     assert isinstance(pyle,list)
     assert pyle
     f=pyle[0]
-    if f==S(':='):
+    if f is S(':='):
         assert len(pyle)==3
         return Assign(build(pyle[1]),build(pyle[2]))
-    if f==S('return'):
+    if f is S('return'):
         assert len(pyle) in [1,2]
         if len(pyle)==1:
             return Return()
         else:
             return Return(build(pyle[1]))
-    if f==S('yield'):
+    if f is S('yield'):
         assert len(pyle)==2
         return Yield(build(pyle[1]))
-    if f==S('mk-list'):
+    if f is S('mk-list'):
         return MkList(list(map(build,pyle[1:])))
-    if f==S('mk-tuple'):
+    if f is S('mk-tuple'):
         return MkTuple(list(map(build,pyle[1:])))
-    if f==S('mk-set'):
+    if f is S('mk-set'):
         return MkSet(list(map(build,pyle[1:])))
-    if f==S('mk-dict'):
+    if f is S('mk-dict'):
         return MkDict(list(map(buildPair,pyle[1:])))
-    if f==S('try'):
+    if f is S('try'):
         klassClauses=[]
         finallyClause=None
         assert len(pyle)>=2
@@ -644,7 +644,7 @@ def build(pyle):
             assert not sawFinally
             assert len(clause) in [2,3]
             if len(clause)==2:
-                assert clause[0]==S(':finally')
+                assert clause[0] is S(':finally')
                 sawFinally=True
                 finallyBody=build(clause[1])
             else:
@@ -655,18 +655,18 @@ def build(pyle):
                                      Var(clause[1]),
                                      build(clause[2])))
         return Try(build(pyle[1]),klassClauses,finallyBody)
-    if f==S('raise'):
+    if f is S('raise'):
         assert len(pyle)==2
         return Raise(build(pyle[1]))
-    if f==S('reraise'):
+    if f is S('reraise'):
         assert len(pyle)==1
         return Reraise()
-    if f==S('binop'):
+    if f is S('binop'):
         assert len(pyle)==4
         return Binop(build(pyle[1]),
                      build(pyle[2]),
                      build(pyle[3]))
-    if f==S('quote'):
+    if f is S('quote'):
         assert len(pyle)==2
         def q(r):
             if isinstance(r,list):
@@ -674,18 +674,18 @@ def build(pyle):
             else:
                 return Literal(r)
         return Quote(q(pyle[1]))
-    if f==S('if'):
+    if f is S('if'):
         assert len(pyle) in [3,4]
         cond=build(pyle[1])
         thenClause=build(pyle[2])
         elseClause=build(pyle[3]) if len(pyle)==4 else None
         return If(cond,thenClause,elseClause)
-    if f==S('while'):
+    if f is S('while'):
         assert len(pyle)==3
         cond=build(pyle[1])
         body=build(pyle[2])
         return While(cond,body)
-    if f==S('def'):
+    if f is S('def'):
         assert len(pyle)==4
         name=build(pyle[1])
         body=build(pyle[3])
@@ -704,13 +704,12 @@ def build(pyle):
                 '&nonlocal': nonlocals}
         cur=posArgs
         for arg in pyle[2]:
-            if cur is optionalArgs:
-                assert isinstance(arg,S) or (isinstance(arg,list)
-                                             and len(arg)==2
-                                             and isinstance(arg[0],S))
-            else:
-                assert isinstance(arg,S)
-            if arg[0]=='&':
+            isS=isinstance(arg,S)
+            assert isS or (cur is optionalArgs
+                           and isinstance(arg,list)
+                           and len(arg)==2
+                           and isinstance(arg[0],S))
+            if isS and arg[0]=='&':
                 cur=states[str(arg)]
             else:
                 if cur is optionalArgs:
@@ -724,45 +723,45 @@ def build(pyle):
 
         return Def(name,posArgs,optionalArgs,kwArgs,restArgs,
                    globals,nonlocals,body)
-    if f==S('class'):
+    if f is S('class'):
         assert len(pyle)>=3
         name=build(pyle[1])
         bases=list(map(build,pyle[2]))
         body=list(map(build,pyle[3:]))
 
         return Class(name,bases,body)
-    if f==S('break'):
+    if f is S('break'):
         assert len(pyle)==1
         return Break()
-    if f==S('continue'):
+    if f is S('continue'):
         assert len(pyle)==1
         return Continue()
-    if f==S('pass'):
+    if f is S('pass'):
         assert len(pyle)==1
         return Pass()
-    if f==S('nop'):
+    if f is S('nop'):
         return Pass()
-    if f==S('begin'):
+    if f is S('begin'):
         return Begin(list(map(build,pyle[1:])))
-    if f==S('import'):
+    if f is S('import'):
         assert len(pyle)==2
         return Import(build(pyle[1]))
-    if f==S('import'):
+    if f is S('import'):
         assert len(pyle)==2
         return Import(build(pyle[1]))
-    if f==S('.'):
+    if f is S('.'):
         assert len(pyle)>2
         return Dot(build(pyle[1]),
                    list(map(build,pyle[2:])))
-    if f==S('[]'):
+    if f is S('[]'):
         assert len(pyle)==3
         return Subscript(build(pyle[1]),build(pyle[2]))
 
-    if f==S('slice'):
+    if f is S('slice'):
         assert len(pyle)==4
         return Slice(build(pyle[1]),build(pyle[2]),build(pyle[3]))
 
-    if f==S('call'):
+    if f is S('call'):
         assert len(pyle)==4
 
         if isinstance(pyle[2],list):
@@ -1079,6 +1078,7 @@ def trim1Scratch(pyleStmt,scratch):
         return BEFORE
 
 def trimScratches(pyleStmt):
+    return pyleStmt
     scratches=set()
     for var in descendantVars(pyleStmt):
         if var.isScratch:

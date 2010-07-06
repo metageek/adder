@@ -20,10 +20,6 @@ def literable(x):
 class Symbol:
     registry={}
     def __new__(cls,s):
-        if isinstance(s,Symbol):
-            return s
-        assert isinstance(s,str)
-        assert s
         try:
             return Symbol.registry[s]
         except KeyError:
@@ -32,16 +28,11 @@ class Symbol:
 
     def __init__(self,s):
         if hasattr(self,'s'):
-            assert isinstance(s,Symbol) or isinstance(s,str)
-            if isinstance(s,Symbol):
-                assert self.s==s.s
-            else:
-                if isinstance(s,str):
-                    assert self.s==s
             return
-        assert isinstance(s,str)
         self.s=s
         self.isScratch=False
+        self.h=None
+        self.p=None
 
     def __getitem__(self,i):
         return self.s[i]
@@ -59,7 +50,9 @@ class Symbol:
         return x in self.s
 
     def __hash__(self):
-        return 7*hash(self.s)
+        if self.h is None:
+            self.h=7*hash(self.s)
+        return self.h
 
     def __eq__(self,other):
         return ((self is other)
@@ -88,7 +81,7 @@ class Symbol:
         return self.startswith('#<gensym')
 
     def isKeyword(self):
-        return (self[0]==':') and (self!=Symbol(':='))
+        return (self[0]==':') and (self.s!=':=')
 
     def __repr__(self):
         return 'adder.common.Symbol('+repr(str(self))+')'
@@ -97,20 +90,25 @@ class Symbol:
         return isLegalPython(self.s)
 
     def toPython(self):
-        if str(self)=='..':
-            return '_adder_dotdot_'
-        def escapeSegment(seg):
-            if isLegalPython(seg):
-                return seg
-            def escape1(ch):
-                if ch=='_':
-                    return '_'
-                if pythonLegal.match(ch):
-                    return ch
-                return '_%04x' % ord(ch)
-            return '_adder_'+''.join(map(escape1,seg))
-        return '.'.join(map(escapeSegment,self.s.split('.')))
-            
+        if self.p is None:
+            if self.s=='..':
+                self.p='_adder_dotdot_'
+            else:
+                if self.isLegalPython():
+                    self.p=self.s
+                else:
+                    def escapeSegment(seg):
+                        if isLegalPython(seg):
+                            return seg
+                        def escape1(ch):
+                            if ch=='_':
+                                return '_'
+                            if pythonLegal.match(ch):
+                                return ch
+                            return '_%04x' % ord(ch)
+                        return '_adder_'+''.join(map(escape1,seg))
+                    self.p='.'.join(map(escapeSegment,self.s.split('.')))
+        return self.p
 
 def gensym(base=None):
     id=gensym.nextId
