@@ -9,7 +9,7 @@ def const(expr):
         return (True,expr)
     if (type(expr)==list
         and expr
-        and isinstance(expr[0],S)
+        and type(expr[0])==S
         ):
         if expr[0] in const.knownFuncs:
             args=[]
@@ -301,7 +301,7 @@ class Annotator:
             print(ve,parsedExpr)
             raise
         if type(expr)==list and expr:
-            if isinstance(expr[0][0],S):
+            if type(expr[0][0])==S:
                 f=expr[0][0]
                 required=scope.requiredScope(f)
                 if required is Scope.root:
@@ -321,7 +321,7 @@ class Annotator:
                     +list(map(lambda e: self(e,scope,globalDict,localDict),
                               expr[1:])))
             return (scoped,line,scope)
-        if isinstance(expr,S):
+        if type(expr)==S:
             if expr.isKeyword():
                 return (expr,line,Scope.root)
             else:
@@ -350,10 +350,10 @@ class Annotator:
 
                 if (entry.asConst
                     and entry.constValueValid
-                    and (isinstance(entry.constValue,int)
-                         or isinstance(entry.constValue,float)
-                         or isinstance(entry.constValue,str)
-                         or isinstance(entry.constValue,bool)
+                    and (type(entry.constValue)==int
+                         or type(entry.constValue)==float
+                         or type(entry.constValue)==str
+                         or type(entry.constValue)==bool
                          )
                     ):
                     expr=entry.constValue
@@ -365,7 +365,7 @@ class Annotator:
         gomerClauses=None
         for (stmtOrClause,stmtOrClauseLine) in expr[1:]:
             if (type(stmtOrClause)==list
-                and isinstance(stmtOrClause[0][0],S)
+                and type(stmtOrClause[0][0])==S
                 and stmtOrClause[0][0].isKeyword()):
                 clauseScope=Scope(scope)
                 if not gomerClauses:
@@ -428,7 +428,7 @@ class Annotator:
     def annotate_assign(self,expr,line,scope,globalDict,localDict):
         assert len(expr)==3
         (lhs,lhsLine)=expr[1]
-        if isinstance(lhs,S):
+        if type(lhs)==S:
             entry=scope[lhs]
             if entry.asConst:
                 raise AssignedToConst(lhs)
@@ -551,10 +551,10 @@ class Annotator:
                 sublists.append(self(([(S('list'),aLine),a[1]],aLine),
                                      scope,globalDict,localDict))
                 continue
-            if (isinstance(a,int)
-                or isinstance(a,str)
-                or isinstance(a,float)
-                or isinstance(a,bool)):
+            if (type(a)==int
+                or type(a)==str
+                or type(a)==float
+                or type(a)==bool):
                 curItem=(a,aLine,scope)
             else:
                 if type(a)==list and not a:
@@ -582,7 +582,7 @@ class Annotator:
     def annotate_dot(self,expr,line,scope,globalDict,localDict):
         def annotateDumbly(parsedExpr):
             (expr,line)=parsedExpr
-            assert isinstance(expr,S)
+            assert type(expr)==S
             return (expr,line,scope)
 
         return (([self(expr[0],scope,globalDict,localDict,asFunc=True),
@@ -668,11 +668,11 @@ class Annotator:
             if not (type(expr)==list and expr):
                 return
             fExpr=expr[0][0]
-            if isinstance(fExpr,S):
+            if type(fExpr)==S:
                 searchSpace=expr
                 if fExpr is S(':='):
                     (lhs,lhsLine,lhsScope)=expr[1]
-                    if isinstance(lhs,S):
+                    if type(lhs)==S:
                         yield (lhs,lhsScope)
                         searchSpace=[expr[2]]
                 else:
@@ -746,10 +746,10 @@ def stripAnnotations(annotated,*,quoted=False):
     except ValueError as ve:
         print(ve,annotated)
         raise
-    if (scope is None) and isinstance(expr,S):
+    if (scope is None) and type(expr)==S:
         return expr
     if (not quoted
-        and isinstance(expr,S)
+        and type(expr)==S
         and not expr.isKeyword()):
         if expr is S('&rest') or expr is S('&key') or expr is S('&optional'):
             return expr
@@ -772,14 +772,14 @@ def stripAnnotations(annotated,*,quoted=False):
     return list(map(lambda e: stripAnnotations(e,quoted=quoted),expr))
 
 def addLines(expr,defLine):
-    if literable(expr) or isinstance(expr,S):
+    if literable(expr) or type(expr)==S:
         return (expr,defLine)
     #assert type(expr)==list
     return (list(map(lambda e: addLines(e,defLine),expr)),defLine)
 
 def stripLines(parsedExpr):
     (expr,line)=parsedExpr
-    if literable(expr) or isinstance(expr,S):
+    if literable(expr) or type(expr)==S:
         return expr
     #assert type(expr)==list
     return list(map(stripLines,expr))
