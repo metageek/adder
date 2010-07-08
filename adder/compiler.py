@@ -3,14 +3,11 @@ from adder.common import Symbol as S, gensym, q, literable
 import adder.gomer
 
 def const(expr):
-    if isinstance(expr,tuple):
+    if type(expr)==tuple:
         expr=expr[0]
-    if expr is None:
+    if literable(expr):
         return (True,expr)
-    for t in [int,float,str,bool]:
-        if isinstance(expr,t):
-            return (True,expr)
-    if (isinstance(expr,list)
+    if (type(expr)==list
         and expr
         and isinstance(expr[0],S)
         ):
@@ -303,7 +300,7 @@ class Annotator:
         except ValueError as ve:
             print(ve,parsedExpr)
             raise
-        if isinstance(expr,list) and expr:
+        if type(expr)==list and expr:
             if isinstance(expr[0][0],S):
                 f=expr[0][0]
                 required=scope.requiredScope(f)
@@ -367,7 +364,7 @@ class Annotator:
         gomerBody=[]
         gomerClauses=None
         for (stmtOrClause,stmtOrClauseLine) in expr[1:]:
-            if (isinstance(stmtOrClause,list)
+            if (type(stmtOrClause)==list
                 and isinstance(stmtOrClause[0][0],S)
                 and stmtOrClause[0][0].isKeyword()):
                 clauseScope=Scope(scope)
@@ -515,7 +512,7 @@ class Annotator:
             except ValueError as ve:
                 print(ve,parsedExpr)
                 raise
-            if isinstance(expr,list):
+            if type(expr)==list:
                 return [list(map(annotateDumbly,expr)),line,scope]
             else:
                 return (expr,line,scope)
@@ -534,7 +531,7 @@ class Annotator:
     def annotate_backquote(self,expr,line,scope,globalDict,localDict):
         assert len(expr)==2
         (arg,argLine)=expr[1]
-        if not isinstance(arg,list):
+        if not type(arg)==list:
             expr=[(S('quote'),expr[0][1]),expr[1]]
             return self.annotate_quote(expr,line,scope,
                                        globalDict,localDict)
@@ -543,7 +540,7 @@ class Annotator:
         curSublistFirstLine=None
 
         for (a,aLine) in arg:
-            if isinstance(a,list) and a and a[0] and a[0][0] is S(',@'):
+            if type(a)==list and a and a[0] and a[0][0] is S(',@'):
                 if curSublist:
                     sublists.append(([(S('mk-list'),
                                        curSublistFirstLine,
@@ -560,10 +557,10 @@ class Annotator:
                 or isinstance(a,bool)):
                 curItem=(a,aLine,scope)
             else:
-                if isinstance(a,list) and not a:
+                if type(a)==list and not a:
                     curItem=([(S('mk-list'),aLine,scope.root)],aLine,scope)
                 else:
-                    if isinstance(a,list) and a and a[0] and a[0][0] is S(','):
+                    if type(a)==list and a and a[0] and a[0][0] is S(','):
                         curItem=self(a[1],scope,globalDict,localDict)
                     else:
                         curItem=self(([(S('backquote'),aLine),(a,aLine)],aLine),
@@ -645,7 +642,7 @@ class Annotator:
         def doArg(arg):
             nonlocal keyArgs,inKeys
             (argExpr,argLine)=arg
-            if isinstance(argExpr,list):
+            if type(argExpr)==list:
                 (argExprPE,argDefaultPE)=argExpr
                 argExpr=argExprPE[0]
             else:
@@ -668,7 +665,7 @@ class Annotator:
 
         def seekAssignments(scopedExpr):
             (expr,_,scope)=scopedExpr
-            if not (isinstance(expr,list) and expr):
+            if not (type(expr)==list and expr):
                 return
             fExpr=expr[0][0]
             if isinstance(fExpr,S):
@@ -759,7 +756,7 @@ def stripAnnotations(annotated,*,quoted=False):
         if (scope.id>0
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):
             return S('%s-%d' % (str(expr),scope.id))
-    if not (isinstance(expr,list) and expr):
+    if not (type(expr)==list and expr):
         return expr
     if not quoted and (expr[0][0] is S('quote')
                        or expr[0][0] is S('import')):
@@ -777,14 +774,14 @@ def stripAnnotations(annotated,*,quoted=False):
 def addLines(expr,defLine):
     if literable(expr) or isinstance(expr,S):
         return (expr,defLine)
-    #assert isinstance(expr,list)
+    #assert type(expr)==list
     return (list(map(lambda e: addLines(e,defLine),expr)),defLine)
 
 def stripLines(parsedExpr):
     (expr,line)=parsedExpr
     if literable(expr) or isinstance(expr,S):
         return expr
-    #assert isinstance(expr,list)
+    #assert type(expr)==list
     return list(map(stripLines,expr))
 
 def compileAndEval(expr,scope,globalDict,localDict,*,
