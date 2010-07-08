@@ -485,14 +485,6 @@ class Annotator:
                        line),scope,globalDict,localDict),
                  pyArg,globalArg,localArg],line,scope)
 
-    def annotate_scope(self,expr,line,scope,globalDict,localDict):
-        scopedScope=self(expr[0],scope,globalDict,localDict,asFunc=True)
-        childScope=Scope(scope)
-        scopedChildren=list(map(lambda e: self(e,childScope,
-                                               globalDict,localDict),
-                                expr[1:]))
-        return ([scopedScope]+scopedChildren,line,scope)
-
     def annotate_quote(self,expr,line,scope,globalDict,localDict):
         return self.quoteOrImport(expr,line,scope,True,
                                   globalDict,localDict)
