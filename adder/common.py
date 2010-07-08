@@ -52,23 +52,23 @@ class Symbol:
 
     def __eq__(self,other):
         return ((self is other)
-                or (isinstance(other,Symbol) and self.s==other.s)
+                or (type(other)==Symbol and self.s==other.s)
                 )
 
     def __ne__(self,other):
         return not (self==other)
 
     def __ge__(self,other):
-        return isinstance(other,Symbol) and self.s>=other.s
+        return type(other)==Symbol and self.s>=other.s
 
     def __le__(self,other):
-        return isinstance(other,Symbol) and self.s<=other.s
+        return type(other)==Symbol and self.s<=other.s
 
     def __gt__(self,other):
-        return isinstance(other,Symbol) and self.s>other.s
+        return type(other)==Symbol and self.s>other.s
 
     def __lt__(self,other):
-        return isinstance(other,Symbol) and self.s<other.s
+        return type(other)==Symbol and self.s<other.s
 
     def startswith(self,prefix):
         return self.s.startswith(prefix)
@@ -146,10 +146,7 @@ class DuplicateKeyError(Exception):
         return 'Duplicate variable name: '+self.key
 
 def q(value):
-    if (isinstance(value,int)
-        or isinstance(value,str)
-        or isinstance(value,float)
-        or isinstance(value,bool)):
+    if type(value) in [int,str,float,bool]:
         return value
     return [Symbol('quote'),value]
 
@@ -157,9 +154,9 @@ def isFunc(x):
     return isinstance(x,types.FunctionType) or isinstance(x,types.BuiltinFunctionType)
 
 def adderStr(x):
-    if isinstance(x,list):
+    if type(x)==list:
         return '(%s)' % (' '.join(map(adderStr,x)))
-    if isinstance(x,Symbol):
+    if type(x)==Symbol:
         return str(x)
     if isFunc(x):
         if hasattr(x,'__name__'):
