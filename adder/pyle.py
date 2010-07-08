@@ -609,9 +609,9 @@ def build(pyle):
         return (build(var),build(val))
     if isinstance(pyle,S):
         return Var(pyle)
-    if literable(pyle):
+    if not isinstance(pyle,list):
+        assert(literable(pyle))
         return Literal(pyle)
-    assert isinstance(pyle,list)
     assert pyle
     f=pyle[0]
     if f is S(':='):
