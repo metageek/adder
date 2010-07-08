@@ -10,12 +10,11 @@ def isLegalPython(s):
     return pythonLegal.match(s)
 
 def literable(x):
-    if x is None:
-        return True
-    for t in [int,str,float,bool]:
-        if isinstance(x,t):
-            return True
-    return False
+    return (x is None
+            or isinstance(x,int)
+            or isinstance(x,str)
+            or isinstance(x,float)
+            or isinstance(x,bool))
 
 class Symbol:
     registry={}
