@@ -11,10 +11,7 @@ def isLegalPython(s):
 
 def literable(x):
     return (x is None
-            or isinstance(x,int)
-            or isinstance(x,str)
-            or isinstance(x,float)
-            or isinstance(x,bool))
+            or type(x) in [int,str,float,bool])
 
 class Symbol:
     registry={}
