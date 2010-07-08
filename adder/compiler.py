@@ -317,9 +317,9 @@ class Annotator:
                                                        localDict)
                     return self(addLines(expanded,line),
                                 scope,globalDict,localDict)
-            scoped=([self(expr[0],scope,globalDict,localDict,asFunc=True)]
-                    +list(map(lambda e: self(e,scope,globalDict,localDict),
-                              expr[1:])))
+            scoped=[self(expr[0],scope,globalDict,localDict,asFunc=True)]
+            for e in expr[1:]:
+                scoped.append(self(e,scope,globalDict,localDict))
             return (scoped,line,scope)
         if type(expr)==S:
             if expr.isKeyword():
