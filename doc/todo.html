@@ -7,6 +7,29 @@
 <h1>Adder: To-Do List</h1>
 
 <dl>
+<dt>Compiler performance is poor.</dt>
+<dd>This is what discouraged me into dropping Adder for several
+  months.  The performance is OK for ordinary code, but anything
+  macro-heavy takes forever, since the compiler has to get invoked
+  over and over.  One solution is to cache the generated Python, the
+  way CPython caches .pyc files.  The generated file would have to
+  export metadata for the compiler to use.
+</dd>
+
+<dt>Can't write packages.</dt>
+<dd>There's no way to write a package in Adder.  We
+  can <em>import</em> packages, but the Adder program lives in a
+  single namespace.
+</dd>
+
+<dt>Logic programming</dt>
+<dd>It would be very cool to give Adder a logic
+  programming system.  Initially a simple one, as described in the
+  early chapters of <i>The Art of Prolog,</i> but it'd be nice to
+  extend it to use a SQL backend.  The system should include the
+  ability to trigger arbitrary Adder code.
+</dd>
+
 <dt>Return and yield in helper functions. Probably solved.</dt>
 <dd>There are a few places where we use a helper function to solve the
   statement problem.  E.g., <code>(:=)</code> and
