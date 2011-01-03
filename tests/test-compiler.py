@@ -1382,6 +1382,13 @@ class EvalTestCase(EmptyStripTestCase):
 (scope (defvar x 23) x))
 """)==23
 
+    def testStatementProblem(self):
+        assert self.evalAdder("""(scope
+(defvar h 3)
+(defun g (x) (+ h x))
+(mk-list (g 7) (:= h 9))
+)""")==[10,9]
+
     def testQuoteInt(self):
         assert self.evalAdder("(quote 17)")==17
 

@@ -7,16 +7,6 @@
 <h1>Adder: To-Do List</h1>
 
 <dl>
-<dt>The statement problem</dt>
-<dd>At present, if an expression has statement side effects, the order
-  of execution can be perturbed.  For example, in
-  <code>(f (g 1) (:= h 2))</code>, the := will be moved out to an
-  earlier statement; if <code>g</code> depends on <code>h</code>,
-  it'll have the wrong value.  The solution is to use something like
-  three-address form.  Maybe&mdash;the problem with that is eliminating
-  spurious transfers.  Also, don't forget to null out scratch
-  variables when done: don't want leaks.  Another solution is to put
-  statements into helper functions.</dd>
 <dt>Return and yield in helper functions.</dt>
 <dd>There are a few places where we use a helper function to solve the
   statement problem.  E.g., <code>(:=)</code> and
