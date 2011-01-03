@@ -7,7 +7,7 @@
 <h1>Adder: To-Do List</h1>
 
 <dl>
-<dt>Return and yield in helper functions.</dt>
+<dt>Return and yield in helper functions. Probably solved.</dt>
 <dd>There are a few places where we use a helper function to solve the
   statement problem.  E.g., <code>(:=)</code> and
   <code>(if)</code>.  We need to worry about return
@@ -18,20 +18,17 @@ Currently working on this; tackling it by replacing with (return-from)
   (lambda), there's no name.  Add a :block arg to (lambda).  Also to
   (begin).
 </dd>
-<dt>Refactor <code>build</code></dt>
+<dt>Refactor <code>adder.pyle.build</code> and
+  <code>adder.util.build</code></dt>
 <dd>Too many special cases; need to move that knowledge into the
   function classes.  Ideally, this would make it easier for the
   function classes to do rewriting&mdash;it's absurd that they have to
   call each other instead of calling <code>build</code> with the lists
   they want.
 </dd>
-<dt>Make <code>(exec-py)</code> work as an expr.</dt>
-<dd>Depends on solving the statement problem, above.
-</dd>
 <dt>Make <code>(-gomer-try)</code> work as an expr.</dt>
-<dd>Depends on solving the statement problem, above.
+<dd>Depends on solving the statement problem, above.  Probably solved.
 </dd>
-<dt>Implement (try).</dt>
 <dt>Error reporting</dt>
 <dd>Lots and lots of places where constraints are asserted.  Should
   all be replaced with proper error reporting.
