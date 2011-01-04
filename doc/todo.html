@@ -22,6 +22,11 @@
   single namespace.  It would be nice to have Adder modules imported
   by ordinary Python import; see
   <a href="http://www.python.org/dev/peps/pep-0302/">PEP 302</a>.
+  Adder importing Adder gets more complicated, because the compiler
+  needs to know about macros in the imported module.  Possible syntax
+  for an Adder dir in sys.path: /foo/bar/+baz+ means look for Adder in
+  baz, <em>unless</em> +baz+ exists.  Then we won't conflict with any
+  standard Python search path.
 </dd>
 
 <dt>Logic programming</dt>
