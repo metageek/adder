@@ -2069,14 +2069,18 @@ class ContextTestCase(CompileAndEvalTestCase):
     def loadPrelude(self):
         return False
 
+    def cacheFileName(self):
+        global nextCacheFileId
+        if False:
+            return 'cache-%d.py' % nextCacheFileId
+
     def e(self,exprStr,*,verbose=False,printCompilationExn=True,
           **globalsToSet):
         global nextCacheFileId
-        cacheFileName='cache-%d.py' % nextCacheFileId
-        nextCacheFileId+=1
         self.context=Context(loadPrelude=self.loadPrelude(),
-                             #cacheOutputFileName=cacheFileName
+                             cacheOutputFileName=self.cacheFileName()
                              )
+        nextCacheFileId+=1
         for (k,v) in globalsToSet.items():
             self.context.define(k,v)
         res=None
@@ -2090,8 +2094,7 @@ class ContextTestCase(CompileAndEvalTestCase):
         return res
 
     def ownScopeId(self):
-        cacheFileName=None#'cache-%d.py' % nextCacheFileId    
-        return abs(hash((cacheFileName,1)))
+        return abs(hash((self.cacheFileName(),1)))
 
     def __getitem__(self,var):
         return lookup(self.context.globals,'%s-%d' % (var,self.scope.id))
