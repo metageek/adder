@@ -1,16 +1,19 @@
 from adder.common import gensym, Symbol as S
+import adder.compiler
 import pdb
 
 def getScopeById(id):
     return getScopeById.scopes[id]
 getScopeById.scopes={}
 
-def eval(adder,scope,globalDict,localDict):
-    from adder.compiler import annotate,stripAnnotations,addLines
+def eval(adderCode,scope,globalDict,localDict):
     from adder.gomer import geval
 
-    parsedExpr=addLines(adder,0)
-    gomer=stripAnnotations(annotate(parsedExpr,scope,globalDict,localDict))
+    parsedExpr=adder.compiler.addLines(adderCode,0)
+    gomer=adder.compiler.stripAnnotations(adder.compiler.annotate(parsedExpr,
+                                                                  scope,
+                                                                  globalDict,
+                                                                  localDict))
     return geval(gomer,globalDict=globalDict,localDict=localDict)
 
 def load(f,scope,globalDict):
@@ -18,17 +21,21 @@ def load(f,scope,globalDict):
     (lastValue,globalDict)=loadFile(f,scope,globalDict)
     return lastValue
 
-def adder_function_wrapper(fSym,args,scopeId):
+def adder_function_wrapper(fSym,args,scopeOrId):
     localDict={}
-    scope=getScopeById(scopeId).mkChild()
-    adder=[fSym]
+    if isinstance(scopeOrId,adder.compiler.Scope):
+        parentScope=scopeOrId
+    else:
+        parentScope=getScopeById(scopeOrId)
+    scope=parentScope.mkChild()
+    adderCode=[fSym]
     for (i,arg) in enumerate(args):
         name=S('a%d' % i)
         pyName=S('a%d-%d' % (i,scope.id)).toPython()
         localDict[pyName]=arg
         scope.addDef(name,None,1)
-        adder.append(name)
-    return eval(adder,scope,adder_function_wrapper.globals,localDict)
+        adderCode.append(name)
+    return eval(adderCode,scope,adder_function_wrapper.globals,localDict)
 
 adder_function_wrapper.globals=None
 

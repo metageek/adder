@@ -1,4 +1,4 @@
-import pdb,os
+import pdb,os,pickle,io
 from adder.common import Symbol as S, gensym, q, literable
 import adder.gomer
 
@@ -89,14 +89,27 @@ class AssignedToConst(Exception):
     def __str__(self):
         return 'Assigning to constant: %s' % self.args
 
+def listPickle(obj):
+    byteStream=io.BytesIO()
+    pickle.dump(obj,byteStream)
+    byteStream.flush()
+    byteStream.seek(0)
+    return list(byteStream.read())
+
+def listDepickle(byteList):
+    byteStream=io.BytesIO(bytes(byteList))
+    return pickle.load(byteStream)
+
 class Scope:
+    nextId=1
+
     class Entry:
         def __init__(self,*,initExpr,line,
                      asConst=False,ignoreScopeId=False,
                      macroExpander=None,
                      isBuiltinFunc=False,
                      nativeFunc=None):
-            self.initExpr=initExpr
+            self.initExpr=None#initExpr
             if initExpr is None:
                 (self.constValueValid,self.constValue)=(False,None)
             else:
@@ -108,14 +121,37 @@ class Scope:
             self.isBuiltinFunc=isBuiltinFunc
             self.nativeFunc=nativeFunc if isBuiltinFunc else None
 
-    nextId=1
+        def flatten(self):
+            # We don't need to serialize isBuiltinFunc or nativeFunc,
+            #  because they're only for the root env, which doesn't
+            #  get serialized.  And macroExpander is no longer a
+            #  function, so that's easy.
+            cucumber={'initExpr' : self.initExpr,
+                      'line': self.line,
+                      'asConst': self.asConst,
+                      'ignoreScopeId': self.ignoreScopeId,
+                      'macroExpander': self.macroExpander
+                      }
+            if self.constValueValid:
+                cucumber['constValue']=self.constValue
+            return cucumber
+
+        def expand(cucumber):
+            return Scope.Entry(initExpr=cucumber['initExpr'],
+                               line=cucumber['line'],
+                               asConst=cucumber['asConst'],
+                               ignoreScopeId=cucumber['ignoreScopeId'],
+                               macroExpander=cucumber['macroExpander'])
 
     def __init__(self,parent,*,
                  isRoot=False,
                  isClassScope=False,
-                 isFuncScope=False):
+                 isFuncScope=False,
+                 trackDescendants=False,
+                 idFromCucumber=None,
+                 context=None):
         self.entries={}
-        id=None
+        id=idFromCucumber
 
         if parent is None:
             if isRoot:
@@ -123,12 +159,19 @@ class Scope:
                 id=0
             else:
                 self.parent=Scope.root
+            self.context=context
         else:
             self.parent=parent
+            self.context=self.parent.context
+
+        if self.parent:
+            self.parent.addChild(self)
 
         if id is None:
             self.id=Scope.nextId
             Scope.nextId+=1
+            if self.context:
+                self.id=abs(hash((self.context.cacheOutputFileName,self.id)))
         else:
             self.id=id
         self.readOnly=False
@@ -137,7 +180,60 @@ class Scope:
 
         self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
 
+        if trackDescendants:
+            self.descendants=[self]
+        else:
+            self.descendants=None
+
     root=None
+
+    def addChild(self,child):
+        if self.descendants:
+            self.descendants.append(child)
+        else:
+            if self.parent:
+                self.parent.addChild(child)
+
+    def flatten(self,*,suppress=None):
+        if suppress is None:
+            suppress=set()
+        assert self.parent
+        cucumber={'id': self.id,
+                  'parent': self.parent,
+                  'readOnly': self.readOnly,
+                  'isClassScope': self.isClassScope,
+                  'isFuncScope': self.isFuncScope,
+                  'entries': {}}
+        for (name,entry) in self.entries.items():
+            if name not in suppress:
+                cucumber['entries'][name]=entry.flatten()
+        return cucumber
+
+    def expand(cucumber):
+        scope=Scope(cucumber['parent'],
+                    idFromCucumber=cucumber['id'],
+                    isClassScope=cucumber['isClassScope'],
+                    isFuncScope=cucumber['isFuncScope'])
+        scope.readOnly=cucumber['readOnly']
+        for (name,entryCucumber) in cucumber['entries'].items():
+            scope.entries[name]=Scope.Entry.expand(entryCucumber)
+        adder.runtime.getScopeById.scopes[scope.id]=scope
+        return scope
+
+    def varNameForCache(self):
+        return '__adder__module_scope_%d__' % self.id
+
+    def dump(self,outputStream):
+        oldReprForCache=Scope.reprForCache
+        Scope.reprForCache=True
+        for scope in self.descendants:
+            outputStream.writelines([
+                    scope.varNameForCache(),
+                    '=adder.compiler.Scope.expand(',
+                    repr(scope.flatten(suppress={S('current-scope')})),
+                    ')\n'
+                    ])
+        Scope.reprForCache=oldReprForCache
 
     def atGlobalScope(self):
         if self.isFuncScope:
@@ -149,8 +245,15 @@ class Scope:
     def mkChild(self):
         return Scope(self)
 
+    reprForCache=False
     def __repr__(self):
-        return 'adder.runtime.getScopeById(%d)' % self.id
+        if Scope.reprForCache:
+            if self.parent:
+                return self.varNameForCache()
+            else:
+                return 'adder.compiler.Scope.root'
+        else:
+            return 'adder.runtime.getScopeById(%d)' % self.id
 
     def addDef(self,name,initExpr,line,*,
                asConst=False,
@@ -159,6 +262,9 @@ class Scope:
                redefPermitted=False,
                isBuiltinFunc=False,
                nativeFunc=None):
+        assert not (isBuiltinFunc and self.parent)
+        assert not (nativeFunc and self.parent)
+
         if self.isClassScope:
             ignoreScopeId=True
         assert not self.readOnly
@@ -229,6 +335,9 @@ class Scope:
         if self.parent is not None:
             return self.parent.isDescendantOf(other)
         return False
+
+    def serialize(self,outputStream):
+        outputStream.write('None')
 
 Scope.root=Scope(None,isRoot=True)
 for name in ['not',
@@ -311,10 +420,9 @@ class Annotator:
                                                globalDict,localDict)
                 if required[f].macroExpander:
                     xArgs=stripLines((expr[1:],expr[1][1]))
-                    expanded=required[f].macroExpander(xArgs,
-                                                       scope,
-                                                       globalDict,
-                                                       localDict)
+                    xCall=[required[f].macroExpander]+list(map(q,xArgs))
+                    expanded=adder.runtime.eval(xCall,scope,
+                                                globalDict,localDict)
                     return self(addLines(expanded,line),
                                 scope,globalDict,localDict)
             scoped=[self(expr[0],scope,globalDict,localDict,asFunc=True)]
@@ -417,10 +525,9 @@ class Annotator:
         (name,nameLine)=expr[1]
         expanderName=gensym('macro-'+('dot-dot' if str(name)=='..'
                                       else str(name)))
-        def expand(xArgs,xScope,xGlobalDict,xLocalDict):
-            xCall=[expanderName]+list(map(q,xArgs))
-            return adder.runtime.eval(xCall,xScope,xGlobalDict,xLocalDict)
-        scope.addDef(name,None,line,macroExpander=expand,redefPermitted=True)
+        scope.addDef(name,None,line,
+                     macroExpander=expanderName,
+                     redefPermitted=True)
         return self(([(S('defun'),line),(expanderName,line)]+expr[2:],
                      line),
                     scope,globalDict,localDict)
@@ -605,7 +712,7 @@ class Annotator:
     def annotate_class(self,expr,line,scope,globalDict,localDict):
         classScope=Scope(scope,isClassScope=True)
         namePE=expr[1]
-        scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
+        scope.addDef(namePE[0],None,namePE[1],redefPermitted=True)
         return (([(S('class'),expr[0][1],Scope.root),
                   (namePE[0],namePE[1],scope),
                   (list(map(lambda e: self(e,scope,globalDict,localDict),
@@ -680,7 +787,7 @@ class Annotator:
         scoped=[self(opPE,scope,globalDict,localDict,asFunc=True)]
 
         if namePE:
-            scope.addDef(namePE[0],namePE[1],None,redefPermitted=True)
+            scope.addDef(namePE[0],None,namePE[1],redefPermitted=True)
             scoped.append((namePE[0],namePE[1],scope))
         (argsExpr,argsLine)=argsPE
         scopedArgs=[]
@@ -745,7 +852,7 @@ def stripAnnotations(annotated,*,quoted=False):
         and not expr.isKeyword()):
         if expr is S('&rest') or expr is S('&key') or expr is S('&optional'):
             return expr
-        if (scope.id>0
+        if (scope.parent
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):
             return S('%s-%d' % (str(expr),scope.id))
     if not (type(expr)==list and expr):
@@ -779,7 +886,8 @@ def stripLines(parsedExpr):
 def compileAndEval(expr,scope,globalDict,localDict,*,
                    hasLines=False,defLine=0,
                    verbose=False,
-                   printCompilationException=True):
+                   printCompilationExn=True,
+                   cacheOutputFile=None):
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
@@ -793,15 +901,16 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
         annotated=annotate(expr,scope,globalDict,localDict)
         gomer=stripAnnotations(annotated)
     except Exception as e:
-        if printCompilationException:
+        if printCompilationExn:
             print('Compilation exception in',expr)
         raise
     return adder.gomer.geval(gomer,
                              globalDict=globalDict,
                              localDict=localDict,
-                             verbose=verbose)
+                             verbose=verbose,
+                             cacheOutputFile=cacheOutputFile)
 
-def loadFile(f,scope,globalDict,*,inSrcDir=False):
+def loadFile(f,scope,globalDict,*,inSrcDir=False,cacheOutputFile=None):
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
@@ -816,28 +925,63 @@ def loadFile(f,scope,globalDict,*,inSrcDir=False):
     for parsedExpr in adder.parser.parseFile(f):
         res=compileAndEval(parsedExpr,scope,
                            globalDict,None,
-                           hasLines=True)
+                           hasLines=True,
+                           cacheOutputFile=cacheOutputFile)
     return (res,globalDict)
 
 class Context:
-    def __init__(self,*,loadPrelude=True):
-        self.scope=Scope(None)
+    def __init__(self,*,loadPrelude=True,
+                 cacheOutputFileName=None):
+        self.cacheOutputFileName=cacheOutputFileName
+        self.scope=Scope(None,trackDescendants=True,context=self)
         self.globals=adder.gomer.mkGlobals()
+        if self.cacheOutputFileName:
+            self.cacheOutputFile=open(self.cacheOutputFileName,'w')
+            self.cacheOutputFile.write("""import adder.gomer, adder.compiler
+from adder.runtime import *
+python=adder.gomer.mkPython()
+
+""")
+            self.cacheBodyStream=io.StringIO()
+        else:
+            self.cacheBodyStream=None
+            self.cacheOutputFile=None
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)
 
     def load(self,f,*,inSrcDir=False):
-        loadFile(f,self.scope,self.globals,inSrcDir=inSrcDir)
+        loadFile(f,self.scope,self.globals,
+                 inSrcDir=inSrcDir,
+                 cacheOutputFile=self.cacheBodyStream)
 
     def eval(self,expr,*,verbose=False,hasLines=False,defLine=0,
-             printCompilationException=True):
+             printCompilationExn=True):
+        if self.cacheBodyStream:
+            self.cacheBodyStream.writelines(['\n']
+                                            +list(map(lambda l: '#'+l+'\n',
+                                                      adder.common.adderStr(expr).split('\n')
+                                                     )
+                                                 )
+                                            +['\n']
+                                            )
         return compileAndEval(expr,
                               self.scope,self.globals,
                               None,
                               hasLines=hasLines,defLine=defLine,
                               verbose=verbose,
-                              printCompilationException=printCompilationException)
+                              printCompilationExn=printCompilationExn,
+                              cacheOutputFile=self.cacheBodyStream)
 
     def define(self,name,value):
         self.scope.addDef(S(name),value,0,redefPermitted=True)
-        self.globals[S("%s-1" % name).toPython()]=value
+        self.globals[S("%s-%d" % (name,self.scope.id)).toPython()]=value
+
+    def close(self):
+        if self.cacheOutputFile:
+            self.cacheOutputFile.write('\n\n')
+            self.scope.dump(self.cacheOutputFile)
+            self.cacheOutputFile.write('\n\n')
+
+            self.cacheBodyStream.seek(0)
+            self.cacheOutputFile.write(self.cacheBodyStream.read())
+            self.cacheOutputFile.flush()

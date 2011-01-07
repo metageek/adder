@@ -639,16 +639,20 @@ def reduce(gomer,isStmt,stmtCollector,*,inAssignment=False,inClass=False):
             gomer=scratch
         return gomer
 
-def mkGlobals():
-    g=dict(adder.runtime.__dict__)
-    class O:
-        pass
+class O:
+    pass
+
+def mkPython():
     python=O()
     for (k,v) in __builtins__.items():
         setattr(python,k,v)
     python.sys=sys
     python.types=types
-    g['python']=python
+    return python
+
+def mkGlobals():
+    g=dict(adder.runtime.__dict__)
+    g['python']=mkPython()
     a=O()
     a.common=adder.common
     g['adder']=a
@@ -657,7 +661,9 @@ def mkGlobals():
     g['stdenv']=mkGlobals
     return g
 
-def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
+def geval(gomer,*,globalDict=None,localDict=None,
+          verbose=False,
+          cacheOutputFile=None):
     if globalDict is None:
         globalDict=mkGlobals()
     if localDict is None:
@@ -675,6 +681,8 @@ def geval(gomer,*,globalDict=None,localDict=None,verbose=False):
     stmtTree=il.toPythonTree()
     stmtTrees.append(stmtTree)
     stmtFlat=adder.pyle.flatten(tuple(stmtTrees))
+    if cacheOutputFile is not None:
+        cacheOutputFile.writelines([stmtFlat])
     if verbose:
         print(stmtFlat)
     exec(stmtFlat,globalDict,localDict)

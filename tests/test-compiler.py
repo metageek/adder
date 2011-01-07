@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import unittest,pdb,sys,os,re
+import unittest,pdb,sys,os,re,pickle
 from adder.compiler import Scope,annotate,stripAnnotations,AssignedToConst,Redefined,compileAndEval,loadFile,Context,stripLines
 from adder.common import Symbol as S, gensym
 from adder.gomer import mkGlobals,geval
@@ -1369,7 +1369,6 @@ class EvalTestCase(EmptyStripTestCase):
         except Redefined as red:
             assert red.args[0]==S('x')
             assert red.args[1][:2]==(12,1)
-            assert red.args[2].initExpr[:2]==(17,1)
 
     def testScopeTrivial(self):
         assert self.evalAdder("(scope 17)")==17
@@ -1723,7 +1722,7 @@ gensymXRe=re.compile('^#<gensym-x #[0-9]+>$')
 
 class CompileAndEvalTestCase(EmptyStripTestCase):
     def e(self,exprStr,*,scope=None,verbose=False,
-          printCompilationException=True,**globalsToSet):
+          printCompilationExn=True,**globalsToSet):
         if isinstance(exprStr,tuple):
             exprs=[exprStr]
             hasLines=True
@@ -1740,7 +1739,8 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         self.g=mkGlobals()
         for (k,v) in globalsToSet.items():
             scope.addDef(S(k),v,0)
-            self.g[S("%s-%d" % (k,scope.id)).toPython()]=v
+            kPy=S("%s-%d" % (k,scope.id)).toPython()
+            self.g[kPy]=v
         res=None
         for expr in exprs:
             res=compileAndEval(expr,scope,self.g,None,
@@ -1750,7 +1750,7 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         return res
 
     def __getitem__(self,var):
-        return lookup(self.g,var)
+        return lookup(self.g,'%s-%d' % (var,self.scope.id))
 
     def testTimes2(self):
         assert self.e("(* 9 7)")==63
@@ -1803,8 +1803,8 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
 )
 """,
                       bar=bar) is None
-        l1=self['l1-1']
-        l2=self['l2-1']
+        l1=self['l1']
+        l2=self['l2']
         assert len(l1)==1
         assert isinstance(l1[0],Exception)
         assert l1[0].args==("nerfbuckets",)
@@ -1816,46 +1816,46 @@ class CompileAndEvalTestCase(EmptyStripTestCase):
         assert self.e("""(defun f (x) (* x 7))
 (f 9)
 """)==63
-        assert self['f-1'](12)==84
+        assert self['f'](12)==84
 
     def testDefunOptional(self):
         assert self.e("""(defun f (x &optional y) (mk-tuple x y))
 (mk-list (f 9 7) (f 19))
 """)==[(9,7),(19,None)]
-        assert self['f-1'](12)==(12,None)
-        assert self['f-1'](12,S('q'))==(12,S('q'))
+        assert self['f'](12)==(12,None)
+        assert self['f'](12,S('q'))==(12,S('q'))
 
     def testDefunOptionalD(self):
         assert self.e("""(defun f (x &optional (y 23)) (mk-tuple x y))
 (mk-list (f 9 7) (f 19))
 """)==[(9,7),(19,23)]
-        assert self['f-1'](12)==(12,23)
-        assert self['f-1'](12,S('q'))==(12,S('q'))
+        assert self['f'](12)==(12,23)
+        assert self['f'](12,S('q'))==(12,S('q'))
 
     def testDefunKw(self):
         assert self.e("""(defun f (x &key y) (* x y))
 (f 9 :y 7)
 """)==63
-        assert self['f-1'](12,y=9)==108
+        assert self['f'](12,y=9)==108
 
     def testDefunKwRest(self):
         assert self.e("""(defun f (x &key y &rest z) (* x y ([] z 0)))
 (f 9 3 :y 7)
 """)==189
-        assert self['f-1'](12,5,'alpha',y=9)==540
+        assert self['f'](12,5,'alpha',y=9)==540
 
     def testDefunReturnBlank(self):
         assert self.e("""(defun f (x) (return) (* x 7))
 (f 9)
 """) is None
-        assert self['f-1'](12) is None
+        assert self['f'](12) is None
 
     def testLoad(self):
         thisFile=self.__class__.testLoad.__code__.co_filename
         thisDir=os.path.split(thisFile)[0]
         codeFile=os.path.join(thisDir,'test-load.+')
         assert self.e('(load "%s")' % codeFile)==13
-        assert self['x7-1']==5040
+        assert self['x7']==5040
 
     def testDefmacro(self):
         assert self.e("""(defmacro when (x body)
@@ -2016,8 +2016,12 @@ y
   ([] g "x"))
 """)==7
 
+    def ownScopeId(self):
+        return 1
+
     def testOpFuncGetScopeById(self):
-        assert self.e("""(apply getScopeById '(1))""") is self.scope
+        assert (self.e("""(apply getScopeById '(%d))""" % self.ownScopeId())
+                is self.scope)
 
     def testOpFuncGlobals(self):
         g=self.e("""(apply globals '())""")
@@ -2033,7 +2037,7 @@ y
         thisDir=os.path.split(thisFile)[0]
         codeFile=os.path.join(thisDir,'test-load.+')
         assert self.e("""(apply load '("%s"))""" % codeFile)==13
-        assert self['x7-1']==5040
+        assert self['x7']==5040
 
     def testAccumulator(self):
         assert self.e("""(begin
@@ -2059,27 +2063,38 @@ class LoadTestCase(unittest.TestCase):
         assert lastValue==13
         assert lookup(globalDict,'x7-1')==5040
 
+nextCacheFileId=1
+
 class ContextTestCase(CompileAndEvalTestCase):
     def loadPrelude(self):
         return False
 
-    def e(self,exprStr,*,verbose=False,printCompilationException=True,
+    def e(self,exprStr,*,verbose=False,printCompilationExn=True,
           **globalsToSet):
-        self.context=Context(loadPrelude=self.loadPrelude())
+        global nextCacheFileId
+        cacheFileName='cache-%d.py' % nextCacheFileId
+        nextCacheFileId+=1
+        self.context=Context(loadPrelude=self.loadPrelude(),
+                             #cacheOutputFileName=cacheFileName
+                             )
         for (k,v) in globalsToSet.items():
             self.context.define(k,v)
         res=None
         for parsedExpr in adder.parser.parse(exprStr):
             res=self.context.eval(stripLines(parsedExpr),
                                   verbose=verbose,
-                                  printCompilationException=
-                                  printCompilationException)
+                                  printCompilationExn=printCompilationExn)
         self.g=self.context.globals
         self.scope=self.context.scope
+        self.context.close()
         return res
 
+    def ownScopeId(self):
+        cacheFileName=None#'cache-%d.py' % nextCacheFileId    
+        return abs(hash((cacheFileName,1)))
+
     def __getitem__(self,var):
-        return lookup(self.context.globals,var)
+        return lookup(self.context.globals,'%s-%d' % (var,self.scope.id))
 
 class PreludeTestCase(ContextTestCase):
     def loadPrelude(self):
@@ -2229,32 +2244,32 @@ class PreludeTestCase(ContextTestCase):
  ((x 9)
   (y (* x 7)))
 (mk-list x y)
-)""",printCompilationException=False)
+)""",printCompilationExn=False)
             assert False
         except adder.compiler.Undefined as u:
             assert u.args==(S("x"),)
 
     def testDefineVar(self):
         assert self.e("(define x 17)")==17
-        assert self['x-1']==17
+        assert self['x']==17
 
     def testDefineFunc(self):
-        assert self.e("(define (sq x) (* x x))") is self['sq-1']
-        assert self['sq-1'](17)==289
+        assert self.e("(define (sq x) (* x x))") is self['sq']
+        assert self['sq'](17)==289
 
     def testDefineFuncOptional(self):
         assert self.e("""(define (sq x &optional q)
   (* x x (if (not q) 1 q))
-)""") is self['sq-1']
-        assert self['sq-1'](17)==289
-        assert self['sq-1'](17,5)==1445
+)""") is self['sq']
+        assert self['sq'](17)==289
+        assert self['sq'](17,5)==1445
 
     def testDefineFuncOptionalD(self):
         assert self.e("""(define (sq x &optional (q 2))
   (* x x (if (not q) 1 q))
-)""") is self['sq-1']
-        assert self['sq-1'](17)==578
-        assert self['sq-1'](17,5)==1445
+)""") is self['sq']
+        assert self['sq'](17)==578
+        assert self['sq'](17,5)==1445
 
     def testError(self):
         try:
@@ -2329,8 +2344,8 @@ class PreludeTestCase(ContextTestCase):
 z
 )
 """,x=3,y=0,z=0)==27
-        assert self['y-1']==9
-        assert self['z-1']==27
+        assert self['y']==9
+        assert self['z']==27
 
     def testWhenFalse(self):
         assert self.e("""(when (< x 7)
@@ -2339,8 +2354,8 @@ z
 z
 )
 """,x=10,y=0,z=0) is None
-        assert self['y-1']==0
-        assert self['z-1']==0
+        assert self['y']==0
+        assert self['z']==0
 
     def testUnlessTrue(self):
         assert self.e("""(unless (< x 7)
@@ -2349,8 +2364,8 @@ z
 z
 )
 """,x=3,y=0,z=0) is None
-        assert self['y-1']==0
-        assert self['z-1']==0
+        assert self['y']==0
+        assert self['z']==0
 
     def testUnlessFalse(self):
         assert self.e("""(unless (< x 7)
@@ -2359,8 +2374,8 @@ z
 z
 )
 """,x=10,y=0,z=0)==90
-        assert self['y-1']==9
-        assert self['z-1']==90
+        assert self['y']==9
+        assert self['z']==90
 
     def testDelayInt(self):
         assert self.e("""(begin
