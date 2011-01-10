@@ -1079,10 +1079,7 @@ def trim1Scratch(pyleStmt,scratch):
 
 def trimScratches(pyleStmt):
     return pyleStmt
-    scratches=set()
-    for var in descendantVars(pyleStmt):
-        if var.isScratch:
-            scratches.add(var)
+    scratches=set(filter(lambda v: v.isScratch,descendantVars(pyleStmt)))
     for scratch in sorted(scratches):
         t=trim1Scratch(pyleStmt,scratch)
         if t==AFTER:
