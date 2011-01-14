@@ -1,6 +1,6 @@
 import pdb,os,pickle,io
 from adder.common import Symbol as S, gensym, q, literable
-import adder.gomer
+import adder.gomer,adder.parser
 
 def const(expr):
     if type(expr)==tuple:
