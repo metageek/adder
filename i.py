@@ -7,5 +7,5 @@ import sys,adder
 #i.load_module('foo')
 import foo
 
-print(dir(foo))
+print(foo.fact(7))
 

@@ -29,12 +29,11 @@ class Importer:
         absolute=os.path.join(self.path,relative)
         adderSource=absolute+'.+'
         if os.path.isfile(adderSource):
-            print('Found:',adderSource)
             pySource=absolute+'.py'
-            if os.path.isfile(pySource) and Importer.isNewer(pySource,
-                                                             adderSource):
-                print('Already compiled:',pySource)
-            else:
+            if not (os.path.isfile(pySource)
+                    and Importer.isNewer(pySource,
+                                         adderSource)
+                    ):
                 context=adder.compiler.Context(cacheOutputFileName=pySource)
                 context.load(adderSource)
                 context.close()

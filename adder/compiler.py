@@ -295,6 +295,9 @@ class Scope:
                         yield key
             cur=cur.parent
 
+    def iterDontAscend(self):
+        return iter(self.entries)
+
     def __len__(self):
         cur=self
         already=set()
@@ -984,4 +987,19 @@ python=adder.gomer.mkPython()
 
             self.cacheBodyStream.seek(0)
             self.cacheOutputFile.write(self.cacheBodyStream.read())
+
+            self.cacheOutputFile.write('\n\n')
+            for varName in self.scope.iterDontAscend():
+                if varName not in Scope.root:
+                    if varName.isLegalPython():
+                        entry=self.scope[varName]
+                        if not (entry.macroExpander
+                                or entry.isBuiltinFunc):
+                            adderVarName=S('%s-%d' % (str(varName),
+                                                      self.scope.id))
+                            self.cacheOutputFile.write('%s=%s\n'
+                                                       % (varName,
+                                                          adderVarName.toPython())
+                                                       )
+
             self.cacheOutputFile.flush()

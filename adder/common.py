@@ -2,7 +2,7 @@ import pdb,types,re
 
 pythonLegal=re.compile('^[_a-z0-9A-Z]+$')
 
-pythonReservedWords={'def','global','nonlocal','class'}
+pythonReservedWords={'def','global','nonlocal','class','for','while','if'}
 
 def isLegalPython(s):
     if s in pythonReservedWords:
@@ -19,8 +19,9 @@ class Symbol:
         try:
             return Symbol.registry[s]
         except KeyError:
-            Symbol.registry[s]=super(Symbol,cls).__new__(cls)
-            return Symbol.registry[s]
+            res=super(Symbol,cls).__new__(cls)
+            Symbol.registry[s]=res
+            return res
 
     def __init__(self,s):
         if hasattr(self,'s'):
