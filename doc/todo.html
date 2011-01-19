@@ -16,17 +16,16 @@
   export metadata for the compiler to use.
 </dd>
 
-<dt>Can't write modules.</dt>
-<dd>There's no way to write a module in Adder.  We
-  can <em>import</em> modules, but the Adder program lives in a
-  single namespace.  It would be nice to have Adder modules imported
-  by ordinary Python import; see
+<dt>Can't write nested modules.</dt>
+<dd>We can now write a module in Adder, and import it into Adder or
+  Python; but the importer doesn't support heirarchy.
+  See
   <a href="http://www.python.org/dev/peps/pep-0302/">PEP 302</a>.
-  Adder importing Adder gets more complicated, because the compiler
-  needs to know about macros in the imported module.  Possible syntax
-  for an Adder dir in sys.path: /foo/bar/+baz+ means look for Adder in
-  baz, <em>unless</em> +baz+ exists.  Then we won't conflict with any
-  standard Python search path.
+</dd>
+
+<dt>Can't import macros.</dt>
+<dd>We can import Adder into Adder, but the compiler doesn't know
+anything about macros in the imported module.
 </dd>
 
 <dt>Logic programming</dt>
