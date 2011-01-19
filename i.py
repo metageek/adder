@@ -7,5 +7,7 @@ import sys,adder
 #i.load_module('foo')
 import foo
 
-print(foo.fact(7))
+assert foo.fact(7)==5040
 
+import bar.baz
+assert bar.baz.fib(7)==13
