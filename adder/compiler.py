@@ -233,6 +233,9 @@ class Scope:
                     repr(scope.flatten(suppress={S('current-scope')})),
                     ')\n'
                     ])
+        outputStream.writelines(['__adder__module_scope__=',
+                                 self.varNameForCache(),
+                                 '\n'])
         Scope.reprForCache=oldReprForCache
 
     def atGlobalScope(self):
@@ -283,6 +286,12 @@ class Scope:
         self.addDef(name,q(value),line,
                     asConst=True,
                     ignoreScopeId=ignoreScopeId)
+
+    def addModule(self,module,moduleLine):
+        g={}
+        exec("import %s" % module,g)
+        self.addDef(S(str(module).split('.')[0]),None,moduleLine,
+                    ignoreScopeId=True,redefPermitted=True)
 
     def __iter__(self):
         cur=self
@@ -611,9 +620,8 @@ class Annotator:
     def annotate_import(self,expr,line,scope,globalDict,localDict):
         res=self.quoteOrImport(expr,line,scope,False,
                                globalDict,localDict)
-        for (pkg,pkgLine) in expr[1:]:
-            scope.addDef(S(str(pkg).split('.')[0]),None,pkgLine,
-                         ignoreScopeId=True,redefPermitted=True)
+        for (module,moduleLine) in expr[1:]:
+            scope.addModule(module,moduleLine)
         return res
 
     def quoteOrImport(self,expr,line,scope,justOneArg,globalDict,localDict):

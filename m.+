@@ -1,0 +1,3 @@
+(import bar.baz)
+(print bar.baz)
+(bar.baz.fred 5 7)
