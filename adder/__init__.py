@@ -3,18 +3,17 @@ import adder.compiler
 
 class Importer:
     def __init__(self,pathItem):
-        m=Importer.adderDirRe.match(pathItem)
-        if not m:
+        if os.path.exists(pathItem):
             raise ImportError()
-
-        (dirname,_,basename)=m.groups()
-        self.path=dirname+basename
+        (dirname,basename)=os.path.split(pathItem)
+        if not (basename.startswith('+') and basename.endswith('+')):
+            raise ImportError()
+        basename=basename[1:-1]
+        self.path=os.path.join(dirname,basename)
         print('Importer(%s): %s' % (pathItem,self.path))
 
     def __str__(self):
         return '<%s for "%s">' % (self.__class__.__name__, self.path)
-
-    adderDirRe=re.compile('(^|(.*/))\+([^/]+)\+$')
 
     def isNewer(f1,f2):
         stat1=os.stat(f1)
