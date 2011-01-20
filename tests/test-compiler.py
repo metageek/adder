@@ -7,7 +7,9 @@ from adder.gomer import mkGlobals,geval
 import adder.parser,adder.runtime
 
 class O:
-    pass
+    def __init__(self,**kwArgs):
+        for (k,v) in kwArgs.items():
+            setattr(self,k,v)
 
 def scopesToIds(scoped):
     scopes={}
@@ -745,6 +747,14 @@ class ParseAndStripTestCase(EmptyStripTestCase):
         scope.addDef(S('foo'),None,1)
         assert self.clarify("foo",scope=scope)==S('foo-1')
 
+    def testDottedVar(self):
+        scope=Scope(None)
+        scope.addDef(S('foo'),None,1)
+        assert self.clarify("foo.bar.baz",scope=scope)==[S('.'),
+                                                         S('foo-1'),
+                                                         S('bar'),
+                                                         S('baz')]
+
     def testClass(self):
         scope=Scope(None)
         scope.addDef(S('Base1'),None,1)
@@ -1298,6 +1308,22 @@ class EvalTestCase(EmptyStripTestCase):
 
     def testVar(self):
         assert self.evalAdder("foo",foo=17)==17
+
+    def testDottedVar(self):
+        assert self.evalAdder("foo.bar",foo=O(bar=12))==12
+
+    def testDottedCall(self):
+        assert self.evalAdder("(bar.baz 13)",bar=O(baz=lambda n: n*n))==169
+
+    def testDottedCall2(self):
+        class O2:
+            def __init__(self,n):
+                self.n=n
+
+            def quux(self,q):
+                return q*self.n
+
+        assert self.evalAdder("(baz.quux 13)",baz=O2(17))==221
 
     def testKeyword(self):
         assert self.evalAdder(":foo") is S(':foo')

@@ -414,20 +414,21 @@ class Annotator:
             raise
         if type(expr)==list and expr:
             if type(expr[0][0])==S:
-                f=expr[0][0]
-                required=scope.requiredScope(f)
-                if required is Scope.root:
-                    m=self.methodFor(f)
-                    if hasattr(self,m):
-                        return getattr(self,m)(expr,line,scope,
-                                               globalDict,localDict)
-                if required[f].macroExpander:
-                    xArgs=stripLines((expr[1:],expr[1][1]))
-                    xCall=[required[f].macroExpander]+list(map(q,xArgs))
-                    expanded=adder.runtime.eval(xCall,scope,
-                                                globalDict,localDict)
-                    return self(addLines(expanded,line),
-                                scope,globalDict,localDict)
+                (f,_,_)=self(expr[0],scope,globalDict,localDict,asFunc=True)
+                if isinstance(f,S):
+                    required=scope.requiredScope(f)
+                    if required is Scope.root:
+                        m=self.methodFor(f)
+                        if hasattr(self,m):
+                            return getattr(self,m)(expr,line,scope,
+                                                   globalDict,localDict)
+                    if required[f].macroExpander:
+                        xArgs=stripLines((expr[1:],expr[1][1]))
+                        xCall=[required[f].macroExpander]+list(map(q,xArgs))
+                        expanded=adder.runtime.eval(xCall,scope,
+                                                    globalDict,localDict)
+                        return self(addLines(expanded,line),
+                                    scope,globalDict,localDict)
             scoped=[self(expr[0],scope,globalDict,localDict,asFunc=True)]
             for e in expr[1:]:
                 scoped.append(self(e,scope,globalDict,localDict))
@@ -436,11 +437,19 @@ class Annotator:
             if expr.isKeyword():
                 return (expr,line,Scope.root)
             else:
-                if str(expr)=='current-scope':
+                symbolName=str(expr)
+                if symbolName=='current-scope':
                     adder.runtime.getScopeById.scopes[scope.id]=scope
                     return self(([(S('getScopeById'),line),
                                   (scope.id,line)],line),scope,
                                 globalDict,localDict)
+
+                if (symbolName[0]!='.') and ('.' in symbolName):
+                    expanded=['.']+symbolName.split('.')
+                    expanded=list(map(lambda s: (S(s),line),expanded))
+                    return self((expanded,line),
+                                scope,globalDict,localDict,asFunc=asFunc)
+
                 required=scope.requiredScope(expr)
 
                 exprPy=expr.toPython()
