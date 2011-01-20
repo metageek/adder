@@ -3,3 +3,6 @@
       1
       (+ (fib (- n 1))
          (fib (- n 2)))))
+
+(defmacro fred (x y)
+  `(if ,x (mk-list ,y ,y)))
