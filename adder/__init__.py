@@ -3,6 +3,7 @@ import adder.compiler
 
 class Importer:
     def __init__(self,pathItem):
+        self.pathItem=pathItem
         if os.path.exists(pathItem):
             raise ImportError()
         (dirname,basename)=os.path.split(pathItem)
@@ -10,7 +11,6 @@ class Importer:
             raise ImportError()
         basename=basename[1:-1]
         self.path=os.path.join(dirname,basename)
-        print('Importer(%s): %s' % (pathItem,self.path))
 
     def __str__(self):
         return '<%s for "%s">' % (self.__class__.__name__, self.path)
@@ -21,8 +21,10 @@ class Importer:
         return stat1.st_atime>stat2.st_atime
 
     def absolute_path(self,fullname,path=None):
+        if not path:
+            path=self.path
         relative=fullname.replace('.',os.path.sep)
-        absolute=os.path.join(self.path,relative)
+        absolute=os.path.join(path,relative)
         isPkg=os.path.isdir(absolute)
         if isPkg:
             absolute+='/__init__'
@@ -31,14 +33,10 @@ class Importer:
             return (adderSource,absolute+'.py',isPkg)
 
     def find_module(self,fullname,path=None):
-        print('Importer<%s>.find_module(%s,%s)' % (self.path,
-                                                   fullname,
-                                                   str(path)))
         if self.absolute_path(fullname,path):
             return self
 
     def load_module(self,fullname):
-        print('Importer<%s>.load_module(%s)' % (self.path,fullname))
         if fullname in sys.modules:
             return sys.modules[fullname]
 
@@ -61,9 +59,8 @@ class Importer:
             mod.__file__ = adderSource
             mod.__loader__ = self
             if isPkg:
-                mod.__path__ = [fullname]
+                mod.__path__ = [self.pathItem]
             exec(code,mod.__dict__)
-            print('\tloaded %s' % repr(mod))
             return mod
         except Exception:
             del sys.modules[fullname]
