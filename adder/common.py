@@ -16,6 +16,8 @@ def literable(x):
 class Symbol:
     registry={}
     def __new__(cls,s):
+        if isinstance(s,Symbol):
+            return s
         try:
             return Symbol.registry[s]
         except KeyError:

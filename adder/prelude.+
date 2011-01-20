@@ -17,6 +17,7 @@
 (defconst type-str (. python str))
 (defconst type-generator (. python types GeneratorType))
 (defconst gensym (. adder common gensym))
+(defconst intern (. adder common Symbol))
 
 (defmacro dp (expr)
   (defvar scratch (gensym))
