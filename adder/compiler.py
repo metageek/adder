@@ -290,8 +290,29 @@ class Scope:
     def addModule(self,module,moduleLine):
         g={}
         exec("import %s" % module,g)
-        self.addDef(S(str(module).split('.')[0]),None,moduleLine,
+        parts=str(module).split('.')
+        self.addDef(S(parts[0]),None,moduleLine,
                     ignoreScopeId=True,redefPermitted=True)
+        mod=g[parts[0]]
+        for part in parts[1:]:
+            mod=getattr(mod,part)
+        if hasattr(mod,'__adder__module_scope__'):
+            scope=mod.__adder__module_scope__
+            for name in scope:
+                if '.' in name:
+                    continue
+                entry=scope[name]
+                if entry.macroExpander:
+                    localName=S('%s.%s' % (module,str(name)))
+                    localExpander=S('%s.%s-%d' % (module,
+                                                  str(entry.macroExpander),
+                                                  scope.id
+                                                  )
+                                    )
+                    self.addDef(localName,None,moduleLine,
+                                ignoreScopeId=True,redefPermitted=True,
+                                macroExpander=localExpander
+                                )
 
     def __iter__(self):
         cur=self
@@ -340,6 +361,14 @@ class Scope:
             return self.parent.requiredScope(sym,
                                              skipClassScopes=skipClassScopes)
         raise Undefined(sym)
+
+    def isMacro(self,sym):
+        try:
+            scope=self.requiredScope(sym)
+        except Undefined:
+            return False
+        entry=scope[sym]
+        return not (not entry.macroExpander)
 
     def isDescendantOf(self,other):
         if self is other:
@@ -453,7 +482,10 @@ class Annotator:
                                   (scope.id,line)],line),scope,
                                 globalDict,localDict)
 
-                if (symbolName[0]!='.') and ('.' in symbolName):
+                if ((symbolName[0]!='.')
+                    and ('.' in symbolName)
+                    and not (asFunc and scope.isMacro(expr))
+                    ):
                     expanded=['.']+symbolName.split('.')
                     expanded=list(map(lambda s: (S(s),line),expanded))
                     return self((expanded,line),
