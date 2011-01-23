@@ -1,0 +1,56 @@
+<html>
+<head>
+<title>Adder: Python with a Lisp</title>
+</head>
+<body>
+<h1>Adder: Python with a Lisp</h1>
+
+<h2>By <a href="/">John Stracke</a></h2>
+
+<p>Adder : <a href="http://www.python.org">Python</a> ::
+
+<a href="http://clojure.org">Clojure</a> :
+<a href="http://www.java.com">Java</a>
+</p>
+
+<p>Adder is a Lisp-1 which compiles to Python.  It aims to
+integrate seamlessly into Python: every Adder function is a Python
+function, every Adder list is a Python list, etc.
+</p>
+
+<p>Python-on-Lisp has been tried before; I think Adder has two advantages
+that previous attempts did not.  The first is technical: Python's
+metaprogramming has gotten better in the past few years, which allows
+Adder to integrate more smoothly.  The second is social: Clojure has
+prepared the ground for the notion of a Lisp that integrates into an
+existing language.
+</p>
+
+<p>It has one bit of non-Lispy syntax: <code>foo.bar.baz</code>
+means exactly what
+it does in Python, and <code>.bar.baz</code> is a function,
+defined so that
+
+<code>(.bar.baz foo)</code> is identical to <code>foo.bar.baz</code>.
+</p>
+
+<p>Adder is now released; you can get the code from
+<a href="http://github.com/metageek/adder">Github</a>.  Documentation:
+</p>
+
+<ul>
+<li><a href="running.html">How to run Adder</a></li>
+<li><a href="lang.html">The language spec</a></li>
+<li><a href="compiler.html">How the compiler works</a></li>
+<li><a href="todo.html">My to-do list</a></li>
+</ul>
+
+<p><a href="presentation.pdf">The slides from the lightning
+talk I gave at ILC09.</a>  Note that these are now dated; I had to
+  start from scratch, compiling to Python instead of directly to Python
+  bytecode (because bytecode is not stable from one version of Python
+  to the next).
+</p>
+
+</body>
+</html>

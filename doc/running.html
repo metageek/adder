@@ -1,0 +1,59 @@
+<html>
+<head>
+<title>Running Adder</title>
+</head>
+
+<body>
+<h1>Running Adder</h1>
+
+<p>Requirements: Python 3.x.  Adder has been tested under Python 3.1
+  on Linux (x86 and ARM).  It <em>ought</em> to work under Windows
+  (its only OS interaction is in file I/O, and it
+  uses <code>os.path</code> for pathname manipulation), but I don't
+  have a Windows box to test it on.  I'll test it on Mac Real Soon
+  Now.
+</p>
+
+<p>At this point, Adder isn't really packaged up; you run it from the
+  source tree.  If the base directory of the tree is at
+  <code>/foo/bar/baz/adder</code>, add it to
+  your <code>PYTHONPATH</code>
+</p>
+
+<p><code>PYTHONPATH = $PYTHONPATH:/foo/bar/baz/adder:/foo/bar/baz/adder/+modules+</code>
+</p>
+
+<p>(The <code>+modules+</code> bit is so that Python can find 
+<a href="lang.html#Modules">modules
+  written in Adder</a>.)
+</p>
+
+<p>To run an Adder program <code>quux.+</code>, do:
+</p>
+
+<p><code>/foo/bar/baz/adder/adder.py quux.+</code></p>
+
+<p>The <code>adder.py</code> program is also the REPL:
+</p>
+
+<pre>
+$ ./adder.py
+Loading prelude...done.
+> (define (fact n)
+(if (< n 2)
+ 1
+ (* n (fact (- n 1))))
+)
+#<FUNCTION _adder_fact_002d1031743189>
+> (fact 7)
+5040
+> 
+</pre>
+
+<p>There are a few sample scripts in <code>.../adder/samples</code>,
+  and a few modules in <code>.../adder/modules</code>.  You'll also
+  want to read <a href="lang.html">the language spec</a>.
+</p>
+
+</body>
+</html>
