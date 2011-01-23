@@ -482,11 +482,12 @@ class Annotator:
                                   (scope.id,line)],line),scope,
                                 globalDict,localDict)
 
-                if ((symbolName[0]!='.')
+                if ((symbolName!='.')
                     and ('.' in symbolName)
                     and not (asFunc and scope.isMacro(expr))
                     ):
-                    expanded=['.']+symbolName.split('.')
+                    op='..' if symbolName[0]=='.' else '.'
+                    expanded=[op]+list(filter(None,symbolName.split('.')))
                     expanded=list(map(lambda s: (S(s),line),expanded))
                     return self((expanded,line),
                                 scope,globalDict,localDict,asFunc=asFunc)

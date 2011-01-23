@@ -2224,6 +2224,16 @@ class PreludeTestCase(ContextTestCase):
 
         assert self.e("(((.. f) o))",o=O2())==49
 
+    def testLeadingDot(self):
+        class O2:
+            def __init__(self):
+                self.x=7
+
+            def f(self):
+                return self.x*self.x
+
+        assert self.e("((.f o))",o=O2())==49
+
     def testListPT(self):
         assert self.e("(list? '(1 2 3))") is True
 
