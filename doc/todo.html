@@ -10,12 +10,8 @@
 <dt>Importing a module may not recompile it.</dt>
 
 <dt>Compiler performance is poor.</dt>
-<dd>This is what discouraged me into dropping Adder for several
-  months.  The performance is OK for ordinary code, but anything
-  macro-heavy takes forever, since the compiler has to get invoked
-  over and over.  One solution is to cache the generated Python, the
-  way CPython caches .pyc files.  The generated file would have to
-  export metadata for the compiler to use.
+<dd>This has been ameliorated by caching the generated Python code for
+  modules, the way CPython caches .pyc files.
 </dd>
 
 <dt>Logic programming</dt>
