@@ -27,6 +27,7 @@
 <li><a href="#PFunctions">Functions</a></li>
 </ul>
 </li>
+<li><a href="#Modules">Modules</a></li>
 </ul>
 
 <h2><a name="Overview">Overview</a></h2>
@@ -67,6 +68,14 @@ legal Adder.
 <dl>
 <dt>quote</dt>
 <dt>import</dt>
+<dd>As the Python version, although there's no equivalent of
+<code>as</code> or <code>from</code>.  For example,
+<code>(import foo bar)</code> is equivalent to Python's
+<code>import foo,bar</code>.  Note that modules written in Adder can
+be imported,
+too&mdash;in fact, they can even be imported into Python.  See
+<a href="#Modules">Modules</a>, below.
+</dd>
 <dt>if</dt>
 <dt>while</dt>
 <dt>break</dt>
@@ -80,11 +89,39 @@ legal Adder.
 <dt>:=</dt>
 <dt>.</dt>
 <dt>class</dt>
+<dd>Syntax is <code>(class ClassName (...ParentNames...)
+    ...code...)</code>.  As in Python, the class definition encloses a
+    block of code which is executed in class scope.  For example:
+<pre>(import math)
+
+(class Point ()
+  (define __init__ (self x y)
+    (:= (. self x) x)
+    (:= (. self y) y))
+
+  (define (dist self other)
+    (math.sqrt (+ (* (- other.x self.x) (- other.x self.x))
+                  (* (- other.y self.y) (- other.y self.y)))))
+ )
+</pre>
+</dd>
 <dt>defconst</dt>
+<dt>defvar</dt>
+<dt>defun</dt>
+<dd>Define a function.  The argument syntax supports &rest, &keys, and
+  &optional, which correspond to the Python equivalent syntax.  Note
+  that keyword arguments are the new style, introduced in Python 3,
+  which cannot be passed as positional arguments.
+</dd>
 <dt>defmacro</dt>
-<dt><a name="scope">scope</a></dt>
+<dd>Define a macro, as in Common Lisp.  (Although it doesn't have the
+  super-powered argument lists of Common Lisp; its argument list
+  syntax is the same as for
+  <a href="#sym_defun"><code>(defun)</code></a>.)
+</dd>
+<dt><a name="sym_scope">scope</a></dt>
 <dd>Like <code>(begin)</code>, but introduces a new lexical scope.
-  You probably want <a href="#let"><code>(let)</code></a> instead.
+  You probably want <a href="#sym_let"><code>(let)</code></a> instead.
 </dd>
 </dl>
 
@@ -173,11 +210,11 @@ legal Adder.
 <dd>A function generator.  <code>(.. bar baz)</code>
  is equivalent to <code>(lambda (x) (. x bar baz))</code>.
 </dd>
-<dt><a name="let">let</a></dt>
+<dt><a name="sym_let">let</a></dt>
 <dd>Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap
-  enough.  Instead I'm using rewriting to distinguish which scope a
-  given var comes from.
+  enough.  Instead <code>(let)</code> expands into
+  <code><a href="#sym_scope">(scope)</a></code>
 </dd>
 <dt>let*</dt>
 <dt>define</dt>
@@ -200,6 +237,19 @@ legal Adder.
 <dt>when-bind</dt>
 <dd>(when-bind (var condition) then): binds var to condition and
   then uses it in an when.
+</dd>
+<dt>yield*</dt>
+<dd>My original reason for creating Adder.  It's fairly common in
+  Python to have to write a loop such as:
+
+<pre>for bar in foo:
+  yield bar
+</pre>
+
+(For example, if you're recursing down a tree.)
+In Adder, this would be <code>(yield* foo)</code>: yield all the
+elements which foo would yield.  In Adder, <code>yield*</code>
+is a simple macro; in Python, it's impossible.
 </dd>
 </dl>
 
@@ -227,6 +277,32 @@ legal Adder.
 <dt>str</dt>
 <dt>len</dt>
 </dl>
+
+<h2><a name="Modules">Modules</a></h2>
+
+<p>Modules can be written in Adder, and can be imported into Adder and
+  into Python.  To make sure the Adder modules
+in the directory <code>/foo/bar/baz</code> are available, put
+<code>/foo/bar/+baz+</code> into <code>sys.path</code> (aka the
+environment variable <code>PYTHONPATH</code>).  If the
+directory
+<code>/foo/bar/+baz+</code> actually exists, this won't work.
+</p>
+
+<p>If you have a Python program, and you want to import an Adder
+  module, you'll need to <code>import adder</code> before you import
+  the first Adder module; that inserts the
+  <a href="http://www.python.org/dev/peps/pep-0302/">import hook</a>
+  used to load Adder modules.
+</p>
+
+<p>When you import an Adder module,
+  it gets compiled to Python; if the Adder module's source was
+  <code>/foo/bar/baz/quux.+</code>, the
+  Python code is cached in <code>/foo/bar/baz/quux.py</code>.  At this
+  time, <code>/foo/bar/baz/quux.pyc</code> does not get created; that
+  might be a nice little speedup.
+</p>
 
 </body>
 </html>
