@@ -59,6 +59,10 @@ legal Adder.
 <dt>class</dt>
 <dt>defconst</dt>
 <dt>defmacro</dt>
+<dt><a name="scope">scope</a></dt>
+<dd>Like <code>(begin)</code>, but introduces a new lexical scope.
+  You probably want <a href="#let"><code>(let)</code></a> instead.
+</dd>
 </dl>
 
 <h3>Functions</h3>
@@ -146,7 +150,7 @@ legal Adder.
 <dd>A function generator.  <code>(.. bar baz)</code>
  is equivalent to <code>(lambda (x) (. x bar baz))</code>.
 </dd>
-<dt>let</dt>
+<dt><a name="let">let</a></dt>
 <dd>Yes, it can be defined in terms of lambda; but that depends on
   having cheap function calls.  I don't know that Python is cheap
   enough.  Instead I'm using rewriting to distinguish which scope a
