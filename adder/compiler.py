@@ -1040,12 +1040,17 @@ python=adder.gomer.mkPython()
             self.cacheOutputFile.write('\n\n')
             for varName in self.scope.iterDontAscend():
                 if varName not in Scope.root:
-                    if varName.isLegalPython():
-                        entry=self.scope[varName]
-                        if not (entry.macroExpander
-                                or entry.isBuiltinFunc):
-                            adderVarName=S('%s-%d' % (str(varName),
-                                                      self.scope.id))
+                    entry=self.scope[varName]
+                    if not (entry.macroExpander
+                            or entry.isBuiltinFunc):
+                        adderVarName=S('%s-%d' % (str(varName),
+                                                  self.scope.id))
+                        self.cacheOutputFile.write('%s=%s\n'
+                                                   % (varName.toPython(),
+                                                      adderVarName.toPython()
+                                                      )
+                                                   )
+                        if varName.isLegalPython():
                             self.cacheOutputFile.write('%s=%s\n'
                                                        % (varName,
                                                           adderVarName.toPython())

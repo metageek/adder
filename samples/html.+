@@ -1,196 +1,27 @@
-(define (lookup-attr-group attr-or-group)
-  (case attr-or-group
-    ('%coreattrs '(id class style title))
-    ('%i18n '(lang dir))
-    ('%events '(onclick ondblclick onmousedown onmouseup
-                onmouseover onmousemove onmouseout
-                onkeypress onkeydown onkeyup))
-    ('%cellhalign '(align char charoff))
-    ('%cellvalign '(valign))
-    ('%attrs (+ (lookup-attr-group '%coreattrs)
-                (lookup-attr-group '%i18n)
-                (lookup-attr-group '%events)))
-    (otherwise (mk-list attr-or-group))))
+(import htmlmacros)
 
-(define (expand-attr-groups attrs)
-  (for (attr attrs)
-       (for (x (lookup-attr-group attr))
-            (yield x))))
-
-(define (tag-to-sym tag)
-  (mk-symbol (% "<%s>" (str tag))))
-
-(defmacro define-element (tag attrs &optional (self-closing-p false))
-  (:= attrs (list (expand-attr-groups attrs)))
-  `(defun ,(tag-to-sym tag) (&rest text-and-children &key ,@attrs)
-     (yield "<")
-     (yield ,(str tag))
-     ,@(map (lambda (a) `(when ,a
-                               (yield " ")
-                               (yield ,(str a))
-                               (yield "=\"")
-                               (yield ,a)
-                               (yield "\"")))
-            attrs)
-     (yield ">")
-     (for (text-or-child text-and-children)
-          (if (str? text-or-child)
-              (yield text-or-child)
-              (yield* text-or-child)))
-     (unless ,self-closing-p
-             (yield "</")
-             (yield ,(str tag))
-             (yield ">"))))
-
-(define (write doc)
-  (for (s doc)
-       ((. stdout write) s))
-  ((. stdout write) "\n"))
-
-(defmacro foreach (x seq expr)
-  `((lambda () (for (,x ,seq) (yield ,expr)))))
-
-(defmacro define-phrase-elements (tags)
-  `(begin
-     ,@(map (lambda (tag) `(define-element ,tag (%attrs)))
-            tags))
-  )
-
-(defmacro define-fontstyle-elements (tags)
-  `(begin
-     ,@(map (lambda (tag) `(define-element ,tag (%attrs)))
-            tags))
-  )
-
-(define-phrase-elements (abbr acronym cite code dfn em kbd samp strong var))
-(define-fontstyle-elements (b big i s small strike tt u))
-
-(define-element a (%attrs charset type name href hreflang
-                   rel rev accesskey shape coords tabindex
-                   onfocus onblur))
-(define-element address (%attrs))
-(define-element applet (%coreattrs
-                        codebase archive code object alt name
-                        width height align hspace vspace))
-(define-element area (%attrs shape coords href nohref
-                             alt tabindex accesskey onfocus onblur)
-  true)
-(define-element base (href) true)
-(define-element basefont (%coreattrs %i18n size color face) true)
-(define-element bdo (%coreattrs %i18n))
-(define-element blockquote (%attrs cite))
-(define-element body (%attrs onload onunload
-                      background text link vlink alink))
-(define-element br (%coreattrs) true)
-(define-element button (%attrs name value type
-                               disabled tabindex accesskey
-                               onfocus onblur))
-(define-element caption (%attrs align))
-(define-element center (%coreattrs))
-(define-element col (%attrs span width %cellhalign %cellvalign) true)
-(define-element colgroup (%attrs span width %cellhalign %cellvalign))
-(define-element dd (%attrs))
-(define-element del (%attrs cite datetime))
-(define-element dir (%attrs compact))
-(define-element div (%attrs))
-(define-element dl (%attrs))
-(define-element dt (%attrs))
-(define-element fieldset (%attrs))
-(define-element font (%coreattrs %i18n size color face))
-(define-element form (%attrs action method enctype
-                             accept name onsubmit onreset accept-charset))
-(define-element frame (%coreattrs longdesc name src
-                                  frameborder marginwidth marginheight
-                                  noresize scrolling) true)
-(define-element frameset (%coreattrs rows cols onload onunload))
-(define-element h1 (%attrs))
-(define-element h2 (%attrs))
-(define-element h3 (%attrs))
-(define-element h4 (%attrs))
-(define-element h5 (%attrs))
-(define-element h6 (%attrs))
-(define-element head (%i18n profile))
-(define-element hr (%attrs align noshade size width) true)
-(define-element html (%i18n version))
-(define-element iframe (%coreattrs longdesc name src
-                                   frameborder marginwidth marginheight
-                                   scrolling align height width))
-(define-element img (%attrs src alt longdesc name
-                            height width usemap ismap) true)
-(define-element input (%attrs type name value checked
-                              disabled readonly
-                              size maxlength
-                              src alt usemap ismap
-                              tabindex accesskey
-                              onfocus onblur onselect onchange
-                              accept) true)
-(define-element ins (%attrs cite datetime))
-(define-element isindex (%coreattrs %i18n prompt) true)
-(define-element label (%attrs _for accesskey onfocus onblur))
-(define-element legend (%attrs accesskey))
-(define-element li (%attrs))
-(define-element link (%attrs charset href hreflang type rel rev media) true)
-(define-element map (%attrs name))
-(define-element menu (%attrs compact))
-(define-element meta (%i18n http-equiv name content scheme) true)
-(define-element noframes (%attrs))
-(define-element noscript (%attrs))
-(define-element object (%attrs declare classid
-                               codebase data type codetype archive standby
-                               height width usemap name tabindex))
-(define-element ol (%attrs))
-(define-element optgroup (%attrs disabled label))
-(define-element option (%attrs selected disabled label value))
-(define-element p (%attrs align))
-(define-element param (%attrs name value valuetype type) true)
-(define-element pre (%attrs))
-(define-element q (%attrs cite))
-(define-element script (charset type src defer))
-(define-element select (%attrs name size multiple disabled tabindex
-                               onfocus onblur onchange))
-(define-element span (%attrs))
-(define-element style (%i18n type media title))
-(define-element sub (%attrs))
-(define-element sup (%attrs))
-(define-element table (%attrs summary width border frame
-                              rules cellspacing cellpadding))
-(define-element tbody (%attrs %cellhalign %cellvalign))
-(define-element td (%attrs abbr axis headers scope
-                           rowspan colspan %cellhalign %cellvalign))
-(define-element textarea (%attrs name rows cols disabled readonly
-                                 tabindex accesskey
-                                 onfocus onblur onselect onchange))
-(define-element tfoot (%attrs %cellhalign %cellvalign))
-(define-element th (%attrs abbr axis headers scope
-                           rowspan colspan %cellhalign %cellvalign))
-(define-element thead (%attrs %cellhalign %cellvalign))
-(define-element title (%i18n))
-(define-element tr (%attrs %cellhalign %cellvalign))
-(define-element ul (%attrs))
-
-(defvar color "blue")
-(write 
- (<html> 
-  (<head> 
-   (<title> "Adder: Python with a Lisp")
+(htmlmacros.write 
+ (htmlmacros.<html> 
+  (htmlmacros.<head> 
+   (htmlmacros.<title> "Adder: Python with a Lisp")
    )
-  (<body> 
-   (<h1> "Adder: Python with a Lisp")
+  (htmlmacros.<body> 
+   (htmlmacros.<h1> "Adder: Python with a Lisp")
 
-   (<h2> "By " (<a> :href "/" "John Stracke"))
+   (htmlmacros.<h2> "By " (htmlmacros.<a> :href "/" "John Stracke"))
 
-   (<p> "Adder : " (<a> :href "http://www.python.org" "Python") " :: "
+   (htmlmacros.<p> "Adder : " (htmlmacros.<a> :href "http://www.python.org" "Python") " :: "
 
-        (<a> :href "http://clojure.org" "Clojure") " : "
-        (<a> :href "http://www.java.com" "Java")
+        (htmlmacros.<a> :href "http://clojure.org" "Clojure") " : "
+        (htmlmacros.<a> :href "http://www.java.com" "Java")
         )
 
-   (<p> "Adder is a Lisp-1 which compiles to Python.  It aims to
+   (htmlmacros.<p> "Adder is a Lisp-1 which compiles to Python.  It aims to
 integrate seamlessly into Python: every Adder function is a Python
 function, every Adder list is a Python list, etc.
 ")
 
-   (<p> "Python-on-Lisp has been tried before; I think Adder has two advantages
+   (htmlmacros.<p> "Python-on-Lisp has been tried before; I think Adder has two advantages
 that previous attempts did not.  The first is technical: Python's
 metaprogramming has gotten better in the past few years, which allows
 Adder to integrate more smoothly.  The second is social: Clojure has
@@ -198,13 +29,13 @@ prepared the ground for the notion of a Lisp that integrates into an
 existing language.
 ")
 
-   (<p> "Status: as of 30 June 2010,
+   (htmlmacros.<p> "Status: as of 30 June 2010,
 the compiler works, but is disgustingly slow.  
-" (<em> "Running") " the code once it's generated is plenty fast, but
+" (htmlmacros.<em> "Running") " the code once it's generated is plenty fast, but
 startup times are excessive."
 )
 
-   (<p> (<a> :href "presentation.pdf" "The slides from the lightning
+   (htmlmacros.<p> (htmlmacros.<a> :href "presentation.pdf" "The slides from the lightning
 talk I gave at ILC09."))
 
    )
