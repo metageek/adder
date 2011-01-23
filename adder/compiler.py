@@ -1043,17 +1043,15 @@ python=adder.gomer.mkPython()
                     entry=self.scope[varName]
                     if not (entry.macroExpander
                             or entry.isBuiltinFunc):
-                        adderVarName=S('%s-%d' % (str(varName),
+                        scopedVarName=S('%s-%d' % (str(varName),
                                                   self.scope.id))
+                        pyVarName=scopedVarName.toPython()
                         self.cacheOutputFile.write('%s=%s\n'
                                                    % (varName.toPython(),
-                                                      adderVarName.toPython()
-                                                      )
-                                                   )
+                                                      pyVarName))
                         if varName.isLegalPython():
                             self.cacheOutputFile.write('%s=%s\n'
                                                        % (varName,
-                                                          adderVarName.toPython())
-                                                       )
+                                                          pyVarName))
 
             self.cacheOutputFile.flush()
