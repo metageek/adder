@@ -474,12 +474,17 @@ class Begin(Stmt):
             return "pass"
 
 class Import(Stmt):
-    def __init__(self,module):
+    def __init__(self,module,*,asName=None):
         assert isinstance(module,Var)
+        assert (asName is None) or isinstance(asName,Var)
         self.module=module
+        self.asName=asName
 
     def __str__(self):
-        return 'import %s' % str(self.module)
+        if self.asName:
+            return 'import %s as %s' % (str(self.module),str(self.asName))
+        else:
+            return 'import %s' % str(self.module)
 
 class MkList(RValue):
     def __init__(self,items):
@@ -744,11 +749,11 @@ def build(pyle):
     if f is S('begin'):
         return Begin(list(map(build,pyle[1:])))
     if f is S('import'):
-        assert len(pyle)==2
-        return Import(build(pyle[1]))
-    if f is S('import'):
-        assert len(pyle)==2
-        return Import(build(pyle[1]))
+        assert (len(pyle)==2) or (len(pyle)==3)
+        if len(pyle)==3:
+            return Import(build(pyle[1]),asName=build(pyle[2]))
+        else:
+            return Import(build(pyle[1]))
     if f is S('.'):
         assert len(pyle)>2
         return Dot(build(pyle[1]),

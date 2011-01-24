@@ -89,6 +89,13 @@ class AssignedToConst(Exception):
     def __str__(self):
         return 'Assigning to constant: %s' % self.args
 
+class SyntaxError(Exception):
+    def __init__(self,expr,line):
+        Exception.__init__(self,line,expr)
+
+    def __str__(self):
+        return 'Syntax error at line %d: %s' % self.args
+
 def listPickle(obj):
     byteStream=io.BytesIO()
     pickle.dump(obj,byteStream)
@@ -287,11 +294,12 @@ class Scope:
                     asConst=True,
                     ignoreScopeId=ignoreScopeId)
 
-    def addModule(self,module,moduleLine):
+    def addModule(self,module,moduleLine,*,asName=None):
+        moduleName=asName or module
         g={}
         exec("import %s" % module,g)
         parts=str(module).split('.')
-        self.addDef(S(parts[0]),None,moduleLine,
+        self.addDef(asName or S(parts[0]),None,moduleLine,
                     ignoreScopeId=True,redefPermitted=True)
         mod=g[parts[0]]
         for part in parts[1:]:
@@ -303,8 +311,8 @@ class Scope:
                     continue
                 entry=scope[name]
                 if entry.macroExpander:
-                    localName=S('%s.%s' % (module,str(name)))
-                    localExpander=S('%s.%s-%d' % (module,
+                    localName=S('%s.%s' % (moduleName,str(name)))
+                    localExpander=S('%s.%s-%d' % (moduleName,
                                                   str(entry.macroExpander),
                                                   scope.id
                                                   )
@@ -654,7 +662,14 @@ class Annotator:
         res=self.quoteOrImport(expr,line,scope,False,
                                globalDict,localDict)
         for (module,moduleLine) in expr[1:]:
-            scope.addModule(module,moduleLine)
+            if isinstance(module,list):
+                ((moduleName,_),(asKeyword,_),(asName,_))=module
+                if asKeyword is not S(":as"):
+                    raise SyntaxError(moduleLine,"Imported item must be symbol or (symbol :as symbol): %s" % str(module))
+            else:
+                moduleName=module
+                asName=None
+            scope.addModule(moduleName,moduleLine,asName=asName)
         return res
 
     def quoteOrImport(self,expr,line,scope,justOneArg,globalDict,localDict):

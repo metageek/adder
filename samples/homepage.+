@@ -1,27 +1,27 @@
-(import html)
+(import (html :as h))
 
-(html.write 
- (html.<html> 
-  (html.<head> 
-   (html.<title> "Adder: Python with a Lisp")
+(h.write 
+ (h.<html> 
+  (h.<head> 
+   (h.<title> "Adder: Python with a Lisp")
    )
-  (html.<body> 
-   (html.<h1> "Adder: Python with a Lisp")
+  (h.<body> 
+   (h.<h1> "Adder: Python with a Lisp")
 
-   (html.<h2> "By " (html.<a> :href "/" "John Stracke"))
+   (h.<h2> "By " (h.<a> :href "/" "John Stracke"))
 
-   (html.<p> "Adder : " (html.<a> :href "http://www.python.org" "Python") " :: "
+   (h.<p> "Adder : " (h.<a> :href "http://www.python.org" "Python") " :: "
 
-        (html.<a> :href "http://clojure.org" "Clojure") " : "
-        (html.<a> :href "http://www.java.com" "Java")
+        (h.<a> :href "http://clojure.org" "Clojure") " : "
+        (h.<a> :href "http://www.java.com" "Java")
         )
 
-   (html.<p> "Adder is a Lisp-1 which compiles to Python.  It aims to
+   (h.<p> "Adder is a Lisp-1 which compiles to Python.  It aims to
 integrate seamlessly into Python: every Adder function is a Python
 function, every Adder list is a Python list, etc.
 ")
 
-   (html.<p> "Python-on-Lisp has been tried before; I think Adder has two advantages
+   (h.<p> "Python-on-Lisp has been tried before; I think Adder has two advantages
 that previous attempts did not.  The first is technical: Python's
 metaprogramming has gotten better in the past few years, which allows
 Adder to integrate more smoothly.  The second is social: Clojure has
@@ -29,13 +29,13 @@ prepared the ground for the notion of a Lisp that integrates into an
 existing language.
 ")
 
-   (html.<p> "Status: as of 30 June 2010,
+   (h.<p> "Status: as of 30 June 2010,
 the compiler works, but is disgustingly slow.  
-" (html.<em> "Running") " the code once it's generated is plenty fast, but
+" (h.<em> "Running") " the code once it's generated is plenty fast, but
 startup times are excessive."
 )
 
-   (html.<p> (html.<a> :href "presentation.pdf" "The slides from the lightning
+   (h.<p> (h.<a> :href "presentation.pdf" "The slides from the lightning
 talk I gave at ILC09."))
 
    )

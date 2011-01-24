@@ -321,9 +321,21 @@ class ReduceImport(Reducer):
     def reduce(self,gomer,isStmt,stmtCollector,inClass):
         last=None
         for module in gomer[1:]:
-            assert isinstance(module,S)
-            stmtCollector([S('import'),module])
-            last=module
+            assert (isinstance(module,S)
+                    or (isinstance(module,list)
+                        and len(module)==3
+                        and isinstance(module[0],S)
+                        and isinstance(module[1],S)
+                        and module[1] is S(':as')
+                        and isinstance(module[2],S)
+                        )
+                    )
+            if isinstance(module,S):
+                stmtCollector([S('import'),module])
+                last=module
+            else:
+                stmtCollector([S('import'),module[0],module[2]])
+                last=module[2]
         if not isStmt:
             return last
 
