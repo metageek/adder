@@ -7,12 +7,15 @@
 <h1>Adder: To-Do List</h1>
 
 <dl>
-<dt>Importing a module may not recompile it.</dt>
 
 <dt>Compiler performance is poor.</dt>
 <dd>This has been ameliorated by caching the generated Python code for
   modules, the way CPython caches .pyc files.
 </dd>
+
+<dt>When an exception is thrown while compiling a module, delete the
+  cache file.
+</dt>
 
 <dt>TCO</dt>
 <dd>See <a href="http://news.ycombinator.com/item?id=2133379">thread
