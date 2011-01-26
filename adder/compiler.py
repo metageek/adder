@@ -1,5 +1,5 @@
 import pdb,os,pickle,io
-from adder.common import Symbol as S, gensym, q, literable
+from adder.common import Symbol as S, gensym, q, literable, mkScratch
 import adder.gomer,adder.parser
 
 def const(expr):
@@ -75,6 +75,13 @@ class Undefined(Exception):
     def __str__(self):
         return 'Undefined variable: %s' % self.args
 
+class UndefinedInModule(Exception):
+    def __init__(self,sym,module):
+        Exception.__init__(self,sym,module)
+
+    def __str__(self):
+        return "Can't find variable %s in module %s" % self.args
+
 class Redefined(Exception):
     def __init__(self,var,initExpr,oldEntry):
         Exception.__init__(self,var,initExpr,oldEntry)
@@ -90,7 +97,7 @@ class AssignedToConst(Exception):
         return 'Assigning to constant: %s' % self.args
 
 class SyntaxError(Exception):
-    def __init__(self,expr,line):
+    def __init__(self,line,expr):
         Exception.__init__(self,line,expr)
 
     def __str__(self):
@@ -294,33 +301,66 @@ class Scope:
                     asConst=True,
                     ignoreScopeId=ignoreScopeId)
 
-    def addModule(self,module,moduleLine,*,asName=None):
+    def addModule(self,module,moduleLine,asName,targets):
+        #if module is S('html'):
+        #    pdb.set_trace()
         moduleName=asName or module
+        targetLimitationList=None if targets is S('*') else targets
+        if targets and isinstance(targets,list):
+            targetExpectedSet=set(targets)
+        else:
+            targetExpectedSet=set()
         g={}
         exec("import %s" % module,g)
         parts=str(module).split('.')
-        self.addDef(asName or S(parts[0]),None,moduleLine,
-                    ignoreScopeId=True,redefPermitted=True)
+        if not targets:
+            self.addDef(asName or S(parts[0]),None,moduleLine,
+                        ignoreScopeId=True,redefPermitted=True)
         mod=g[parts[0]]
         for part in parts[1:]:
             mod=getattr(mod,part)
         if hasattr(mod,'__adder__module_scope__'):
             scope=mod.__adder__module_scope__
             for name in scope:
-                if '.' in name:
+                if '.' in str(name):
                     continue
+                if targetLimitationList and name not in targetLimitationList:
+                    if targetExpectedSet:
+                        continue
+                    else:
+                        break
                 entry=scope[name]
-                if entry.macroExpander:
+                if not (targets or entry.macroExpander):
+                    continue
+                if targets:
+                    localName=name
+                    if targetExpectedSet:
+                        targetExpectedSet.remove(localName)
+                else:
                     localName=S('%s.%s' % (moduleName,str(name)))
+                if entry.macroExpander:
                     localExpander=S('%s.%s-%d' % (moduleName,
                                                   str(entry.macroExpander),
                                                   scope.id
                                                   )
                                     )
-                    self.addDef(localName,None,moduleLine,
-                                ignoreScopeId=True,redefPermitted=True,
-                                macroExpander=localExpander
-                                )
+                else:
+                    localExpander=None
+                self.addDef(localName,None,moduleLine,
+                            ignoreScopeId=True,redefPermitted=True,
+                            macroExpander=localExpander
+                            )
+                if targets and not (entry.macroExpander
+                                    or name is S('current-scope')
+                                    ):
+                    code=([(S('defvar'),moduleLine),
+                           (S('%s-%d' % (str(name),self.id)),moduleLine),
+                           (name,moduleLine)],
+                          moduleLine)
+                    yield (name,code)
+            if targetExpectedSet:
+                raise UndefinedInModule(next(iter(targetExpectedSet)),
+                                        module)
 
     def __iter__(self):
         cur=self
@@ -659,18 +699,62 @@ class Annotator:
                                   globalDict,localDict)
 
     def annotate_import(self,expr,line,scope,globalDict,localDict):
+        def parseImportee(importee,importeeLine):
+            if isinstance(importee,S):
+                return (importee,None,None)
+            if not (isinstance(importee,list) and len(importee)==3):
+                raise SyntaxError(importeeLine,
+                                  "Imported item must be symbol, as-spec, or from-spec: %s" % str(importee))
+            ((first,firstLine),(kw,_),(last,_))=importee
+            if kw is S(":as"):
+                return (first,last,None)
+            if kw is S(":from"):
+                def parseTarget(t):
+                    (target,targetLine)=t
+                    if not (isinstance(target,S)):
+                        raise SyntaxError(targetLine,
+                                          ("Item to import must be symbol, not %s"
+                                           % str(target)))
+                    return target
+                if first is S('*'):
+                    targets=first
+                else:
+                    if isinstance(first,list) and first:
+                        targets=list(map(parseTarget,first))
+                    else:
+                        raise SyntaxError(firstLine,
+                                          ("Spec of items to import from %s must be a non-empty list or *: %s"
+                                           % (last,first)))
+                return (last,None,targets)
+            raise SyntaxError(importeeLine,
+                              "Imported item must be symbol, as-spec, or from-spec: %s" % str(importee))
+
+        extraRes=[]
+        limitedNames=[]
+        for (importee,importeeLine) in expr[1:]:
+            (moduleName,asName,targets)=parseImportee(importee,importeeLine)
+            for (name,command) in scope.addModule(moduleName,importeeLine,
+                                                  asName,targets):
+                if name:
+                    limitedNames.append(name)
+                extraRes.append(self(command,scope,globalDict,localDict))
+        if (limitedNames
+            and isinstance(expr[1][0],list)
+            and (expr[1][0][0][0] is S('*'))
+            ):
+            expr=list(expr)
+            expr[1]=(list(expr[1][0]),expr[1][1])
+            starLine=expr[1][0][0][1]
+            expr[1][0][0]=(list(map(lambda name: (name,starLine),
+                                    limitedNames)),
+                           starLine)
         res=self.quoteOrImport(expr,line,scope,False,
                                globalDict,localDict)
-        for (module,moduleLine) in expr[1:]:
-            if isinstance(module,list):
-                ((moduleName,_),(asKeyword,_),(asName,_))=module
-                if asKeyword is not S(":as"):
-                    raise SyntaxError(moduleLine,"Imported item must be symbol or (symbol :as symbol): %s" % str(module))
-            else:
-                moduleName=module
-                asName=None
-            scope.addModule(moduleName,moduleLine,asName=asName)
-        return res
+        if extraRes:
+            return (([(S('begin'),line,Scope.root),res]
+                     +extraRes),line,scope)
+        else:
+            return res
 
     def quoteOrImport(self,expr,line,scope,justOneArg,globalDict,localDict):
         def annotateDumbly(parsedExpr):
@@ -1065,6 +1149,9 @@ python=adder.gomer.mkPython()
                         self.cacheOutputFile.write('%s=%s\n'
                                                    % (varName.toPython(),
                                                       pyVarName))
+                        # TODO: is this necessary? If it's legal
+                        # Python, then varName.toPython() is just
+                        # varName, right?
                         if varName.isLegalPython():
                             self.cacheOutputFile.write('%s=%s\n'
                                                        % (varName,

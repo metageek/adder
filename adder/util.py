@@ -1169,3 +1169,8 @@ def build(scope,gomer,isStmt):
 
     return res
 
+def every(predicate,iterable):
+    for x in iterable:
+        if not predicate(x):
+            return False
+    return True

@@ -3,6 +3,7 @@
 
 import itertools,functools,re,pdb,adder.pyle,sys,types
 from adder.common import Symbol as S, gensym, mkScratch
+from adder.util import every
 import adder.runtime
 
 def maybeBegin(body):
@@ -324,18 +325,32 @@ class ReduceImport(Reducer):
             assert (isinstance(module,S)
                     or (isinstance(module,list)
                         and len(module)==3
-                        and isinstance(module[0],S)
                         and isinstance(module[1],S)
-                        and module[1] is S(':as')
-                        and isinstance(module[2],S)
+                        and (   (module[1] is S(':as')
+                                 and isinstance(module[0],S)
+                                 and isinstance(module[2],S)
+                                 )
+                             or (module[1] is S(':from')
+                                 and ((module[0] is S('*'))
+                                      or (isinstance(module[0],list)
+                                          and every(lambda x: isinstance(x,S),
+                                                    module[0])))
+                                 and isinstance(module[2],S)
+                                 )
+                                )
                         )
                     )
             if isinstance(module,S):
                 stmtCollector([S('import'),module])
                 last=module
             else:
-                stmtCollector([S('import'),module[0],module[2]])
-                last=module[2]
+                if module[1] is S(':as'):
+                    stmtCollector([S('import-as'),module[0],module[2]])
+                    last=module[2]
+                else:
+                    if module[1] is S(':from'):
+                        stmtCollector([S('import-from'),module[2],module[0]])
+                        last=None
         if not isStmt:
             return last
 

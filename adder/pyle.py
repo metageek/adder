@@ -7,6 +7,7 @@
 # for the syntax.
 
 from adder.common import Symbol as S, literable
+from adder.util import every
 import re,pdb
 
 indentStep=4
@@ -474,17 +475,32 @@ class Begin(Stmt):
             return "pass"
 
 class Import(Stmt):
-    def __init__(self,module,*,asName=None):
+    def __init__(self,module,*,asName=None,targets=None):
         assert isinstance(module,Var)
         assert (asName is None) or isinstance(asName,Var)
+        assert ((targets is None)
+                or (isinstance(targets,Var) and targets.varSym is S('*'))
+                or (isinstance(targets,list)
+                    and every(lambda x: isinstance(x,Var),
+                              targets))
+                )
+        assert not (asName and targets)
         self.module=module
         self.asName=asName
+        self.targets=targets
 
     def __str__(self):
         if self.asName:
             return 'import %s as %s' % (str(self.module),str(self.asName))
         else:
-            return 'import %s' % str(self.module)
+            if self.targets:
+                if isinstance(self.targets,Var):
+                    targetsPy='*'
+                else:
+                    targetsPy=', '.join(map(str,self.targets))
+                return 'from %s import %s' % (str(self.module),targetsPy)
+            else:
+                return 'import %s' % str(self.module)
 
 class MkList(RValue):
     def __init__(self,items):
@@ -749,11 +765,16 @@ def build(pyle):
     if f is S('begin'):
         return Begin(list(map(build,pyle[1:])))
     if f is S('import'):
-        assert (len(pyle)==2) or (len(pyle)==3)
-        if len(pyle)==3:
-            return Import(build(pyle[1]),asName=build(pyle[2]))
-        else:
-            return Import(build(pyle[1]))
+        assert len(pyle)==2
+        return Import(build(pyle[1]))
+    if f is S('import-as'):
+        assert len(pyle)==3
+        return Import(build(pyle[1]),asName=build(pyle[2]))
+    if f is S('import-from'):
+        assert len(pyle)==3
+        return Import(build(pyle[1]),
+                      targets=(build(pyle[2]) if pyle[2] is S('*')
+                               else list(map(build,pyle[2]))))
     if f is S('.'):
         assert len(pyle)>2
         return Dot(build(pyle[1]),
