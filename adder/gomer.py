@@ -276,6 +276,8 @@ class ReduceClass(Reducer):
         if not isStmt:
             return name
 
+debug=False
+
 class ReduceAssign(Reducer):
     def isSimple(self,rhs):
         if not isinstance(rhs,list):
@@ -291,16 +293,29 @@ class ReduceAssign(Reducer):
         return True
 
     def reduce(self,gomer,isStmt,stmtCollector,inClass):
+        global debug
+        if debug:
+            pdb.set_trace()
         lhs=gomer[1]
         rhs=gomer[2]
         assert (isinstance(lhs,S)
                 or (isinstance(lhs,list)
+                    and len(lhs)==3
                     and isinstance(lhs[0],S)
                     and (lhs[0] is S('.') or lhs[0] is S('[]'))
                     ))
         rhsExpr=reduce(rhs,False,stmtCollector,inAssignment=True)
+        if (isinstance(lhs,list)
+            and lhs[0] is S('[]')):
+            lhsArray=(lhs[1] if self.isSimple(lhs[1])
+                      else reduce(lhs[1],False,stmtCollector,
+                                  inAssignment=True))
+            lhsIndex=(lhs[2] if self.isSimple(lhs[2])
+                      else reduce(lhs[2],False,stmtCollector,
+                                  inAssignment=True))
+            lhs=[S('[]'),lhsArray,lhsIndex]
         if self.isSimple(rhs):
-            stmtCollector([gomer[0],gomer[1],rhsExpr])
+            stmtCollector([gomer[0],lhs,rhsExpr])
         else:
             stmtCollector([S(':='),lhs,rhsExpr])
         if not isStmt:
