@@ -6,7 +6,7 @@
    (<title> "Adder: Python with a Lisp")
    )
   (<body> 
-   (<h1> "Adder: Python with a Lisp")
+   (<h1> :id 1 "Adder: Python with a Lisp")
 
    (<h2> "By " (<a> :href "/" "John Stracke"))
 

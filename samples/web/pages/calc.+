@@ -1,0 +1,14 @@
+(import (* :from htmlout))
+
+(write
+ (<html>
+  (<head> (<title> "Foolish Calculator"))
+  (<body> (<h1> "Foolish Calculator")
+          (<h2> "Input expression:")
+          (<p> @.expr)
+          (<h2> "Result:")
+          (<p> (str (eval-py @.expr)))
+          )
+  )
+ )
+

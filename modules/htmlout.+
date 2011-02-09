@@ -21,15 +21,19 @@
   (mk-symbol (% "<%s>" (str tag))))
 
 (defmacro define-element (tag attrs &optional (self-closing-p false))
+  (define (strip-underscore s)
+    (if (s.startswith "_")
+        (slice s 1)
+        s))
   (:= attrs (list (expand-attr-groups attrs)))
   `(defun ,(tag-to-sym tag) (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
-     ,@(map (lambda (a) `(when ,a
+     ,@(map (lambda (a) `(when ,(mk-symbol (strip-underscore (str a)))
                                (yield " ")
-                               (yield ,(str a))
+                               (yield ,(strip-underscore (str a)))
                                (yield "=\"")
-                               (yield ,a)
+                               (yield (str ,(strip-underscore a)))
                                (yield "\"")))
             attrs)
      (yield ">")
@@ -155,13 +159,13 @@
 (define-element table (%attrs summary width border frame
                               rules cellspacing cellpadding))
 (define-element tbody (%attrs %cellhalign %cellvalign))
-(define-element td (%attrs abbr axis headers scope
+(define-element td (%attrs abbr axis headers _scope
                            rowspan colspan %cellhalign %cellvalign))
 (define-element textarea (%attrs name rows cols disabled readonly
                                  tabindex accesskey
                                  onfocus onblur onselect onchange))
 (define-element tfoot (%attrs %cellhalign %cellvalign))
-(define-element th (%attrs abbr axis headers scope
+(define-element th (%attrs abbr axis headers _scope
                            rowspan colspan %cellhalign %cellvalign))
 (define-element thead (%attrs %cellhalign %cellvalign))
 (define-element title (%i18n))
