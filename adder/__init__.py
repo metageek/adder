@@ -18,7 +18,7 @@ class Importer:
     def isNewer(f1,f2):
         stat1=os.stat(f1)
         stat2=os.stat(f2)
-        return stat1.st_atime>stat2.st_atime
+        return stat1.st_mtime>stat2.st_mtime
 
     def absolute_path(self,fullname,path=None):
         if not path:
