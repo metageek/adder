@@ -29,11 +29,11 @@
   `(defun ,(tag-to-sym tag) (&rest text-and-children &key ,@attrs)
      (yield "<")
      (yield ,(str tag))
-     ,@(map (lambda (a) `(when ,(mk-symbol (strip-underscore (str a)))
+     ,@(map (lambda (a) `(when ,a
                                (yield " ")
                                (yield ,(strip-underscore (str a)))
                                (yield "=\"")
-                               (yield (str ,(strip-underscore a)))
+                               (yield (str ,a))
                                (yield "\"")))
             attrs)
      (yield ">")
