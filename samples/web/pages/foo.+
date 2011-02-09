@@ -1,0 +1,6 @@
+(import (* :from htmlout))
+
+(write 
+ (<html> 
+  (<head> (<title> z.title))
+  (<body> (<h1> z.title))))

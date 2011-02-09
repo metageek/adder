@@ -1,0 +1,6 @@
+(import (* :from htmlout))
+
+(write 
+ (<html> 
+  (<head> (<title> "File not found"))
+  (<body> (<h1> (% "File not found: %s" file)))))

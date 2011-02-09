@@ -1,0 +1,51 @@
+(import cgi)
+(import os)
+
+(defvar cgi-fields (cgi.FieldStorage))
+
+(define (field name &optional default-value)
+  (if (in name cgi-fields)
+      (let ((f ([] cgi-fields name)))
+        (cond ((not f) default-value)
+              ((isinstance f type-list) (.value ([] f 0)))
+              (true (.value f))))
+      default-value))
+
+(define (fields name)
+  (if (in name cgi-fields)
+      (let ((f ([] cgi-fields name)))
+        (cond ((not f) '())
+              ((isinstance f type-list) (list (map .value f)))
+              (true (mk-list (.value f)))))
+      '()))
+
+(define (field-names)
+  (list ((.keys cgi-fields))))
+
+(define (file-to-load)
+  (define (path)
+    (let ((p (+ "./pages" (or (os.getenv "PATH_INFO") "/"))))
+      (if (and (os.path.exists p) (os.path.isdir p))
+          (+ p (if (p.endswith "/") "" "/") "index.+")
+          p)))
+  (let ((p (path)))
+    (if (os.path.exists p)
+        p
+        "404.+")))
+
+(print "Content-Type: text/html")
+(print "")
+(import sys)
+
+(define page-env (globals))
+
+(class O ())
+(define z (O))
+
+(for (name (field-names))
+     (python.setattr z name (field name))
+     (python.setattr z (+ name "[]") (fields name)))
+
+(:= ([] page-env "z") z)
+
+(load (file-to-load) page-env)
