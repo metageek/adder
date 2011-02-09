@@ -40,12 +40,12 @@
 (define page-env (globals))
 
 (class O ())
-(define z (O))
+(define @ (O))
 
 (for (name (field-names))
-     (python.setattr z name (field name))
-     (python.setattr z (+ name "[]") (fields name)))
+     (python.setattr @ name (field name))
+     (python.setattr @ (+ name "[]") (fields name)))
 
-(:= ([] page-env "z") z)
+(:= ([] page-env (.toPython '@)) @)
 
 (load (file-to-load) page-env)

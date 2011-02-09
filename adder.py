@@ -26,6 +26,7 @@ Options:
 progDir=os.path.dirname(__file__)
 pkgDir=os.path.join(progDir,'adder')
 sys.path.append(pkgDir)
+sys.path.append('%s/+modules+' % progDir)
 
 if not args:
     interactive=True

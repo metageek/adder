@@ -449,7 +449,7 @@ for (name,native) in [('mk-dict','nativeMkDict'),
 
 for name in ['and','or',':=','.',
              'adder','python',
-             'class','defun','lambda','defvar','scope','try',
+             'class','defun','lambda','defvar','scope','extern','try',
              'quote','backquote',
              'import',
              'if','while','break','continue','begin',
@@ -982,6 +982,13 @@ class Annotator:
                            expr[1:]))
                  ),
                 line,scope)
+
+    def annotate_extern(self,expr,line,scope,globalDict,localDict):
+        assert len(expr)==2
+        (var,varLine)=expr[1]
+        assert isinstance(var,S)
+        scope.addDef(var,None,varLine)
+        return self(expr[1],scope,globalDict,localDict)
 
 def annotate(parsedExpr,scope,globalDict,localDict):
     if globalDict is None:

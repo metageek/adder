@@ -123,6 +123,12 @@ too&mdash;in fact, they can even be imported into Python.  See
 <dd>Like <code>(begin)</code>, but introduces a new lexical scope.
   You probably want <a href="#sym_let"><code>(let)</code></a> instead.
 </dd>
+<dt><a name="sym_extern">extern</a></dt>
+<dd><code>(extern foo)</code> declares that the runtime environment
+  will contain a variable named <code>foo</code>.  Used for code which
+  is run dynamically, relying on variables set externally (e.g., HTML
+  templates).  Returns the value of <code>foo</code>.
+</dd>
 </dl>
 
 <h3><a name="BFunctions">Functions</a></h3>

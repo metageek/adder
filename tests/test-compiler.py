@@ -1278,12 +1278,15 @@ class EvalTestCase(EmptyStripTestCase):
                                      verbose=verbose,
                                      globalDict=globalDict)
 
-    def evalAdder(self,exprStr,*,scope=None,verbose=False,**globalsToSet):
+    def evalAdder(self,exprStr,*,verbose=False,
+                  scope=None,addGlobalsToScope=True,
+                  **globalsToSet):
         if scope is None:
             scope=Scope(None)
         g=mkGlobals()
         for (k,v) in globalsToSet.items():
-            scope.addDef(S(k),v,0)
+            if addGlobalsToScope:
+                scope.addDef(S(k),v,0)
             g[S("%s-1" % k).toPython()]=v
         gomer=self.clarify(exprStr,scope=scope,verbose=verbose)
         return geval(gomer,globalDict=g,verbose=verbose)
@@ -1377,6 +1380,14 @@ class EvalTestCase(EmptyStripTestCase):
 
     def testDefvar(self):
         assert self.evalAdder("(begin (defvar x 17) x)")==17
+
+    def testExtern1(self):
+        assert self.evalAdder("(extern x)",
+                              addGlobalsToScope=False,x=17)==17
+
+    def testExtern2(self):
+        assert self.evalAdder("(begin (extern x) (* x x))",
+                              addGlobalsToScope=False,x=17)==289
 
     def testDefconst(self):
         assert self.evalAdder("(begin (defconst x 17) x)")==17

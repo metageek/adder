@@ -2,5 +2,5 @@
 
 (write 
  (<html> 
-  (<head> (<title> z.title))
-  (<body> (<h1> z.title))))
+  (<head> (<title> @.title))
+  (<body> (<h1> @.title))))
