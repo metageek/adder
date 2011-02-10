@@ -1263,7 +1263,8 @@ class ParseAndStripTestCase(EmptyStripTestCase):
             S('load'),
             "prelude.+",
             [S('getScopeById'),1],
-            [S('globals')]
+            [S('globals')],
+            None
             ]
 
 class EvalTestCase(EmptyStripTestCase):
