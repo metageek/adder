@@ -178,7 +178,7 @@ class Scope:
             self.parent=parent
             self.context=self.parent.context
 
-        if self.parent:
+        if self.parent is not None:
             self.parent.addChild(self)
 
         if id is None:
@@ -205,13 +205,13 @@ class Scope:
         if self.descendants:
             self.descendants.append(child)
         else:
-            if self.parent:
+            if self.parent is not None:
                 self.parent.addChild(child)
 
     def flatten(self,*,suppress=None):
         if suppress is None:
             suppress=set()
-        assert self.parent
+        assert self.parent is not None
         cucumber={'id': self.id,
                   'parent': self.parent,
                   'readOnly': self.readOnly,
@@ -255,7 +255,7 @@ class Scope:
     def atGlobalScope(self):
         if self.isFuncScope:
             return False
-        if not self.parent:
+        if self.parent is None:
             return True
         return self.parent.atGlobalScope()
 
@@ -265,7 +265,7 @@ class Scope:
     reprForCache=False
     def __repr__(self):
         if Scope.reprForCache:
-            if self.parent:
+            if self.parent is not None:
                 return self.varNameForCache()
             else:
                 return 'adder.compiler.Scope.root'
@@ -279,8 +279,8 @@ class Scope:
                redefPermitted=False,
                isBuiltinFunc=False,
                nativeFunc=None):
-        assert not (isBuiltinFunc and self.parent)
-        assert not (nativeFunc and self.parent)
+        assert not (isBuiltinFunc and (self.parent is not None))
+        assert not (nativeFunc and (self.parent is not None))
 
         if self.isClassScope:
             ignoreScopeId=True
@@ -1034,7 +1034,7 @@ def stripAnnotations(annotated,*,quoted=False):
         and not expr.isKeyword()):
         if expr is S('&rest') or expr is S('&key') or expr is S('&optional'):
             return expr
-        if (scope.parent
+        if ((scope.parent is not None)
             and not scope.get(expr,skipClassScopes=False).ignoreScopeId):
             return S('%s-%d' % (str(expr),scope.id))
     if not (type(expr)==list and expr):
