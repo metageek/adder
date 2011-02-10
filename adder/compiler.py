@@ -198,6 +198,7 @@ class Scope:
             self.descendants=[self]
         else:
             self.descendants=None
+        self.needsToBeCached=False
 
     root=None
 
@@ -240,13 +241,15 @@ class Scope:
     def dump(self,outputStream):
         oldReprForCache=Scope.reprForCache
         Scope.reprForCache=True
+        self.needsToBeCached=True
         for scope in self.descendants:
-            outputStream.writelines([
-                    scope.varNameForCache(),
-                    '=adder.compiler.Scope.expand(',
-                    repr(scope.flatten(suppress={S('current-scope')})),
-                    ')\n'
-                    ])
+            if scope.needsToBeCached:
+                outputStream.writelines([
+                        scope.varNameForCache(),
+                        '=adder.compiler.Scope.expand(',
+                        repr(scope.flatten(suppress={S('current-scope')})),
+                        ')\n'
+                        ])
         outputStream.writelines(['__adder__module_scope__=',
                                  self.varNameForCache(),
                                  '\n'])
@@ -264,6 +267,7 @@ class Scope:
 
     reprForCache=False
     def __repr__(self):
+        self.needsToBeCached=True
         if Scope.reprForCache:
             if self.parent is not None:
                 return self.varNameForCache()
