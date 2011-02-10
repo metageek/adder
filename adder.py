@@ -35,8 +35,13 @@ import adder.repl
 repl=adder.repl.Repl(interactive=interactive)
 
 def doIt():
+    if '--cache' in args:
+        assert len(args)==2 and args[0]=='--cache' and args[1]!='--cache'
+        cache=True
+    else:
+        cache=False
     for f in args:
-        repl.load(f)
+        repl.load(f,cache=cache)
 
     if interactive:
         repl.run()

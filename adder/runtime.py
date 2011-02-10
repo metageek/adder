@@ -18,20 +18,8 @@ def eval(adderCode,scope,globalDict,localDict):
     return geval(gomer,globalDict=globalDict,localDict=localDict)
 
 def load(f,scope,globalDict,cache):
-    from adder.compiler import loadFile
-    if cache and f.endswith('.+'):
-        cacheOutputFileName=f[:-2]+'.py'
-        if (os.path.exists(cacheOutputFileName)
-            and adder.util.isNewer(cacheOutputFileName,f)):
-            code=open(cacheOutputFileName,'r').read()
-            exec(code,globalDict)
-            return globalDict.get(S('__adder__last__').toPython(),None)
-        else:
-            cacheOutputFile=open(cacheOutputFileName,'w')
-    else:
-        cacheOutputFile=None
-    (lastValue,globalDict)=loadFile(f,scope,globalDict,
-                                    cacheOutputFile=cacheOutputFile)
+    (lastValue,globalDict)=adder.compiler.loadFile(f,scope,globalDict,
+                                                   cache=cache)
     return lastValue
 
 def adder_function_wrapper(fSym,args,scopeOrId):

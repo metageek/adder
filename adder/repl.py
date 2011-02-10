@@ -47,8 +47,8 @@ class Repl:
             if interactive:
                 self.outstream.write('done.\n')
 
-    def load(self,f):
-        self.context.load(f)
+    def load(self,f,*,cache=False):
+        self.context.load(f,cache=cache)
 
     def run(self):
         def exceptionHandler(e):

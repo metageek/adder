@@ -1,6 +1,6 @@
 import pdb,os,pickle,io
 from adder.common import Symbol as S, gensym, q, literable, mkScratch
-import adder.gomer,adder.parser
+import adder.gomer,adder.parser,adder.util
 
 def const(expr):
     if type(expr)==tuple:
@@ -1103,12 +1103,26 @@ def tagWithIsLast(g):
     if prevValid:
         yield (prev,True)
 
-def loadFile(f,scope,globalDict,*,inSrcDir=False,cacheOutputFile=None):
+def loadFile(f,scope,globalDict,*,
+             inSrcDir=False,
+             cacheOutputFile=None,
+             cache=False):
     if scope is None:
         scope=Scope(None)
     if globalDict is None:
         globalDict=adder.gomer.mkGlobals()
     res=None
+
+    if cache and (cacheOutputFile is None) and f.endswith('.+'):
+        cacheOutputFileName=f[:-2]+'.py'
+        if (os.path.exists(cacheOutputFileName)
+            and adder.util.isNewer(cacheOutputFileName,f)):
+            code=open(cacheOutputFileName,'r').read()
+            exec(code,globalDict)
+            return (globalDict.get(S('__adder__last__').toPython(),None),
+                    globalDict)
+        else:
+            cacheOutputFile=open(cacheOutputFileName,'w')
 
     if inSrcDir:
         srcFile=loadFile.__code__.co_filename
@@ -1147,10 +1161,11 @@ python=adder.gomer.mkPython()
         if loadPrelude:
             self.load('prelude.+',inSrcDir=True)
 
-    def load(self,f,*,inSrcDir=False):
+    def load(self,f,*,inSrcDir=False,cache=False):
         loadFile(f,self.scope,self.globals,
                  inSrcDir=inSrcDir,
-                 cacheOutputFile=self.cacheBodyStream)
+                 cacheOutputFile=self.cacheBodyStream,
+                 cache=cache)
 
     def eval(self,expr,*,verbose=False,hasLines=False,defLine=0,
              printCompilationExn=True):
