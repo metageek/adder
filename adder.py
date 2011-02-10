@@ -4,7 +4,10 @@ import sys,os,getopt
 
 interactive=False
 profile=False
-(opts,args)=getopt.getopt(sys.argv[1:],"h?i",["help","interactive","profile"])
+cache=False
+
+(opts,args)=getopt.getopt(sys.argv[1:],"h?i",
+                          ["help","interactive","profile","cache"])
 for (opt,optval) in opts:
     if opt in ["-h","-?","--help"]:
         print("""Usage: %s [OPTIONS] [FILE]...
@@ -22,6 +25,9 @@ Options:
     if opt=='--profile':
         profile=True
         continue
+    if opt=='--cache':
+        cache=True
+        continue
 
 progDir=os.path.dirname(__file__)
 pkgDir=os.path.join(progDir,'adder')
@@ -35,11 +41,9 @@ import adder.repl
 repl=adder.repl.Repl(interactive=interactive)
 
 def doIt():
-    if '--cache' in args:
-        assert len(args)==2 and args[0]=='--cache' and args[1]!='--cache'
-        cache=True
-    else:
-        cache=False
+    if cache:
+        assert len(args)==1
+
     for f in args:
         repl.load(f,cache=cache)
 
