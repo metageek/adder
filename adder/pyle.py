@@ -466,13 +466,13 @@ class Begin(Stmt):
         return '{%s}' % '; '.join(map(str,self.stmts))
 
     def toPythonTree(self):
-        t=tuple(map(toPythonTree,self.stmts))
-        if t:
-            if len(t)>1:
-                return t
-            return t[0]
-        else:
+        if not self.stmts:
             return "pass"
+
+        if len(self.stmts)==1:
+            return toPythonTree(self.stmts[0])
+
+        return tuple(map(toPythonTree,self.stmts))
 
 class Import(Stmt):
     def __init__(self,module,*,asName=None,targets=None):
