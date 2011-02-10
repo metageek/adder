@@ -17,6 +17,8 @@ in interactive mode.
 Options:
   -i, --interactive    Run in interactive mode after loading files (if any).
   -h, -?, --help       This help.
+  --cache              Cache the script.  Works only with one script;
+                         not compatible with interactive mode.
 """ % sys.argv[0])
         sys.exit()
     if opt in ["-i","--interactive"]:
@@ -37,18 +39,33 @@ sys.path.append('%s/+modules+' % progDir)
 if not args:
     interactive=True
 
-import adder.repl
-repl=adder.repl.Repl(interactive=interactive)
+if cache:
+    assert (not interactive) and len(args)==1 and args[0].endswith('.+')
+
 
 def doIt():
     if cache:
-        assert len(args)==1
+        import adder.compiler,adder.util,adder.gomer
+        f=args[0]
+        cacheOutputFileName=f[:-2]+'.py'
+        if (os.path.exists(cacheOutputFileName)
+            and adder.util.isNewer(cacheOutputFileName,f)):
+            code=open(cacheOutputFileName,'r').read()
+            exec(code,adder.gomer.mkGlobals())
+        else:
+            context=adder.compiler.Context(cacheOutputFileName=
+                                           cacheOutputFileName)
+            context.load(args[0])
+            context.close(cacheSymbols=False)
 
-    for f in args:
-        repl.load(f,cache=cache)
+    else:
+        import adder.repl
+        repl=adder.repl.Repl(interactive=interactive)
+        for f in args:
+            repl.load(f)
 
-    if interactive:
-        repl.run()
+        if interactive:
+            repl.run()
 
 if profile:
     import cProfile

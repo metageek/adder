@@ -1189,7 +1189,7 @@ python=adder.gomer.mkPython()
         self.scope.addDef(S(name),value,0,redefPermitted=True)
         self.globals[S("%s-%d" % (name,self.scope.id)).toPython()]=value
 
-    def close(self):
+    def close(self,cacheSymbols=True):
         if self.cacheOutputFile:
             self.cacheOutputFile.write('\n\n')
             self.scope.dump(self.cacheOutputFile)
@@ -1199,23 +1199,24 @@ python=adder.gomer.mkPython()
             self.cacheOutputFile.write(self.cacheBodyStream.read())
 
             self.cacheOutputFile.write('\n\n')
-            for varName in self.scope.iterDontAscend():
-                if varName not in Scope.root:
-                    entry=self.scope[varName]
-                    if not (entry.macroExpander
-                            or entry.isBuiltinFunc):
-                        scopedVarName=S('%s-%d' % (str(varName),
-                                                  self.scope.id))
-                        pyVarName=scopedVarName.toPython()
-                        self.cacheOutputFile.write('%s=%s\n'
-                                                   % (varName.toPython(),
-                                                      pyVarName))
-                        # TODO: is this necessary? If it's legal
-                        # Python, then varName.toPython() is just
-                        # varName, right?
-                        if varName.isLegalPython():
+            if cacheSymbols:
+                for varName in self.scope.iterDontAscend():
+                    if varName not in Scope.root:
+                        entry=self.scope[varName]
+                        if not (entry.macroExpander
+                                or entry.isBuiltinFunc):
+                            scopedVarName=S('%s-%d' % (str(varName),
+                                                      self.scope.id))
+                            pyVarName=scopedVarName.toPython()
                             self.cacheOutputFile.write('%s=%s\n'
-                                                       % (varName,
+                                                       % (varName.toPython(),
                                                           pyVarName))
+                            # TODO: is this necessary? If it's legal
+                            # Python, then varName.toPython() is just
+                            # varName, right?
+                            if varName.isLegalPython():
+                                self.cacheOutputFile.write('%s=%s\n'
+                                                           % (varName,
+                                                              pyVarName))
 
             self.cacheOutputFile.flush()
