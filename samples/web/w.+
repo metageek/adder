@@ -48,4 +48,4 @@
 
 (:= ([] page-env (.toPython '@)) @)
 
-(load (file-to-load) page-env)
+(load (file-to-load) page-env :cache true)

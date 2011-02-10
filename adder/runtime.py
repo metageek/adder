@@ -1,5 +1,6 @@
+import os
 from adder.common import gensym, Symbol as S
-import adder.compiler
+import adder.compiler,adder.util
 import pdb
 
 def getScopeById(id):
@@ -16,9 +17,21 @@ def eval(adderCode,scope,globalDict,localDict):
                                                                   localDict))
     return geval(gomer,globalDict=globalDict,localDict=localDict)
 
-def load(f,scope,globalDict):
+def load(f,scope,globalDict,cache):
     from adder.compiler import loadFile
-    (lastValue,globalDict)=loadFile(f,scope,globalDict)
+    if cache and f.endswith('.+'):
+        cacheOutputFileName=f[:-2]+'.py'
+        if (os.path.exists(cacheOutputFileName)
+            and adder.util.isNewer(cacheOutputFileName,f)):
+            code=open(cacheOutputFileName,'r').read()
+            exec(code,globalDict)
+            return globalDict.get(S('__adder__last__').toPython(),None)
+        else:
+            cacheOutputFile=open(cacheOutputFileName,'w')
+    else:
+        cacheOutputFile=None
+    (lastValue,globalDict)=loadFile(f,scope,globalDict,
+                                    cacheOutputFile=cacheOutputFile)
     return lastValue
 
 def adder_function_wrapper(fSym,args,scopeOrId):

@@ -456,7 +456,8 @@ for name in ['and','or',':=','.',
              'yield', 'return','raise',
              'defconst',
              #'getScopeById','globals','locals',
-             'defmacro','adder_function_wrapper'
+             'defmacro','adder_function_wrapper',
+             '__adder__last__'
              ]:
     Scope.root.addDef(S(name),None,0,redefPermitted=True,isBuiltinFunc=True)
     Scope.root.addDef(S(name),None,0,redefPermitted=True)
@@ -664,16 +665,38 @@ class Annotator:
                  adderArg,scopeArg,globalArg,localArg],line,scope)
     
     def annotate_load(self,expr,line,scope,globalDict,localDict):
-        assert len(expr)>=2 and len(expr)<=3
+        assert len(expr)>=2
+        cacheArg=None
         fileArg=self(expr[1],scope,globalDict,localDict)
         scopeArg=self((S('current-scope'),line),scope,globalDict,localDict)
-        if len(expr)==3:
-            globalArg=self(expr[2],scope,globalDict,localDict)
-        else:
+        globalArg=None
+        if len(expr)>2:
+            i=2
+            sawKeyword=False
+            while i<len(expr):
+                (arg,argLine)=expr[i]
+                if isinstance(arg,S) and arg.isKeyword():
+                    assert (i+1)<len(expr)
+                    value=self(expr[i+1],scope,globalDict,localDict)
+                    assert(arg is S(':cache'))
+                    assert(cacheArg is None)
+                    cacheArg=value
+                    sawKeyword=True
+                    i+=2
+                else:
+                    assert(not sawKeyword)
+                    assert(globalArg is None)
+                    globalArg=self(expr[i],scope,globalDict,localDict)
+                    i+=1
+
+        if globalArg is None:
             globalArg=self(([(S('globals'),line)],line),scope,
                            globalDict,localDict)
+        if cacheArg is None:
+            cacheArg=self((S('none'),line),scope,
+                           globalDict,localDict)
         return ([self(expr[0],scope,globalDict,localDict,asFunc=True),
-                 fileArg,scopeArg,globalArg],line,scope)
+                 fileArg,scopeArg,globalArg,cacheArg],line,scope)
 
     def annotate_exec_py(self,expr,line,scope,globalDict,localDict):
         assert len(expr)>=2 and len(expr)<=4
@@ -1069,6 +1092,17 @@ def compileAndEval(expr,scope,globalDict,localDict,*,
                              verbose=verbose,
                              cacheOutputFile=cacheOutputFile)
 
+def tagWithIsLast(g):
+    prev=None
+    prevValid=False
+    for x in g:
+        if prevValid:
+            yield (prev,False)
+        prev=x
+        prevValid=True
+    if prevValid:
+        yield (prev,True)
+
 def loadFile(f,scope,globalDict,*,inSrcDir=False,cacheOutputFile=None):
     if scope is None:
         scope=Scope(None)
@@ -1081,7 +1115,12 @@ def loadFile(f,scope,globalDict,*,inSrcDir=False,cacheOutputFile=None):
         srcDir=os.path.split(srcFile)[0]
         f=os.path.join(srcDir,f)
 
-    for parsedExpr in adder.parser.parseFile(f):
+    for (parsedExpr,isLast) in tagWithIsLast(adder.parser.parseFile(f)):
+        if isLast and cacheOutputFile:
+            line=parsedExpr[1]
+            parsedExpr=([(S(':='),line),
+                         (S('__adder__last__'),line),
+                         parsedExpr],line)
         res=compileAndEval(parsedExpr,scope,
                            globalDict,None,
                            hasLines=True,

@@ -1,5 +1,4 @@
-# Utilities extracted from the old gomer.py.  Will be discarded or
-# incorporated into compiler.py, as appropriate.
+import os
 
 def q(x):
     return [S('quote'),x]
@@ -1174,3 +1173,9 @@ def every(predicate,iterable):
         if not predicate(x):
             return False
     return True
+
+def isNewer(f1,f2):
+    stat1=os.stat(f1)
+    stat2=os.stat(f2)
+    return stat1.st_mtime>stat2.st_mtime
+

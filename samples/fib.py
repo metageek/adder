@@ -1,0 +1,20 @@
+def _adder_fib_002d1031743189():
+    _adder_n1_002d1116180139=1
+    _adder_n2_002d1116180139=1
+    _adder_tmp_002d1116180139=None
+    yield _adder_n1_002d1116180139
+    yield _adder_n2_002d1116180139
+    _adder__0023_003cgensym_002dwhile_0020_0023558_003e=None
+    while True:
+        _adder_tmp_002d1116180139=_adder_n1_002d1116180139+_adder_n2_002d1116180139
+        yield _adder_tmp_002d1116180139
+        _adder_n1_002d1116180139=_adder_n2_002d1116180139
+        _adder_n2_002d1116180139=_adder_tmp_002d1116180139
+        _adder__0023_003cgensym_002dwhile_0020_0023558_003e=_adder_n2_002d1116180139
+_adder__0023_003cgensym_002dres_0020_0023559_003e=_adder_fib_002d1031743189
+_adder__0023_003cgensym_002dscratch_0020_0023560_003e=_adder_fib_002d1031743189()
+_adder__0023_003cgensym_002dscratch_0020_0023561_003e=_adder_take_002d1031743189(_adder__0023_003cgensym_002dscratch_0020_0023560_003e,5)
+_adder__0023_003cgensym_002dscratch_0020_0023562_003e=list(_adder__0023_003cgensym_002dscratch_0020_0023561_003e)
+print(_adder__0023_003cgensym_002dscratch_0020_0023562_003e)
+__adder__last__=_adder__0023_003cgensym_002dscratch_0020_0023562_003e
+_adder__0023_003cgensym_002dres_0020_0023563_003e=__adder__last__

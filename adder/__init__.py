@@ -15,11 +15,6 @@ class Importer:
     def __str__(self):
         return '<%s for "%s">' % (self.__class__.__name__, self.path)
 
-    def isNewer(f1,f2):
-        stat1=os.stat(f1)
-        stat2=os.stat(f2)
-        return stat1.st_mtime>stat2.st_mtime
-
     def absolute_path(self,fullname,path=None):
         if not path:
             path=self.path
@@ -46,8 +41,7 @@ class Importer:
 
         (adderSource,pySource,isPkg)=found
         if not (os.path.isfile(pySource)
-                and Importer.isNewer(pySource,
-                                     adderSource)
+                and adder.util.isNewer(pySource,adderSource)
                 ):
             context=adder.compiler.Context(cacheOutputFileName=pySource)
             context.load(adderSource)
