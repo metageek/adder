@@ -237,6 +237,12 @@
        (define (__str__ self)
          (% "Non-root enum %s attempts to add a new value, %s."
             self.args)))
+(class NonRootValueWithInvalidBase (HasParentMismatch)
+       (define (__init__ self name value-name)
+         ((. HasParentMismatch __init__) self name value-name))
+       (define (__str__ self)
+         (% "Non-root enum %s has a value, %s, which is not a value of the base enum."
+            self.args)))
 
 (defmacro enum (name-and-maybe-parent &rest values)
   (define (pred-name name)
@@ -252,8 +258,11 @@
                    ([] name-and-maybe-parent 0)
                    name-and-maybe-parent))
          (name? (pred-name name))
+         (parent (if has-parent
+                     ([] name-and-maybe-parent 1)))
+         (parent? (if parent (pred-name parent)))
          (parent-list (if has-parent
-                          `(,([] name-and-maybe-parent 1))
+                          `(,parent)
                           '())))
     (+ `(begin
           (class ,name ,parent-list)
@@ -265,14 +274,21 @@
                                     ([] v 0)))
                         (v-has-parent (not (or (symbol? v)
                                              (keyword? ([] v 1)))))
+                        (v-parent (if v-has-parent
+                                      ([] v 1)))
                         (v-parents (if v-has-parent
-                                       `(,name ,([] v 1))
+                                       `(,name ,v-parent)
                                        `(,name))))
                    (when (and has-parent (not v-has-parent))
                          (raise (NonRootEnumWithRootValue name v-name)))
                    (when (and (not has-parent) v-has-parent)
                          (raise (RootEnumWithParentValue name v-name)))
-                   `(begin (class ,v-name ,v-parents
+                   `(begin ,@(if v-has-parent
+                                 `((unless (,parent? ,v-parent)
+                                     (raise (NonRootValueWithInvalidBase
+                                             (quote ,name) (quote ,v-name)))))
+                                 '())
+                           (class ,v-name ,v-parents
                            ,@(if (symbol? v)
                                  '()
                                  (list (extract-fields
