@@ -1,0 +1,65 @@
+(enum HTTP
+      Informational
+      Successful
+      Redirection
+      ClientError
+      ServerError)
+
+(enum HTTP100
+      (Continue Informational)
+      (SwitchingProtocol Informational))
+
+(enum HTTP200
+      (OK Successful)
+      (Created Successful)
+      (Accepted Successful)
+      (NonAuthoritativeInformation Successful)
+      (NoContent Successful)
+      (ResetContent Successful)
+      (PartialContent Successful))
+
+(enum HTTP300
+      (MultipleChoices Redirection)
+      (MovedPermanently Redirection)
+      (Found Redirection)
+      (SeeOther Redirection)
+      (NotModified Redirection)
+      (UseProxy Redirection)
+      (TemporaryRedirect Redirection))
+
+(enum HTTP400
+      (BadRequest ClientError)
+      (Unauthorized ClientError)
+      (PaymentRequired ClientError)
+      (Forbidden ClientError)
+      (NotFound ClientError)
+      (MethodNotAllowed ClientError)
+      (NotAcceptable ClientError)
+      (ProxyAuthenticationRequired ClientError)
+      (RequestTimeout ClientError)
+      (Conflict ClientError)
+      (Gone ClientError)
+      (LengthRequired ClientError)
+      (PreconditionFailed ClientError)
+      (RequestEntityTooLarge ClientError)
+      (RequestURITooLong ClientError)
+      (UnsupportedMediaType ClientError)
+      (RequestedRangeNotSatisfiable ClientError)
+      (ExpectationFailed ClientError))
+
+(enum HTTP500
+      (InternalServerError ServerError)
+      (NotImplemented ServerError)
+      (BadGateway ServerError)
+      (ServiceUnavailable ServerError)
+      (GatewayTimeout ServerError)
+      (HTTPVersionNotSupported ServerError))
+
+(print (HTTP? Informational))
+(print (Informational? Continue))
+(print (Successful? NoContent))
+(print (Successful? Continue))
+(print (Redirection? Found))
+(print (ClientError? Conflict))
+(print (ServerError? BadGateway))
+(print (HTTP500? NotImplemented))

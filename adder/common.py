@@ -164,4 +164,6 @@ def adderStr(x):
     if isFunc(x):
         if hasattr(x,'__name__'):
             return '#<FUNCTION %s>' % x.__name__
+    if type(x)==str:
+        return '"'+x.replace('"','\\"')+'"'
     return repr(x)

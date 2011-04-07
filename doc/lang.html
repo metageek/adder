@@ -129,6 +129,21 @@ too&mdash;in fact, they can even be imported into Python.  See
   is run dynamically, relying on variables set externally (e.g., HTML
   templates).  Returns the value of <code>foo</code>.
 </dd>
+<dt><a name="sym_enum">enum</a></dt>
+<dd>An extensible enumeration system.
+<code>(enum Fred Success Failure)</code> defines an enumeration
+  named <code>Fred</code>, with possible values <code>Success</code>
+  and <code>Failure</code>.  <code>(enum (Barney Fred) (Created
+  Success) (Fetched Success))</code> extends the enumeration with more
+  specific values.  You can then use the
+  predicates <code>Fred?</code>, <code>Barney?</code>, <code>Success?</code>,
+  <code>Failure?</code>, <code>Created?</code>,
+  and <code>Fetched?</code> to test enumeration values.  Credit goes
+  to <a href="http://jducoeur.livejournal.com/653992.html">Mark
+  Waks</a>
+  for this idea.  (If that Livejournal link doesn't work, try
+  <a href="http://jducoeur.dreamwidth.org/975.html">Dreamwidth</a>.)
+</dd>
 </dl>
 
 <h3><a name="BFunctions">Functions</a></h3>

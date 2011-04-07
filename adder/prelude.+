@@ -67,6 +67,9 @@
 (defun str? (x) (isinstance x type-str))
 (defun generator? (x) (isinstance x type-generator))
 
+(defun mapcar (f l)
+  (list (map f l)))
+
 (defmacro let* (decls &rest body)
   `(scope
     ,@(map (lambda (def)
@@ -204,3 +207,46 @@
                      ((. ,stack append) ,x)
                      (break))
                    (yield ,x)))))))))
+
+(define (ancestors klass)
+  (let ((as (mk-set)))
+    (define (add-ancestors k)
+      (unless (in k as)
+              (as.add k)
+              (for (base k.__bases__)
+                   (add-ancestors base))))
+    (add-ancestors klass)
+    as))
+
+(define (descends-from a b)
+  (in b (ancestors a)))
+
+(defmacro enum (name-and-maybe-parent &rest values)
+  (define (pred-name name)
+    (intern (+ (str name) "?")))
+  (let* ((name (if (symbol? name-and-maybe-parent)
+                   name-and-maybe-parent
+                   ([] name-and-maybe-parent 0)))
+         (name? (pred-name name))
+         (parent-list (if (symbol? name-and-maybe-parent)
+                          '()
+                          `(,([] name-and-maybe-parent 1)))))
+    (+ `(begin
+          (class ,name ,parent-list)
+          (define (,name? e) (descends-from e ,name))
+          )
+       (mapcar (lambda (v)
+                 (let ((v-name (if (symbol? v)
+                                   v
+                                   ([] v 0)))
+                       (v-parents (if (symbol? v)
+                                      `(,name)
+                                      `(,name ,([] v 1)))))
+                   `(begin (class ,v-name ,v-parents)
+                           (define (,(pred-name v-name) e)
+                             (descends-from e ,v-name)))
+                   ))
+               values)
+       )
+    )
+  )

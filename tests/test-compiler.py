@@ -2502,6 +2502,25 @@ z
   (+ foo "bar"))
 """)=="foobar"
 
+    def testEnum(self):
+        assert self.e("""
+(enum Fred Success Failure)
+(enum (Barney Fred) (Created Success) (Fetched Success))
+(enum (Wilma Fred) (Forbidden Failure) (DoesNotExist Failure))
+(mk-list (Fred? Success) (Fred? Failure)
+         (Fred? Created) (Fred? Fetched)
+         (Success? Created) (Success? Fetched)
+         (Barney? Created) (Barney? Fetched)
+         (Fred? Forbidden) (Fred? DoesNotExist)
+         (Failure? Forbidden) (Failure? DoesNotExist)
+         (Wilma? Forbidden) (Wilma? DoesNotExist)
+         (Success? Forbidden) (Success? DoesNotExist)
+         (Barney? Forbidden) (Barney? DoesNotExist)
+         (Failure? Created) (Failure? Fetched)
+         (Wilma? Created) (Wilma? Fetched)
+)
+""")==(([True]*14)+([False]*8))
+
 suite=unittest.TestSuite(
     (
       unittest.makeSuite(AnnotateTestCase,'test'),
