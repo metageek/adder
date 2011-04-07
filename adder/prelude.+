@@ -63,6 +63,7 @@
 (defun set? (x) (isinstance x type-set))
 (defun dict? (x) (isinstance x type-dict))
 (defun symbol? (x) (isinstance x type-symbol))
+(defun keyword? (x) (and (symbol? x) (== ([] (str x) 0) ":")))
 (defun int? (x) (isinstance x type-int))
 (defun str? (x) (isinstance x type-str))
 (defun generator? (x) (isinstance x type-generator))
@@ -224,7 +225,7 @@
 (defmacro enum (name-and-maybe-parent &rest values)
   (define (pred-name name)
     (intern (+ (str name) "?")))
-  (define (extract-fields name paired)
+  (define (extract-fields paired)
     (while paired
            (let ((field (intern (slice (str ([] paired 0)) 1)))
                  (rhs ([] paired 1)))
@@ -245,14 +246,19 @@
                  (let ((v-name (if (symbol? v)
                                    v
                                    ([] v 0)))
-                       (v-parents (if (symbol? v)
+                       (v-parents (if (or (symbol? v)
+                                          (keyword? ([] v 1)))
                                       `(,name)
                                       `(,name ,([] v 1))))
                        )
                    `(begin (class ,v-name ,v-parents
                            ,@(if (symbol? v)
                                  '()
-                                 (list (extract-fields v-name (slice v 2)))))
+                                 (list (extract-fields
+                                        (slice v
+                                               (if (keyword? ([] v 1))
+                                                   1
+                                                   2))))))
                            (define (,(pred-name v-name) e)
                              (descends-from e ,v-name)))
                    ))

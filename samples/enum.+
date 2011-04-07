@@ -1,9 +1,9 @@
 (enum HTTP
-      Informational
-      Successful
-      Redirection
-      ClientError
-      ServerError)
+      (Informational :status 100)
+      (Successful :status 200)
+      (Redirection :status 300)
+      (ClientError :status 400)
+      (ServerError :status 500))
 
 (enum (HTTP100 HTTP)
       (Continue Informational :status 100)
@@ -65,3 +65,4 @@
 (print (HTTP500? NotImplemented))
 (print (Continue.status))
 (print (NotFound.status))
+(print (Informational.status))

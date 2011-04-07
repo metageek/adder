@@ -139,9 +139,12 @@ too&mdash;in fact, they can even be imported into Python.  See
   predicates <code>Fred?</code>, <code>Barney?</code>, <code>Success?</code>,
   <code>Failure?</code>, <code>Created?</code>,
   and <code>Fetched?</code> to test enumeration values.  Fields can be
-  added: <code>(enum (Barney Fred) (Created Success :x 1))</code>
-  defines <code>Success</code> such that <code>(Success.x)</code>
-  returns 1.
+  added, by having enumeration values defined with the syntax
+  <code>(Created Success :x 1)</code> or
+  <code>(Success :x 17)</code>.  Fields are defined as methods on the
+  enumeration value, so that, in this case, <code>(Created.x)</code>
+  returns 1 and <code>(Success.x)</code>
+  returns 17.
   Credit for this idea goes
   to <a href="http://jducoeur.livejournal.com/653992.html">Mark
   Waks</a>.  (If that Livejournal link doesn't work, try
