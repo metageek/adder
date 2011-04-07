@@ -224,6 +224,12 @@
 (defmacro enum (name-and-maybe-parent &rest values)
   (define (pred-name name)
     (intern (+ (str name) "?")))
+  (define (extract-fields name paired)
+    (while paired
+           (let ((field (intern (slice (str ([] paired 0)) 1)))
+                 (rhs ([] paired 1)))
+             (yield `(define (,field) ,rhs))
+             (:= paired (slice paired 2)))))
   (let* ((name (if (symbol? name-and-maybe-parent)
                    name-and-maybe-parent
                    ([] name-and-maybe-parent 0)))
@@ -241,8 +247,12 @@
                                    ([] v 0)))
                        (v-parents (if (symbol? v)
                                       `(,name)
-                                      `(,name ,([] v 1)))))
-                   `(begin (class ,v-name ,v-parents)
+                                      `(,name ,([] v 1))))
+                       )
+                   `(begin (class ,v-name ,v-parents
+                           ,@(if (symbol? v)
+                                 '()
+                                 (list (extract-fields v-name (slice v 2)))))
                            (define (,(pred-name v-name) e)
                              (descends-from e ,v-name)))
                    ))
