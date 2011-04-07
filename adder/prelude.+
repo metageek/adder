@@ -18,6 +18,7 @@
 (defconst type-generator (. python types GeneratorType))
 (defconst gensym (. adder common gensym))
 (defconst intern (. adder common Symbol))
+(defconst Exception (. python Exception))
 
 (defmacro dp (expr)
   (defvar scratch (gensym))
@@ -222,6 +223,21 @@
 (define (descends-from a b)
   (in b (ancestors a)))
 
+(class InvalidEnumDeclaration (Exception))
+(class HasParentMismatch (InvalidEnumDeclaration))
+(class RootEnumWithParentValue (HasParentMismatch)
+       (define (__init__ self name value-name)
+         ((. HasParentMismatch __init__) self name value-name))
+       (define (__str__ self)
+         (% "Root enum %s has a non-root value, %s."
+            self.args)))
+(class NonRootEnumWithRootValue (HasParentMismatch)
+       (define (__init__ self name value-name)
+         ((. HasParentMismatch __init__) self name value-name))
+       (define (__str__ self)
+         (% "Non-root enum %s attempts to add a new value, %s."
+            self.args)))
+
 (defmacro enum (name-and-maybe-parent &rest values)
   (define (pred-name name)
     (intern (+ (str name) "?")))
@@ -231,34 +247,36 @@
                  (rhs ([] paired 1)))
              (yield `(define (,field) ,rhs))
              (:= paired (slice paired 2)))))
-  (let* ((name (if (symbol? name-and-maybe-parent)
-                   name-and-maybe-parent
-                   ([] name-and-maybe-parent 0)))
+  (let* ((has-parent (not (symbol? name-and-maybe-parent)))
+         (name (if has-parent
+                   ([] name-and-maybe-parent 0)
+                   name-and-maybe-parent))
          (name? (pred-name name))
-         (parent-list (if (symbol? name-and-maybe-parent)
-                          '()
-                          `(,([] name-and-maybe-parent 1)))))
+         (parent-list (if has-parent
+                          `(,([] name-and-maybe-parent 1))
+                          '())))
     (+ `(begin
           (class ,name ,parent-list)
           (define (,name? e) (descends-from e ,name))
           )
        (mapcar (lambda (v)
-                 (let ((v-name (if (symbol? v)
-                                   v
-                                   ([] v 0)))
-                       (v-parents (if (or (symbol? v)
-                                          (keyword? ([] v 1)))
-                                      `(,name)
-                                      `(,name ,([] v 1))))
-                       )
+                 (let* ((v-name (if (symbol? v)
+                                    v
+                                    ([] v 0)))
+                        (v-has-parent (not (or (symbol? v)
+                                             (keyword? ([] v 1)))))
+                        (v-parents (if v-has-parent
+                                       `(,name ,([] v 1))
+                                       `(,name))))
+                   (when (and has-parent (not v-has-parent))
+                         (raise (NonRootEnumWithRootValue name v-name)))
+                   (when (and (not has-parent) v-has-parent)
+                         (raise (RootEnumWithParentValue name v-name)))
                    `(begin (class ,v-name ,v-parents
                            ,@(if (symbol? v)
                                  '()
                                  (list (extract-fields
-                                        (slice v
-                                               (if (keyword? ([] v 1))
-                                                   1
-                                                   2))))))
+                                        (slice v (if v-has-parent 2 1))))))
                            (define (,(pred-name v-name) e)
                              (descends-from e ,v-name)))
                    ))
