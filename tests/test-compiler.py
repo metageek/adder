@@ -2505,8 +2505,8 @@ z
     def testEnum(self):
         assert self.e("""
 (enum Fred Success Failure)
-(enum (Barney Fred) (Created Success) (Fetched Success))
-(enum (Wilma Fred) (Forbidden Failure) (DoesNotExist Failure))
+(enum (Barney Fred) (Created Success :x 1) (Fetched Success :x 2))
+(enum (Wilma Fred) (Forbidden Failure :x 3) (DoesNotExist Failure :x 4))
 (mk-list (Fred? Success) (Fred? Failure)
          (Fred? Created) (Fred? Fetched)
          (Success? Created) (Success? Fetched)
@@ -2518,8 +2518,9 @@ z
          (Barney? Forbidden) (Barney? DoesNotExist)
          (Failure? Created) (Failure? Fetched)
          (Wilma? Created) (Wilma? Fetched)
+         (Created.x) (Fetched.x) (Forbidden.x) (DoesNotExist.x)
 )
-""")==(([True]*14)+([False]*8))
+""")==(([True]*14)+([False]*8)+[1,2,3,4])
 
 suite=unittest.TestSuite(
     (
