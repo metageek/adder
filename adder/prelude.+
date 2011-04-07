@@ -210,19 +210,6 @@
                      (break))
                    (yield ,x)))))))))
 
-(define (ancestors klass)
-  (let ((as (mk-set)))
-    (define (add-ancestors k)
-      (unless (in k as)
-              (as.add k)
-              (for (base k.__bases__)
-                   (add-ancestors base))))
-    (add-ancestors klass)
-    as))
-
-(define (descends-from a b)
-  (in b (ancestors a)))
-
 (class InvalidEnumDeclaration (Exception))
 (class HasParentMismatch (InvalidEnumDeclaration))
 (class RootEnumWithParentValue (HasParentMismatch)
@@ -253,6 +240,11 @@
                  (rhs ([] paired 1)))
              (yield `(define (,field) ,rhs))
              (:= paired (slice paired 2)))))
+  (define (ancestors-with-self c)
+    (let ((cur c))
+      (while cur
+             (yield cur)
+             (:= cur (. cur *parent*)))))
   (let* ((has-parent (not (symbol? name-and-maybe-parent)))
          (name (if has-parent
                    ([] name-and-maybe-parent 0)
@@ -265,8 +257,18 @@
                           `(,parent)
                           '())))
     (+ `(begin
-          (class ,name ,parent-list)
-          (define (,name? e) (descends-from e ,name))
+          (class ,name ,parent-list
+                 (define *descendants* (mk-set))
+                 (define (*add-descendant* d)
+                   ((. ,name *descendants* add) d)
+                   ,@(if parent
+                         `(((. ,parent *add-descendant*) d))
+                         '()))
+                 )
+          (define (,name? e) (in e (. ,name *descendants*)))
+          ,@(if parent
+                `(((. ,parent *add-descendant*) ,name))
+                '())
           )
        (mapcar (lambda (v)
                  (let* ((v-name (if (symbol? v)
@@ -292,9 +294,22 @@
                            ,@(if (symbol? v)
                                  '()
                                  (list (extract-fields
-                                        (slice v (if v-has-parent 2 1))))))
+                                        (slice v (if v-has-parent 2 1)))))
+                           (define *descendants* (mk-set))
+                           (define (*add-descendant* d)
+                             ((. ,v-name *descendants* add) d)
+                             ((. ,name *add-descendant*) d)
+                             ,@(if v-parent
+                                   `(((. ,parent *add-descendant*) d))
+                                   '()))
+                           )
                            (define (,(pred-name v-name) e)
-                             (descends-from e ,v-name)))
+                             (in e (. ,v-name *descendants*)))
+                           ((. ,name *add-descendant*) ,v-name)
+                           ,@(if v-parent
+                                 `(((. ,v-parent *add-descendant*) ,v-name))
+                                 '())
+                           )
                    ))
                values)
        )
