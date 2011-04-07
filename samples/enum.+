@@ -5,11 +5,11 @@
       ClientError
       ServerError)
 
-(enum HTTP100
+(enum (HTTP100 HTTP)
       (Continue Informational)
       (SwitchingProtocol Informational))
 
-(enum HTTP200
+(enum (HTTP200 HTTP)
       (OK Successful)
       (Created Successful)
       (Accepted Successful)
@@ -18,7 +18,7 @@
       (ResetContent Successful)
       (PartialContent Successful))
 
-(enum HTTP300
+(enum (HTTP300 HTTP)
       (MultipleChoices Redirection)
       (MovedPermanently Redirection)
       (Found Redirection)
@@ -27,7 +27,7 @@
       (UseProxy Redirection)
       (TemporaryRedirect Redirection))
 
-(enum HTTP400
+(enum (HTTP400 HTTP)
       (BadRequest ClientError)
       (Unauthorized ClientError)
       (PaymentRequired ClientError)
@@ -47,7 +47,7 @@
       (RequestedRangeNotSatisfiable ClientError)
       (ExpectationFailed ClientError))
 
-(enum HTTP500
+(enum (HTTP500 HTTP)
       (InternalServerError ServerError)
       (NotImplemented ServerError)
       (BadGateway ServerError)
