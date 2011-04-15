@@ -37,6 +37,16 @@
   scripts. 
 </dd>
 
+<dt>Accessors</dt>
+<dd>A syntax such as <code>(def-getter)</code> and
+      <code>(def-setter)</code>, inside of
+      <code>(class)</code>.  Or perhaps
+      <code>(defattr :getter (...) :setter (...))</code>.
+      Would have to be careful interacting with
+      raw <code>__getattr__</code> and <code>__setattr__</code>.  For
+      first version, could just disallow the combination.
+</dd>
+
 <dt>Logic programming</dt>
 <dd>It would be very cool to give Adder a logic
   programming system.  Initially a simple one, as described in the
