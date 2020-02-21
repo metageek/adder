@@ -10,4 +10,4 @@
          (:= n1 n2)
          (:= n2 tmp)))
 
-(print (list (take (fib) 5)))
+(print (list (take (fib) 500)))
