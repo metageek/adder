@@ -860,7 +860,7 @@ class NArySubtractive(NAryAdditive):
         assert not kwArgs
         if len(args)==1:
             x=args[0].compyle(stmtCollector)
-            if self.zero is 0:
+            if self.zero == 0:
                 return [S(self.op),[x]]
             else:
                 return [S(self.op),[self.zero,x]]
