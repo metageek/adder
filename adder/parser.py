@@ -1,4 +1,4 @@
-from adder.common import Symbol as S
+from adder.symbol import intern
 
 ATOM=1
 OPEN=2
@@ -112,7 +112,7 @@ def parse(s):
     def maybeQuote(x,quoteIt):
         if quoteIt:
             (sym,line)=quoteIt
-            return ([(S(sym),line),x],line)
+            return ([(intern(sym),line),x],line)
         else:
             return x
     listStack=[]
@@ -150,7 +150,7 @@ def parse(s):
                 try:
                     arg=float(arg)
                 except ValueError as x:
-                    arg=S(arg)
+                    arg=intern(arg)
             a=maybeQuote((arg,line),quotePending)
             if listStack:
                 listStack[-1].append(a)

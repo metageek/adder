@@ -1,27 +1,27 @@
 from adder.parser import parseStream
-from adder.compiler import Context
-import adder.common
-import sys,pdb
+from adder.eval import evaluate
+import adder.prelude
+import sys
 
 try:
     import readline
 except ImportError:
     pass
 
-def readEvalGenerator(context,instream,exceptionHandler):
+def readEvalGenerator(instream, exceptionHandler, env):
     for parsedExpr in parseStream(instream):
         try:
-            yield context.eval(parsedExpr,hasLines=True)
+            yield evaluate(parsedExpr, env)
         except Exception as e:
             if exceptionHandler:
                 exceptionHandler(e)
             raise
 
 class Repl:
-    def __init__(self,*,context=None,prompt='> ',
+    def __init__(self,*,prompt='> ',
                  instream=None,outstream=None,
                  interactive=True):
-        self.context=context
+        self.root=adder.prelude.make()
         self.prompt=prompt
         self.instream=instream
         self.outstream=outstream
@@ -39,16 +39,6 @@ class Repl:
                 self.instream=sys.stdin
         if self.outstream is None:
             self.outstream=sys.stdout
-        if self.context is None:
-            if interactive:
-                self.outstream.write('Loading prelude...')
-                self.outstream.flush()
-            self.context=Context()
-            if interactive:
-                self.outstream.write('done.\n')
-
-    def load(self,f,*,cache=False):
-        self.context.load(f,cache=cache)
 
     def run(self):
         def exceptionHandler(e):
@@ -56,9 +46,9 @@ class Repl:
 
         self.outstream.write(self.prompt)
         self.outstream.flush()
-        for val in readEvalGenerator(self.context,
-                                     self.instream,
-                                     exceptionHandler):
-            self.outstream.write('%s\n' % adder.common.adderStr(val))
+        for val in readEvalGenerator(self.instream,
+                                     exceptionHandler,
+                                     self.root):
+            self.outstream.write('%s\n' % val)
             self.outstream.write(self.prompt)
             self.outstream.flush()
