@@ -1163,7 +1163,7 @@ python=adder.gomer.mkPython()
             self.cacheBodyStream=None
             self.cacheOutputFile=None
         if loadPrelude:
-            self.load('prelude.+',inSrcDir=True)
+            self.load('prelude.+',inSrcDir=True,cache=True)
 
     def load(self,f,*,inSrcDir=False,cache=False):
         loadFile(f,self.scope,self.globals,
