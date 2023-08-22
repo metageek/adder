@@ -192,6 +192,8 @@ class Scope:
         self.isClassScope=isClassScope
         self.isFuncScope=isFuncScope
 
+        self.recordIn=None
+
         self.addConst(S('current-scope'),self,0,ignoreScopeId=True)
 
         if trackDescendants:
@@ -202,6 +204,12 @@ class Scope:
 
     root=None
 
+    def record(self, recordIn):
+        self.recordIn=recordIn
+
+    def stopRecording(self):
+        self.recordIn=None
+    
     def addChild(self,child):
         if self.descendants:
             self.descendants.append(child)
@@ -232,6 +240,8 @@ class Scope:
         scope.readOnly=cucumber['readOnly']
         for (name,entryCucumber) in cucumber['entries'].items():
             scope.entries[name]=Scope.Entry.expand(entryCucumber)
+            if scope.recordIn is not None:
+                scope.recordIn.append(name)
         adder.runtime.getScopeById.scopes[scope.id]=scope
         return scope
 
@@ -298,6 +308,8 @@ class Scope:
                                        macroExpander=macroExpander,
                                        isBuiltinFunc=isBuiltinFunc,
                                        nativeFunc=nativeFunc)
+        if self.recordIn is not None:
+            self.recordIn.append(name)
 
     def addConst(self,name,value,line,*,
                  ignoreScopeId=False):
@@ -1117,6 +1129,11 @@ def loadFile(f,scope,globalDict,*,
         globalDict=adder.gomer.mkGlobals()
     res=None
 
+    if inSrcDir:
+        srcFile=loadFile.__code__.co_filename
+        srcDir=os.path.split(srcFile)[0]
+        f=os.path.join(srcDir,f)
+
     if cache and (cacheOutputFile is None) and f.endswith('.+'):
         cacheOutputFileName=f[:-2]+'.py'
         if (os.path.exists(cacheOutputFileName)
@@ -1127,11 +1144,11 @@ def loadFile(f,scope,globalDict,*,
                     globalDict)
         else:
             cacheOutputFile=open(cacheOutputFileName,'w')
+            cacheOutputFile.write("""import adder.gomer, adder.compiler
+from adder.runtime import *
+python=adder.gomer.mkPython()
 
-    if inSrcDir:
-        srcFile=loadFile.__code__.co_filename
-        srcDir=os.path.split(srcFile)[0]
-        f=os.path.join(srcDir,f)
+""")
 
     for (parsedExpr,isLast) in tagWithIsLast(adder.parser.parseFile(f)):
         if isLast and cacheOutputFile:
@@ -1163,12 +1180,21 @@ python=adder.gomer.mkPython()
             self.cacheBodyStream=None
             self.cacheOutputFile=None
         if loadPrelude:
-            self.load('prelude.+',inSrcDir=True,cache=True)
+            l=[]
+            self.scope.record(l)
+            self.load('prelude.+',inSrcDir=True,cache=True,cacheSeparately=True)
+            self.scope.stopRecording()
+            if self.cacheOutputFile:
+                l=filter(lambda s: '.' not in str(s) and not self.scope.isMacro(s),
+                         l)
+                syms=', '.join(map(lambda s: S("%s-%d" % (s, self.scope.id)).toPython(),
+                                   l))
+                self.cacheOutputFile.write(f"from adder.prelude import {syms}\n")
 
-    def load(self,f,*,inSrcDir=False,cache=False):
+    def load(self,f,*,inSrcDir=False,cache=False,cacheSeparately=False):
         loadFile(f,self.scope,self.globals,
                  inSrcDir=inSrcDir,
-                 cacheOutputFile=self.cacheBodyStream,
+                 cacheOutputFile=None if cacheSeparately else self.cacheBodyStream,
                  cache=cache)
 
     def eval(self,expr,*,verbose=False,hasLines=False,defLine=0,
